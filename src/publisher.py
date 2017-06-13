@@ -28,36 +28,37 @@ def publish_posts_guarded(bot: telegram.Bot, channel_id, posts: list, db):
     for i, post in enumerate(posts):
         db.add(post)
 
+        logging.info(f'Database items:     {len(db):4d}')
+        logging.info(f'Current chunk size: {len(posts):4d}')
         logging.info(f'\t> #{i+1:3d} : {post["title"]}')
         try_to_publish(bot, channel_id, post, publish_post_title)
-        # time.sleep(2)
+
         for image in post['images']:
             logging.info(f'\t\t> : {image["src"]}')
             try_to_publish(bot, channel_id, image, publish_post_image)
-            # time.sleep(2)
 
         time.sleep(30)
 
 
 def try_to_publish(bot, channel_id, item, publisher_callback):
     timeout = 120
-    while True:
-        try:
-            publisher_callback(bot, channel_id, item, timeout)
-            break
-        except telegram.error.TimedOut as e:
-            logging.error(f'Timeout error ⌛ {timeout}s')
-            logging.error(e)
-            logging.error(pformat(item))
-            break
-        except telegram.error.BadRequest as e:
-            logging.error(e)
-            logging.error(pformat(item))
-            break
-        except telegram.error.TelegramError as e:
-            logging.error(e)
-            logging.error(pformat(item))
-            break
+    try:
+        publisher_callback(bot, channel_id, item, timeout)
+    except telegram.error.TimedOut as e:
+        logging.error(f'TimeOut: ⌛ > {timeout}s')
+        logging.error(e)
+        for line in pformat(item).split('\n'):
+            logging.error(line)
+    except telegram.error.BadRequest as e:
+        logging.error('BadRequest')
+        logging.error(e)
+        for line in pformat(item).split('\n'):
+            logging.error(line)
+    except telegram.error.TelegramError as e:
+        logging.error('TelegramError')
+        logging.error(e)
+        for line in pformat(item).split('\n'):
+            logging.error(line)
 
 
 def publish_post_title(bot, channel_id, post, timeout):

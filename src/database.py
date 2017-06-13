@@ -1,5 +1,6 @@
 import time
 import pathlib
+import logging
 
 
 class Database(object):
@@ -7,6 +8,9 @@ class Database(object):
         self._data = {}
         self._path = path
         self._restore_database()
+
+    def __len__(self):
+        return len(self._data)
 
     def __contains__(self, item):
         if type(item) is str:
@@ -24,8 +28,7 @@ class Database(object):
             with open(self._path, 'a') as file:
                 file.write(f'{post_id} {datetime}\n')
 
-    def clear(self):
-        period = 10 * 24 * 60 * 60  # 10 days
+    def clear(self, period):
         now = time.time()
 
         old_posts = set()
@@ -39,14 +42,18 @@ class Database(object):
         with open(self._path, 'w') as file:
             for post_id, datetime in self._data.items():
                 file.write(f'{post_id} {datetime}\n')
+        return len(old_posts)
 
     def _restore_database(self):
         path = pathlib.Path(self._path)
         path.parent.mkdir(parents=True, exist_ok=True)
         if not path.exists():
+            logging.info('Create NEW database.')
             with open(self._path, 'w'):
                 pass
             return
+        else:
+            logging.info('Use OLD database.')
 
         with open(self._path, 'r') as file:
             for line in file:

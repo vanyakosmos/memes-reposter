@@ -16,12 +16,13 @@ logger = logging.getLogger(__name__)
 
 DEBUG = False
 PORT = int(os.environ.get('PORT', '5000'))
-BOT_TOKEN = '357603222:AAHtWyUxNRlUWuWekA4aOKG-cNzwfdusdig'
 
 if DEBUG:
     CHANNEL_ID = '@test_channel_for_vanya'
+    BOT_TOKEN = '333977268:AAFEkwrraTlh1WIZMQOjohpw4QCX1dew6kc'
 else:
     CHANNEL_ID = '@telemgur'
+    BOT_TOKEN = '357603222:AAHtWyUxNRlUWuWekA4aOKG-cNzwfdusdig'
 
 
 def post_images(bot, job):
@@ -39,16 +40,18 @@ def post_images(bot, job):
 
 
 def clear_db(bot: telegram.Bot, job):
-    db: Database = job.context
-    db.clear()
+    logger.info('Perform database clearing...')
+    db, period = job.context
+    deleted_count = db.clear(period)
+    logger.info(f'Cleared: {deleted_count} post(s)')
 
 
 def schedule(updater, db):
     imgur_check_interval = 10 * 60
-    clear_db_interval = 10 * 24 * 60 * 60
+    clear_db_interval = 2 * 24 * 60 * 60
 
     updater.job_queue.run_repeating(post_images, first=0, interval=imgur_check_interval, context=db)
-    updater.job_queue.run_repeating(clear_db, interval=clear_db_interval, context=db)
+    updater.job_queue.run_repeating(clear_db, interval=clear_db_interval, context=(db, clear_db_interval))
     logger.info('Loops scheduled')
 
 
