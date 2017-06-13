@@ -21,7 +21,7 @@ BOT_TOKEN = '357603222:AAHtWyUxNRlUWuWekA4aOKG-cNzwfdusdig'
 if DEBUG:
     CHANNEL_ID = '@test_channel_for_vanya'
 else:
-    CHANNEL_ID = '@imgur_viral'
+    CHANNEL_ID = '@telemgur'
 
 
 def post_images(bot, job):

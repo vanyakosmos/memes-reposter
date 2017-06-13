@@ -42,6 +42,7 @@ class Database(object):
 
     def _restore_database(self):
         path = pathlib.Path(self._path)
+        path.parent.mkdir(parents=True, exist_ok=True)
         if not path.exists():
             with open(self._path, 'w'):
                 pass
