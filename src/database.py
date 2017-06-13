@@ -43,7 +43,7 @@ class Database(object):
     def _restore_database(self):
         path = pathlib.Path(self._path)
         if not path.exists():
-            with open(self._path, 'w+'):
+            with open(self._path, 'w'):
                 pass
             return
 
