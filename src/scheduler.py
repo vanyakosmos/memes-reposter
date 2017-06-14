@@ -50,7 +50,7 @@ def posting_job(bot, job: Job):
     else:
         logger.info(f"All posts were published. "
                     f"After {IMGUR_CHECK_INTERVAL // 60}m will check new posts.")
-        job_queue.run_once(get_posts_job, when=IMGUR_CHECK_INTERVAL)
+        job_queue.run_once(get_posts_job, when=IMGUR_CHECK_INTERVAL, context=db)
 
 
 def cleanup_db_job(_, job: Job):
