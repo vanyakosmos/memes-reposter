@@ -1,111 +1,52 @@
 import logging
-import time
-from pprint import pformat
 
-import telegram
+from telegram.error import BadRequest, TelegramError
 from telegram.constants import MAX_CAPTION_LENGTH, MAX_MESSAGE_LENGTH
 
-
-def publish_posts(bot: telegram.Bot, channel_id, posts: list):
-    logging.info(f'Publishing {len(posts)} post(s) into telegram')
-    for i, post in enumerate(posts[:20]):
-        try:
-            logging.info(f'\t> #{i+1:3d} : {post["title"]}')
-            publish_post_title(bot, channel_id, post)
-            time.sleep(2)
-
-            for image in post['images']:
-                publish_post_image(bot, channel_id, image, post)
-                time.sleep(2)
-
-        except telegram.error.TimedOut:
-            logging.error(f'Timeout error ⌛ (bad connection? dunno)️\n'
-                          f'{pformat(post)}')
+from settings import POST_TIMEOUT, CHANNEL_ID
 
 
-def publish_posts_guarded(bot: telegram.Bot, channel_id, posts: list, db):
-    logging.info(f'Publishing {len(posts)} post(s) into telegram')
-    for i, post in enumerate(posts):
+logger = logging.getLogger(__name__)
+
+
+def publish_post(bot, post, db):
+    try:
         db.add(post)
-
-        logging.info(f'Database items:     {len(db):4d}')
-        logging.info(f'Current chunk size: {len(posts):4d}')
-        logging.info(f'\t> #{i+1:3d} : {post["title"]}')
-        try_to_publish(bot, channel_id, post, publish_post_title)
+        logging.info(f'Post: {post["link"]}')
+        publish_title(bot, post)
 
         for image in post['images']:
-            logging.info(f'\t\t> : {image["src"]}')
-            try_to_publish(bot, channel_id, image, publish_post_image)
-
-        time.sleep(30)
-
-
-def try_to_publish(bot, channel_id, item, publisher_callback):
-    timeout = 120
-    try:
-        publisher_callback(bot, channel_id, item, timeout)
-    except telegram.error.TimedOut as e:
-        logging.error(f'TimeOut: ⌛ > {timeout}s')
-        logging.error(e)
-        for line in pformat(item).split('\n'):
-            logging.error(line)
-    except telegram.error.BadRequest as e:
-        logging.error('BadRequest')
-        logging.error(e)
-        for line in pformat(item).split('\n'):
-            logging.error(line)
-    except telegram.error.TelegramError as e:
-        logging.error('TelegramError')
-        logging.error(e)
-        for line in pformat(item).split('\n'):
-            logging.error(line)
+            logging.info(f'    > Item: {image["src"]}')
+            publish_item(bot, image)
+    except BadRequest as e:
+        logger.error('BadRequest')
+        logger.error(e)
+    except TelegramError as e:
+        logger.error('TelegramError')
+        logger.error(e)
 
 
-def publish_post_title(bot, channel_id, post, timeout):
-    title = post["title"]
-    # desc = post['desc']
-    # topic = '#' + '_'.join(post["topic"].split())
-    tags = ' '.join(post["tags"])
-    link = post["link"]
-
-    strings = ['🌚 ' + butch for butch in title.split('\n')]
-    if post['is_dump']:
-        images_count = post["images_count"]
-        strings.append(f'🔥 Album with {images_count} items')
-    strings.append('🔗 ' + link)
-    if tags:
-        strings.append('🏷 ' + tags)
-
-    text = '\n'.join(strings)
-    text = cut_text(text, limit=MAX_MESSAGE_LENGTH)
-
-    bot.send_message(chat_id=channel_id,
+def publish_title(bot, post):
+    text = format_title(post['title'], post['link'], post['tags'],
+                        post['is_dump'], post['images_count'])
+    bot.send_message(chat_id=CHANNEL_ID,
                      text=text,
                      disable_web_page_preview=True,
-                     timeout=timeout)
+                     timeout=POST_TIMEOUT)
 
 
-def publish_post_image(bot, channel_id, image, timeout):
-    is_album = image['is_album']
+def publish_item(bot, image):
     animated = image['animated']
-    title = image['title']
-    desc = image['desc']
     src = image['src']
 
-    text = ''
-
-    if is_album and title:
-        text += title + '\n'
-    if desc:
-        text += desc
-    text = cut_text(text, limit=MAX_CAPTION_LENGTH)
+    text = format_image_caption(image['title'], image['desc'],
+                                image['is_album'])
 
     kwargs = {
         'caption': text,
-        'chat_id': channel_id,
+        'chat_id': CHANNEL_ID,
         'disable_notification': True,
-        'timeout': timeout,
-
+        'timeout': POST_TIMEOUT,
     }
 
     if animated:
@@ -114,7 +55,28 @@ def publish_post_image(bot, channel_id, image, timeout):
         bot.send_photo(photo=src, **kwargs)
 
 
-def cut_text(text: str, limit=200):
+def format_title(title, link, tags, is_dump, images_count):
+    strings = ['🌚 ' + butch for butch in title.split('\n')]
+    if is_dump:
+        strings.append(f'🔥 Album with {images_count} items')
+    strings.append('🔗 ' + link)
+    if tags:
+        strings.append('🏷 ' + ' '.join(tags))
+
+    text = '\n'.join(strings)
+    return cut_text(text, limit=MAX_MESSAGE_LENGTH)
+
+
+def format_image_caption(title, desc, is_album):
+    text = ''
+    if is_album and title:
+        text += title + '\n'
+    if desc:
+        text += desc
+    return cut_text(text, limit=MAX_CAPTION_LENGTH)
+
+
+def cut_text(text: str, limit):
     limit -= 10
     if text is None:
         return ''

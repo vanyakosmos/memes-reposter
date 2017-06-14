@@ -42,7 +42,7 @@ class Database(object):
         with open(self._path, 'w') as file:
             for post_id, datetime in self._data.items():
                 file.write(f'{post_id} {datetime}\n')
-        return len(old_posts)
+        return len(old_posts), len(self._data)
 
     def _restore_database(self):
         path = pathlib.Path(self._path)
