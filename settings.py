@@ -5,7 +5,7 @@ import logging
 logging.basicConfig(format='%(levelname)-8s %(name)-20s •   %(message)s', level=logging.INFO)
 
 
-DEBUG = True
+DEBUG = False
 
 PORT = int(os.environ.get('PORT', '5000'))
 
@@ -18,7 +18,12 @@ else:
 
 
 IMGUR_CHECK_INTERVAL = 5 * 60
-POSTING_INTERVAL = 3
+POSTING_INTERVAL = 15
 CLEARING_DB_INTERVAL = 2 * 24 * 60 * 60
 
 POST_TIMEOUT = 30
+
+BANNED_TAGS = {'weight loss', }
+IMAGES_PER_POST = 9
+IMAGES_FOR_LONG_POST = 3
+MAX_POST_AGE = 8 * 60 * 60

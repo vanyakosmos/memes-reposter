@@ -1,10 +1,9 @@
+import time
+
 from telegram.constants import MAX_FILESIZE_DOWNLOAD
 
 from src.database import Database
-
-BANNED_TAGS = {'weight loss', }
-IMAGES_PER_POST = 9
-IMAGES_FOR_LONG_POST = 3
+from settings import BANNED_TAGS, IMAGES_PER_POST, IMAGES_FOR_LONG_POST, MAX_POST_AGE
 
 
 def filter_posts(posts: list, db: Database):
@@ -107,7 +106,8 @@ def format_image(image, post):
         src:        str, link to mp4 if animated otherwise regular link
     }
     """
-    if image['size'] < MAX_FILESIZE_DOWNLOAD:
+    now = time.time()
+    if image['size'] < MAX_FILESIZE_DOWNLOAD and image['datetime'] + MAX_POST_AGE > now:
         return {
             'is_album': post['is_album'],
             'title': image['title'],
