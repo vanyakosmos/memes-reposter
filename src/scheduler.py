@@ -17,7 +17,7 @@ def scheduling(job_queue: JobQueue, db: Database):
 
 
 def get_posts_job(_, job: Job):
-    logging.info('> Running GET_POSTS job')
+    logging.info('▶︎ Running GET_POSTS job')
     db = job.context
     job_queue = job.job_queue
     response = data_fetcher.get_data_from_imgur()
@@ -38,7 +38,7 @@ def get_posts_job(_, job: Job):
 
 
 def posting_job(bot, job: Job):
-    logging.info('> Running POSTING job')
+    logging.info('▶︎ Running POSTING job')
     posts, db = job.context
     job_queue = job.job_queue
 
@@ -48,12 +48,13 @@ def posting_job(bot, job: Job):
         publisher.publish_post(bot, post, db)
         job_queue.run_once(posting_job, when=POSTING_INTERVAL, context=(posts, db))
     else:
-        logger.info(f"All posts were published. Checking for new ones...")
+        logger.info(f"All posts were published. "
+                    f"After {IMGUR_CHECK_INTERVAL // 60}m will check new posts.")
         job_queue.run_once(get_posts_job, when=IMGUR_CHECK_INTERVAL)
 
 
 def cleanup_db_job(_, job: Job):
     db = job.context
-    logger.info('> Running CLEANUP_DATABASE job')
+    logger.info('▶︎ Running CLEANUP_DATABASE job')
     deleted, remaining = db.clear(CLEARING_DB_INTERVAL)
     logger.info(f'Deleted from db: {deleted} post(s). Left: {remaining} ')

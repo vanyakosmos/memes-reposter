@@ -2,7 +2,7 @@ import os
 import logging
 
 
-logging.basicConfig(format='%(levelname)-8s %(name)-20s •   %(message)s', level=logging.INFO)
+logging.basicConfig(format='%(levelname)-8s %(name)-20s     %(message)s', level=logging.INFO)
 
 
 DEBUG = False

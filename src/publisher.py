@@ -12,11 +12,11 @@ logger = logging.getLogger(__name__)
 def publish_post(bot, post, db):
     try:
         db.add(post)
-        logging.info(f'Post: {post["link"]}')
+        logger.info(f'Post: {post["link"]}')
         publish_title(bot, post)
 
         for image in post['images']:
-            logging.info(f'    > Item: {image["src"]}')
+            logger.info(f'    | Item: {image["src"]}')
             publish_item(bot, image)
     except BadRequest as e:
         logger.error('BadRequest')
