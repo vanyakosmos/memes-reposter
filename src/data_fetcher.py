@@ -2,9 +2,7 @@ import logging
 
 import requests
 
-# Imgur credentials
-CLIENT_ID = 'eb6223e9384246d'
-CLIENT_SECRET = 'fed4a7e79366b16080aa4433dd45c9cfc414daa3'
+from settings import CLIENT_ID
 
 logger = logging.getLogger(__name__)
 
