@@ -1,29 +1,47 @@
 import logging
+import traceback
+from pprint import pformat
 
-from telegram.error import BadRequest, TelegramError
+from telegram.error import TimedOut, BadRequest, TelegramError
 from telegram.constants import MAX_CAPTION_LENGTH, MAX_MESSAGE_LENGTH
 
 from settings import POST_TIMEOUT, CHANNEL_ID
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('🗞 ' + __name__)
 
 
 def publish_post(bot, post, db):
     try:
         db.add(post)
-        logger.info(f'Post: {post["link"]}')
+        logger.info(f'Post: {post["title"][:40]}')
+        logger.info(f'    : {post["link"]}')
         publish_title(bot, post)
 
         for image in post['images']:
             logger.info(f'    | Item: {image["src"]}')
             publish_item(bot, image)
+    except TimedOut as e:
+        log_error('TimedOut', e, post)
     except BadRequest as e:
-        logger.error('BadRequest')
-        logger.error(e)
+        log_error('BadRequest', e, post)
     except TelegramError as e:
-        logger.error('TelegramError')
-        logger.error(e)
+        log_error('TelegramError', e, post, print_traceback=True)
+    except Exception as e:
+        log_error('Something horrible', e, post, print_traceback=True)
+
+
+def log_error(title: str, err, post,
+              print_traceback=False,
+              print_post=True):
+    logger.error(title)
+    logger.error(err)
+    if print_traceback:
+        for line in traceback.format_exc().split('\n'):
+            logger.error(line)
+    if print_post:
+        for line in pformat(post).split('\n'):
+            logger.error(line)
 
 
 def publish_title(bot, post):

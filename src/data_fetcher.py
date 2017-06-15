@@ -4,7 +4,7 @@ import requests
 
 from settings import CLIENT_ID
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('🐕 ' + __name__)
 
 
 def log_status(code):

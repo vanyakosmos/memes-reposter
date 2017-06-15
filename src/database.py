@@ -3,6 +3,9 @@ import pathlib
 import logging
 
 
+logger = logging.getLogger('📚 ' + __name__)
+
+
 class Database(object):
     def __init__(self, path):
         self._data = {}
@@ -48,12 +51,12 @@ class Database(object):
         path = pathlib.Path(self._path)
         path.parent.mkdir(parents=True, exist_ok=True)
         if not path.exists():
-            logging.info('Creating NEW database...')
+            logger.info('Creating NEW database...')
             with open(self._path, 'w'):
                 pass
             return
         else:
-            logging.info('Using OLD database...')
+            logger.info('Using OLD database...')
 
         with open(self._path, 'r') as file:
             for line in file:
