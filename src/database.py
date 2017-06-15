@@ -111,15 +111,23 @@ class RedisDB(AbstractDB):
 
     def clear(self, period: int):
         now = time.time()
-        old_posts = set()
 
+        # remove old posts from hash `data`
+        old_posts = set()
         for post_id, datetime in self.client.hgetall('data').items():
             datetime = int(datetime)
             if datetime + period < now:
                 old_posts.add(post_id)
-
         for old_post_id in old_posts:
             self.client.hdel('data', old_post_id)
+
+        # remove old date marks from set `dates`
+        old_date_marks = []
+        for date_mark in self.client.smembers('dates'):
+            if float(date_mark) + period < now:
+                old_date_marks.append(date_mark)
+        if old_date_marks:
+            self.client.srem('dates', *old_date_marks)
 
         return len(old_posts), len(self)
 
@@ -134,8 +142,6 @@ class RedisDB(AbstractDB):
             logger.info(f'Old version {version.decode("utf-8")}')
         else:
             logger.info('Using NEW database')
-            # init_data = json.load(open('init.json'))
-            # self.client.hmset('data', init_data)
 
         logger.info(f'New version: {new_version}')
         self.client.set('version', new_version)
