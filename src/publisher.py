@@ -55,6 +55,7 @@ def publish_title(bot, post):
 
 def publish_item(bot, image):
     animated = image['animated']
+    preview = image['preview']
     src = image['src']
 
     text = format_image_caption(image['title'], image['desc'],
@@ -66,6 +67,10 @@ def publish_item(bot, image):
         'disable_notification': True,
         'timeout': POST_TIMEOUT,
     }
+
+    if preview:
+        bot.send_message(text=src, **kwargs)
+        return
 
     if animated:
         bot.send_video(video=src, **kwargs)
@@ -86,12 +91,7 @@ def format_title(title, link, tags, is_dump, images_count):
 
 
 def format_image_caption(title, desc, is_album):
-    text = ''
-    if is_album and title:
-        text += title + '\n'
-    if desc:
-        text += desc
-    return cut_text(text, limit=MAX_CAPTION_LENGTH)
+    return cut_text(desc, limit=MAX_CAPTION_LENGTH)
 
 
 def cut_text(text: str, limit):

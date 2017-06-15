@@ -1,9 +1,8 @@
 import time
 
-from telegram.constants import MAX_FILESIZE_DOWNLOAD
-
 from src.database import Database
-from settings import BANNED_TAGS, IMAGES_PER_POST, IMAGES_FOR_LONG_POST, MAX_POST_AGE, MAX_IMAGE_HEIGHT
+from settings import BANNED_TAGS, IMAGES_PER_POST, IMAGES_FOR_LONG_POST
+from settings import MAX_POST_AGE, MAX_IMAGE_HEIGHT, MAX_VIDEO_SIZE
 
 
 def filter_posts(posts: list, db: Database):
@@ -82,15 +81,13 @@ def get_images(post):
     if post['is_album']:
         # long post will have only IMAGES_FOR_LONG_POST images in it
         # regular posts will have IMAGES_PER_POST images
-        if post['images_count'] > IMAGES_PER_POST:
-            images = post['images'][:IMAGES_FOR_LONG_POST]
-        else:
-            images = post['images'][:IMAGES_PER_POST]
-
+        images = post['images']
         for image in images:
             formatted = format_image(image, post)
             if formatted:
                 formatted_images.append(formatted)
+        cut = IMAGES_PER_POST if post['images_count'] <= IMAGES_PER_POST else IMAGES_FOR_LONG_POST
+        formatted_images = formatted_images[:cut]
     else:
         # if post is not album
         # then post IS the image/gif
@@ -109,11 +106,11 @@ def format_image(image, post):
         src:        str, link to mp4 if animated otherwise regular link
     }
     """
-    normal_size = image['size'] < MAX_FILESIZE_DOWNLOAD
+    normal_size = image['size'] < MAX_VIDEO_SIZE
     normal_dim = image['width'] <= MAX_IMAGE_HEIGHT and image['height'] <= MAX_IMAGE_HEIGHT
     young = image['datetime'] + MAX_POST_AGE > time.time()
 
-    if normal_size and normal_dim and young:
+    if normal_dim and young:
         title = post['title'].strip() if post['title'] else None
 
         return {
@@ -125,6 +122,8 @@ def format_image(image, post):
             'type': image['type'],  # image/png, image/jpeg, image/gif
             'desc': image['description'],
             'animated': image['animated'],
+            'preview': not normal_size,
             'src': image['mp4'] if image['animated'] else image['link']
         }
+
     return None

@@ -20,7 +20,8 @@ if DEBUG:
     CHANNEL_ID = '@test_channel_for_vanya'
     BOT_TOKEN = '333977268:AAFEkwrraTlh1WIZMQOjohpw4QCX1dew6kc'
 else:
-    CHANNEL_ID = '@telemgur'
+    # CHANNEL_ID = '@telemgur'  # fixme
+    CHANNEL_ID = '@test_channel_for_vanya'
     BOT_TOKEN = '357603222:AAHtWyUxNRlUWuWekA4aOKG-cNzwfdusdig'
 
 # scheduler
@@ -29,11 +30,12 @@ POSTING_INTERVAL = 15
 CLEARING_DB_INTERVAL = 2 * 24 * 60 * 60
 
 # filter
-BANNED_TAGS = {'weight loss', }
+BANNED_TAGS = {'weight loss', 'war', 'army', 'tragedy'}
 IMAGES_PER_POST = 9
 IMAGES_FOR_LONG_POST = 3
-MAX_POST_AGE = 12 * 60 * 60
-MAX_IMAGE_HEIGHT = 1280
+MAX_POST_AGE = 2 * 24 * 60 * 60
+MAX_IMAGE_HEIGHT = 1440
+MAX_VIDEO_SIZE = 10 * 1024 * 1024
 
 # publisher
 POST_TIMEOUT = 120
