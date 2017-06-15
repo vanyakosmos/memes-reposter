@@ -41,7 +41,7 @@ def main():
         file.name = "cache.json"
         file.write(
             json.dumps(
-                list(map(int, dates)),
+                list(map(str, dates)),
                 indent=4,
                 sort_keys=True,
                 ensure_ascii=False
