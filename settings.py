@@ -20,13 +20,12 @@ if DEBUG:
     CHANNEL_ID = '@test_channel_for_vanya'
     BOT_TOKEN = '333977268:AAFEkwrraTlh1WIZMQOjohpw4QCX1dew6kc'
 else:
-    # CHANNEL_ID = '@telemgur'  # fixme
-    CHANNEL_ID = '@test_channel_for_vanya'
+    CHANNEL_ID = '@telemgur'
     BOT_TOKEN = '357603222:AAHtWyUxNRlUWuWekA4aOKG-cNzwfdusdig'
 
 # scheduler
 IMGUR_CHECK_INTERVAL = 5 * 60
-POSTING_INTERVAL = 0
+POSTING_INTERVAL = 15
 CLEARING_DB_INTERVAL = 2 * 24 * 60 * 60
 
 # filter
