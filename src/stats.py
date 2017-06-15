@@ -1,7 +1,11 @@
 from io import BytesIO
 from time import gmtime
 
+import matplotlib
 import matplotlib.pyplot as plt
+
+
+matplotlib.use('Agg')
 
 
 def get_stats_image(dates):
