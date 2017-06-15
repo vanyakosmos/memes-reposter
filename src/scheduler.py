@@ -3,14 +3,14 @@ import logging
 from telegram.ext.jobqueue import Job, JobQueue
 
 from src import data_fetcher, filter, publisher
-from src.database import Database
+from src.database import AbstractDB
 from settings import IMGUR_CHECK_INTERVAL, POSTING_INTERVAL, CLEARING_DB_INTERVAL
 
 
 logger = logging.getLogger('⌛ ' + __name__)
 
 
-def scheduling(job_queue: JobQueue, db: Database):
+def scheduling(job_queue: JobQueue, db: AbstractDB):
     logger.info('Setting up schedule...')
     job_queue.run_once(get_posts_job, when=0, context=db)
     job_queue.run_repeating(cleanup_db_job, first=0, interval=CLEARING_DB_INTERVAL, context=db)
@@ -47,7 +47,7 @@ def posting_job(bot, job: Job):
 
     if posts:
         logger.info(f"Received {len(posts)} post(s) for publication.")
-        post = posts.pop()
+        post = posts.pop(0)
         publisher.publish_post(bot, post, db)
         job_queue.run_once(posting_job, when=POSTING_INTERVAL, context=(posts, db))
     else:
