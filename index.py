@@ -5,7 +5,7 @@ from telegram.ext import Updater, CommandHandler
 
 from src.database import Database
 from src.scheduler import scheduling
-from settings import DEBUG, PORT, BOT_TOKEN
+from settings import DEBUG, PORT, BOT_TOKEN, APP_NAME
 
 
 logger = logging.getLogger(__name__)
@@ -32,10 +32,8 @@ def main():
     if DEBUG:
         updater.start_polling()
     else:
-        updater.start_webhook(listen="0.0.0.0",
-                              port=PORT,
-                              url_path=BOT_TOKEN)
-        updater.bot.set_webhook("https://aiven-bot-hater.herokuapp.com/" + BOT_TOKEN)
+        updater.start_webhook(listen="0.0.0.0", port=PORT, url_path=BOT_TOKEN)
+        updater.bot.set_webhook(f"https://{APP_NAME}.herokuapp.com/" + BOT_TOKEN)
     updater.idle()
 
 

@@ -3,7 +3,7 @@ import time
 from telegram.constants import MAX_FILESIZE_DOWNLOAD
 
 from src.database import Database
-from settings import BANNED_TAGS, IMAGES_PER_POST, IMAGES_FOR_LONG_POST, MAX_POST_AGE
+from settings import BANNED_TAGS, IMAGES_PER_POST, IMAGES_FOR_LONG_POST, MAX_POST_AGE, MAX_IMAGE_HEIGHT
 
 
 def filter_posts(posts: list, db: Database):
@@ -48,12 +48,15 @@ def build_new_post(post, tags_list):
     post_id = post['id']
     images_count = post['images_count'] if post['is_album'] else 1
     images = get_images(post)
+
+    title = post['title'].strip() if post['title'] else None
+
     if images:
         return {
             'id': post_id,
             'is_album': post['is_album'],
             'is_dump': images_count > IMAGES_PER_POST,
-            'title': post['title'],
+            'title': title,
             'desc': post['description'],
             'topic': post['topic'],
             'tags': tags_list,
@@ -106,13 +109,20 @@ def format_image(image, post):
         src:        str, link to mp4 if animated otherwise regular link
     }
     """
-    now = time.time()
-    if image['size'] < MAX_FILESIZE_DOWNLOAD and image['datetime'] + MAX_POST_AGE > now:
+    normal_size = image['size'] < MAX_FILESIZE_DOWNLOAD
+    normal_dim = image['width'] <= MAX_IMAGE_HEIGHT and image['height'] <= MAX_IMAGE_HEIGHT
+    young = image['datetime'] + MAX_POST_AGE > time.time()
+
+    if normal_size and normal_dim and young:
+        title = post['title'].strip() if post['title'] else None
+
         return {
             'is_album': post['is_album'],
-            'title': image['title'],
+            'title': title,
             'size': image['size'],
-            "type": image['type'],  # image/png, image/jpeg, image/gif
+            'width': image['width'],
+            'height': image['height'],
+            'type': image['type'],  # image/png, image/jpeg, image/gif
             'desc': image['description'],
             'animated': image['animated'],
             'src': image['mp4'] if image['animated'] else image['link']
