@@ -1,14 +1,14 @@
-import json
 import logging
 import os
-from io import BytesIO
 
 import redis
+from telegram import Bot
 from telegram import Update
 from telegram.ext import Updater, CommandHandler
 
 from src.database import RedisDB
 from src.scheduler import scheduling
+from src.stats import get_stats_image
 from settings import DEBUG, PORT, BOT_TOKEN, APP_NAME
 
 
@@ -35,20 +35,10 @@ def main():
 
     scheduling(updater.job_queue, db)
 
-    def stats(bot, update):
+    def stats(bot: Bot, update):
         dates = db.dates_list()
-        file = BytesIO()
-        file.name = "cache.json"
-        file.write(
-            json.dumps(
-                list(map(str, dates)),
-                indent=4,
-                sort_keys=True,
-                ensure_ascii=False
-            ).encode("utf-8"))
-
-        file.seek(0)
-        bot.sendDocument(chat_id=update.message.chat_id, document=file)
+        file = get_stats_image(dates)
+        bot.send_photo(chat_id=update.message.chat_id, photo=file)
         file.close()
 
     dp.add_handler(CommandHandler('boop', boop))
