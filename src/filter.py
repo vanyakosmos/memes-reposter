@@ -1,8 +1,10 @@
 import time
 
+from telegram.constants import MAX_FILESIZE_DOWNLOAD
+
 from src.database import Database
 from settings import BANNED_TAGS, IMAGES_PER_POST, IMAGES_FOR_LONG_POST
-from settings import MAX_POST_AGE, MAX_IMAGE_HEIGHT, MAX_VIDEO_SIZE
+from settings import MAX_POST_AGE, MAX_VIDEO_SIZE, MAX_IMAGE_SIZE, MIN_DIM_RATIO
 
 
 def filter_posts(posts: list, db: Database):
@@ -81,7 +83,7 @@ def get_images(post):
     if post['is_album']:
         # long post will have only IMAGES_FOR_LONG_POST images in it
         # regular posts will have IMAGES_PER_POST images
-        images = post['images']
+        images = post['images'][:IMAGES_PER_POST]
         for image in images:
             formatted = format_image(image, post)
             if formatted:
@@ -106,11 +108,13 @@ def format_image(image, post):
         src:        str, link to mp4 if animated otherwise regular link
     }
     """
+    normal_image_size = image['animated'] or image['size'] < MAX_IMAGE_SIZE
     normal_size = image['size'] < MAX_VIDEO_SIZE
-    normal_dim = image['width'] <= MAX_IMAGE_HEIGHT and image['height'] <= MAX_IMAGE_HEIGHT
+    large_size = not normal_size and image['size'] < MAX_FILESIZE_DOWNLOAD
+    good_ration = image['width'] / image['height'] > MIN_DIM_RATIO and image['height'] / image['width'] > MIN_DIM_RATIO
     young = image['datetime'] + MAX_POST_AGE > time.time()
 
-    if normal_dim and young:
+    if good_ration and young and normal_image_size and (normal_size or large_size):
         title = post['title'].strip() if post['title'] else None
 
         return {
@@ -122,7 +126,7 @@ def format_image(image, post):
             'type': image['type'],  # image/png, image/jpeg, image/gif
             'desc': image['description'],
             'animated': image['animated'],
-            'preview': not normal_size,
+            'preview': large_size,
             'src': image['mp4'] if image['animated'] else image['link']
         }
 

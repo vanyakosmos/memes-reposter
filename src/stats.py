@@ -17,7 +17,7 @@ def vizualize(marks, counts):
     N = len(marks)
 
     ind = range(N)
-    width = 50 / N  # the width of the bars
+    width = 0.5  # the width of the bars
 
     _, ax = plt.subplots()
     ax.bar(ind, counts, width, color='r')

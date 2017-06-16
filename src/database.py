@@ -109,17 +109,17 @@ class RedisDB(AbstractDB):
         self.client.hset('data', post_id, datetime)
         self.client.sadd('dates', time.time())
 
+    # todo: make transaction with pipe
     def clear(self, period: int):
         now = time.time()
 
         # remove old posts from hash `data`
-        old_posts = set()
+        old_posts = []
         for post_id, datetime in self.client.hgetall('data').items():
-            datetime = int(datetime)
-            if datetime + period < now:
-                old_posts.add(post_id)
-        for old_post_id in old_posts:
-            self.client.hdel('data', old_post_id)
+            if float(datetime) + period < now:
+                old_posts.append(post_id)
+        if old_posts:
+            self.client.hdel('data', *old_posts)
 
         # remove old date marks from set `dates`
         old_date_marks = []
