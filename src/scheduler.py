@@ -20,7 +20,7 @@ def get_posts_job(_, job: Job):
     logger.info('▶︎ Running 🌚 GET_POSTS job...')
     db = job.context
     job_queue = job.job_queue
-    response = data_fetcher.get_data_from_imgur()
+    response = data_fetcher.get_gallery()
 
     if response["success"]:
         posts = response['data']

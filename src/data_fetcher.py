@@ -7,20 +7,26 @@ from settings import CLIENT_ID
 logger = logging.getLogger('🐕 ' + __name__)
 
 
-def log_status(code):
+def log_status(message, code):
     if code == 200:
-        logger.info("Successfully received posts from Imgur.")
+        logger.info(f"Successfully received {message} data from Imgur.")
     else:
-        logger.warning("Failed to receive data from Imgur.")
+        logger.warning(f"Failed to receive {message} data from Imgur.")
 
 
-def get_data_from_imgur():
+def get_gallery() -> dict:
     """
-    :return: {
-        "data": [], list of posts,
-        "success": bool,
-        "status": int, code 200 | 40X
-    }
+    Return:
+        dict: This dictionary contains information about response succession 
+        and list dictionaries that describe posts.
+        
+        Example::
+         
+            {
+                "data": [],
+                "success": True,
+                "status": 200
+            }
     """
     section = 'hot'  # hot | top | user
     sort = 'viral'  # viral | top | time | rising (only available with user section)
@@ -33,5 +39,31 @@ def get_data_from_imgur():
     headers = {'authorization': f'Client-ID {CLIENT_ID}'}
     response = requests.request("GET", url, headers=headers, params=querystring)
 
-    log_status(response.status_code)
+    log_status('gallery', response.status_code)
+    return response.json()
+
+
+def get_album(post_id: str) -> dict:
+    """
+    Args:
+        post_id (str): 
+        
+    Returns: 
+        dict: This dictionary contains information about response succession 
+        and list dictionaries that describe images.
+        
+        Example::
+        
+            {
+                "data": []
+                "success": True,
+                "status": 200
+            }
+    """
+
+    url = f'https://api.imgur.com/3/album/{post_id}/images'
+    headers = {'authorization': f'Client-ID {CLIENT_ID}'}
+    response = requests.request("GET", url, headers=headers)
+
+    log_status(f"album(id='{post_id}')", response.status_code)
     return response.json()

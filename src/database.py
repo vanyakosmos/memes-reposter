@@ -1,10 +1,10 @@
 import time
 import pathlib
 import logging
-# import json
 
 import redis
 
+from src.post import Post
 
 logger = logging.getLogger('📚 ' + __name__)
 
@@ -92,20 +92,12 @@ class RedisDB(AbstractDB):
     def __len__(self):
         return len(self.client.hgetall('data'))
 
-    def __contains__(self, item: str or dict):
-        data = self.client.hgetall('data')
-        if type(item) is str:
-            item = item.encode('ascii')
-            return item in data
-        elif type(item) is dict:
-            item = item['id'].encode('ascii')
-            return item in data
-        else:
-            raise TypeError('Wrong item type')
+    def __contains__(self, post_id: str):
+        return self.client.hexists('data', post_id)
 
-    def add(self, item: dict):
-        post_id = item['id']
-        datetime = item['datetime']
+    def add(self, post: Post):
+        post_id = post.id
+        datetime = post.datetime
         self.client.hset('data', post_id, datetime)
         self.client.sadd('dates', time.time())
 
