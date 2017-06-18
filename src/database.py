@@ -1,31 +1,16 @@
-import time
 import pathlib
-import logging
+import time
 
 import redis
 
-from src.post import Post
-
-logger = logging.getLogger('📚 ' + __name__)
-
-
-class AbstractDB(object):
-    def __len__(self):
-        pass
-
-    def __contains__(self, item: str or dict):
-        pass
-
-    def add(self, item: dict):
-        pass
-
-    def clear(self, period: int):
-        pass
+from autoposter import AbstractDB
+from .wrappers import Post
 
 
 # deprecated in favor of RedisDB
 class Database(AbstractDB):
     def __init__(self, path):
+        super().__init__()
         self._data = {}
         self._path = path
         self._setup()
@@ -69,12 +54,12 @@ class Database(AbstractDB):
         path = pathlib.Path(self._path)
         path.parent.mkdir(parents=True, exist_ok=True)
         if not path.exists():
-            logger.info('Creating NEW database...')
+            self.logger.info('Creating NEW database...')
             with open(self._path, 'w'):
                 pass
             return
         else:
-            logger.info('Using OLD database...')
+            self.logger.info('Using OLD database...')
 
         with open(self._path, 'r') as file:
             for line in file:
@@ -85,21 +70,24 @@ class Database(AbstractDB):
 
 
 class RedisDB(AbstractDB):
-    def __init__(self, redis_client: redis.StrictRedis):
+    def __init__(self, name: str, redis_client: redis.StrictRedis):
+        super().__init__()
         self.client = redis_client
-        self._setup()
+        self.data = name + ':data'
+        self.dates_name = name + ':dates'
+        self._check()
 
     def __len__(self):
-        return len(self.client.hgetall('data'))
+        return self.client.hlen(self.data)
 
     def __contains__(self, post_id: str):
-        return self.client.hexists('data', post_id)
+        return self.client.hexists(self.data, post_id)
 
     def add(self, post: Post):
         post_id = post.id
         datetime = post.datetime
-        self.client.hset('data', post_id, datetime)
-        self.client.sadd('dates', time.time())
+        self.client.hset(self.data, post_id, datetime)
+        self.client.sadd(self.dates_name, time.time())
 
     # todo: make transaction with pipe
     def clear(self, period: int):
@@ -107,33 +95,27 @@ class RedisDB(AbstractDB):
 
         # remove old posts from hash `data`
         old_posts = []
-        for post_id, datetime in self.client.hgetall('data').items():
+        for post_id, datetime in self.client.hgetall(self.data).items():
             if float(datetime) + period < now:
                 old_posts.append(post_id)
         if old_posts:
-            self.client.hdel('data', *old_posts)
+            self.client.hdel(self.data, *old_posts)
 
         # remove old date marks from set `dates`
         old_date_marks = []
-        for date_mark in self.client.smembers('dates'):
+        for date_mark in self.client.smembers(self.dates_name):
             if float(date_mark) + period < now:
                 old_date_marks.append(date_mark)
         if old_date_marks:
-            self.client.srem('dates', *old_date_marks)
+            self.client.srem(self.dates_name, *old_date_marks)
 
         return len(old_posts), len(self)
 
     def dates_list(self) -> list:
-        return sorted(self.client.smembers('dates'))
+        return sorted(self.client.smembers(self.dates_name))
 
-    def _setup(self):
-        version = self.client.get('version')
-        new_version = time.time()
-        if version:
-            logger.info('Using OLD database')
-            logger.info(f'Old version {version.decode("utf-8")}')
+    def _check(self):
+        if self.client.exists(self.data):
+            self.logger.info('Using OLD database')
         else:
-            logger.info('Using NEW database')
-
-        logger.info(f'New version: {new_version}')
-        self.client.set('version', new_version)
+            self.logger.info('Using NEW database')

@@ -1,20 +1,21 @@
 from typing import List
 
 from settings import IMAGES_PER_POST, IMAGES_FOR_LONG_POST
-from src.data_fetcher import get_album
-from src.image import Image
+from src.fetcher import AlbumFetcher
+from .image import Image
 
 
 class Post(object):
     """
     Wrapping a post dictionary obtained from Imgur.
     """
-    def __init__(self, post: dict):
+    def __init__(self, post: dict, album_fetcher: AlbumFetcher):
         """
         Args:
             post (dict): Dictionary of post parameters.
         """
         self.post = post
+        self.album_fetcher = album_fetcher
         self.cache = {}
 
     def __str__(self):
@@ -80,9 +81,9 @@ class Post(object):
                 if self.images_count <= 3:
                     images = self.collect_images(self.post['images'], 3)
                 else:
-                    response = get_album(self.id)
-                    if response['success']:
-                        album = response['data']
+                    response = self.album_fetcher.fetch(self.id)
+                    if response.success:
+                        album = response.data
                         limit = IMAGES_FOR_LONG_POST if self.is_dump else IMAGES_PER_POST
                         images = self.collect_images(album, limit)
             else:

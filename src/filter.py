@@ -1,36 +1,36 @@
-import logging
-from typing import List
-
+from autoposter import AbstractFilter
 from settings import BANNED_TAGS
-from src.database import AbstractDB
-from src.post import Post
+from .fetcher import AlbumFetcher
+from .database import AbstractDB
+from .wrappers import Post
 
 
-logger = logging.getLogger(__name__)
+class PostsFilter(AbstractFilter):
+    def __init__(self, db: AbstractDB, client_id: str):
+        super().__init__(db)
+        self.client_id = client_id
 
+    def filter(self, posts):
+        """
+        Args:
+            posts (List[dict]): Posts obtained from Imgur gallery.
 
-def filter_posts(posts: List[dict], db: AbstractDB) -> List[Post]:
-    """
-    Args:
-        posts (List[dict]): Posts obtained from Imgur gallery.
-        db (AbstractDB): Database that store post ids and its datetime.
-    
-    Returns:
-        List[Post]
-    """
-    filtered_posts = []
+        Returns:
+            List[Post]: list of Post objects.
+        """
+        filtered_posts = []
+        album_fetcher = AlbumFetcher(client_id=self.client_id)
+        for post_dict in posts:
+            post = Post(post_dict, album_fetcher)
 
-    for post_dict in posts:
-        post = Post(post_dict)
-
-        if post.id in db:
-            continue
-
-        for bad_tag in BANNED_TAGS:
-            if bad_tag in post.tags:
+            if post.id in self.db:
                 continue
 
-        if post.valid:
-            filtered_posts.append(post)
+            for bad_tag in BANNED_TAGS:
+                if bad_tag in post.tags:
+                    continue
 
-    return filtered_posts
+            if post.valid:
+                filtered_posts.append(post)
+
+        return filtered_posts
