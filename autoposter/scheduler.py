@@ -69,7 +69,7 @@ class Scheduler(object):
             else:
                 self.data_chunks = response.data
         else:
-            self.logger.debug(f"Failed to receive data."
+            self.logger.info(f"Failed to receive data."
                               f"After {dai_minutes} minutes will try again.")
             self.job_queue.run_once(self.get_data_job,
                                     when=self.data_collection_interval)
@@ -77,11 +77,11 @@ class Scheduler(object):
 
         if self.data_chunks:
             chunks_count = len(self.data_chunks)
-            self.logger.debug(f"Received {chunks_count} filtered chunks.")
+            self.logger.info(f"Received {chunks_count} filtered chunks.")
             self.job_queue.run_once(self.post_job, when=0)
         else:
-            self.logger.debug(f"No chunks remain after filtration." 
-                              f"After {dai_minutes} minutes will try again.")
+            self.logger.info(f"No chunks remain after filtration." 
+                             f"After {dai_minutes} minutes will try again.")
             self.job_queue.run_once(self.get_data_job,
                                     when=self.data_collection_interval)
 
@@ -101,13 +101,13 @@ class Scheduler(object):
 
         if self.data_chunks:
             chunks_count = len(self.data_chunks)
-            self.logger.debug(f"Received {chunks_count} chunk(s) for publication.")
+            self.logger.info(f"Received {chunks_count} chunk(s) for publication.")
             chunk = self.data_chunks.pop(0)
             self.publisher.publish(chunk)
             self.job_queue.run_once(self.post_job, when=self.data_posting_interval)
         else:
-            self.logger.debug(f"All posts were published. "
-                              f"After {dai_minutes} minutes will try again.")
+            self.logger.info(f"All posts were published. "
+                             f"After {dai_minutes} minutes will try again.")
             self.job_queue.run_once(self.get_data_job, when=self.data_collection_interval)
 
     def cleanup_job(self, bot: Bot, job: Job):
@@ -120,4 +120,4 @@ class Scheduler(object):
         """
         self.logger.info(f'▶︎ {self.name}: Running 🔥 CLEANUP_DATABASE job...')
         deleted, remaining = self.db.clear(self.cleanup_interval)
-        self.logger.debug(f'Deleted from db: {deleted} post(s). Left: {remaining} ')
+        self.logger.info(f'Deleted from db: {deleted} post(s). Left: {remaining} ')
