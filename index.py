@@ -9,12 +9,12 @@ from telegram.ext.dispatcher import run_async
 from autoposter import Scheduler
 from src.database import RedisDB
 from src.fetcher import GalleryFetcher, SubredditFetcher
-from src.filter import PostsFilter
+from src.filter import PostsFilter, SubredditFilter
 from src.publisher import ImgurPostPublisher, SubredditPublisher
 from src.stats import get_stats_image
 
 from settings import TELEMGUR_CHANNEL_ID, SUBREDDIT_CHANNEL_ID
-from settings import DEBUG, PORT, BOT_TOKEN, APP_NAME, REDIS_URL, CLIENT_ID
+from settings import DEBUG, PORT, BOT_TOKEN, APP_NAME, REDIS_URL
 from settings import IMGUR_CHECK_INTERVAL, CLEARING_DB_INTERVAL, POSTING_INTERVAL
 
 
@@ -75,7 +75,7 @@ def schedule_pop_subreddits(bot: Bot, updater: Updater):
     ]
 
     fetchers = [SubredditFetcher(subreddit=subreddit) for subreddit in subreddits]
-    filtr = PostsFilter(db=db)
+    filtr = SubredditFilter(db=db)
     publisher = SubredditPublisher(bot=bot, db=db, channel_id=SUBREDDIT_CHANNEL_ID)
 
     scheduler = Scheduler(name=channel_name,
@@ -85,7 +85,7 @@ def schedule_pop_subreddits(bot: Bot, updater: Updater):
                           filtr=filtr,
                           publisher=publisher,
                           data_collection_interval=30*60,  # 30m
-                          data_posting_interval=10,
+                          data_posting_interval=POSTING_INTERVAL,
                           cleanup_interval=CLEARING_DB_INTERVAL)
     scheduler.run()
 

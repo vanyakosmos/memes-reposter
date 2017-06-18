@@ -70,6 +70,7 @@ class RedisDB(AbstractDB):
     def __init__(self, name: str, redis_client: redis.StrictRedis):
         super().__init__()
         self.client = redis_client
+        self.name = name
         self.data = name + ':data'
         self.dates_name = name + ':dates'
         self._check()
@@ -111,6 +112,6 @@ class RedisDB(AbstractDB):
 
     def _check(self):
         if self.client.exists(self.data):
-            self.logger.info('Using OLD database')
+            self.logger.info(self.name + ': Using OLD database')
         else:
-            self.logger.info('Using NEW database')
+            self.logger.info(self.name + ': Using NEW database')

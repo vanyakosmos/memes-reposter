@@ -1,8 +1,15 @@
 import os
 import logging
+import argparse
 
 
-DEBUG = False
+parser = argparse.ArgumentParser()
+parser.add_argument('--debug', type=str, default='False', help='debug flag (default is False)')
+args = parser.parse_args()
+
+
+DEBUG = args.debug.lower() == 'true'
+
 
 if DEBUG:
     logging_level = logging.DEBUG
@@ -30,8 +37,7 @@ REDIS_URL = os.environ.get("REDIS_URL")
 
 
 # imgur
-CLIENT_ID = 'eb6223e9384246d'
-CLIENT_SECRET = 'fed4a7e79366b16080aa4433dd45c9cfc414daa3'
+CLIENT_ID = 'eb6223e9384246d'  # str(os.environ.get('IMGUR_CLIENT_ID'))
 
 
 # telegram

@@ -1,4 +1,5 @@
 import logging
+import random
 from typing import List
 
 from telegram import Bot
@@ -101,7 +102,8 @@ class Scheduler(object):
         if self.data_chunks:
             chunks_count = len(self.data_chunks)
             self.logger.info(f"Received {chunks_count} chunk(s) for publication.")
-            chunk = self.data_chunks.pop(0)
+            index = random.randint(0, chunks_count-1)
+            chunk = self.data_chunks.pop(index)
             self.publisher.publish(chunk)
             self.job_queue.run_once(self.post_job, when=self.data_posting_interval)
         else:

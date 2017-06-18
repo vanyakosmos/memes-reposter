@@ -13,8 +13,7 @@ class Post(object):
             post_dict (dict): Dictionary of post parameters.
         """
         self.post_dict = post_dict
-        # self.album_fetcher = AlbumFetcher(post_id=post['id'])
-        self.cache = {}
+        self._tags = ['#' + tag["name"] for tag in self.post_dict['tags']]
         self._images: List[Image] or None = None
         self._is_dump = False
 
@@ -40,6 +39,10 @@ class Post(object):
         return ''
 
     @property
+    def score(self):
+        return self.post_dict['score']
+
+    @property
     def datetime(self) -> int:
         return self.post_dict.get('datetime')
 
@@ -52,12 +55,11 @@ class Post(object):
 
     @property
     def tags(self) -> List[str]:
-        if 'tags' in self.cache:
-            return self.cache['tags']
-        else:
-            tags = ['#' + tag["name"] for tag in self.post_dict['tags']]
-            self.cache['tags'] = tags
-            return tags
+        return self._tags
+
+    @tags.setter
+    def tags(self, tags: list):
+        self._tags.extend(tags)
 
     @property
     def images_count(self) -> int:

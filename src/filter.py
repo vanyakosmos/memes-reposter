@@ -54,15 +54,11 @@ class PostsFilter(AbstractFilter, ImageValidatorMixin):
     def filtrate_images(self, images_list: list, post: Post, album_fetcher: AlbumFetcher):
         images = []
         if post.is_album:
-            limit = 3  # per post limit when fetching Imgur gallery
-            if post.images_count <= limit:
-                images = self.collect_images(images_list, limit)
-            else:
-                response = album_fetcher.fetch()
-                if response.success:
-                    album = response.data
-                    limit = IMAGES_FOR_LONG_POST if post.is_dump else IMAGES_PER_POST
-                    images = self.collect_images(album, limit)
+            response = album_fetcher.fetch()
+            if response.success:
+                album = response.data
+                limit = IMAGES_FOR_LONG_POST if post.is_dump else IMAGES_PER_POST
+                images = self.collect_images(album, limit)
         else:
             image = Image(post.post_dict)
             if self.valid_image(image):
@@ -96,7 +92,12 @@ class SubredditFilter(AbstractFilter, ImageValidatorMixin):
             if post.id in self.db:
                 continue
 
+            if post.score < 600:
+                continue
+
             if post.is_album:
+                pass  # todo
+            else:
                 image = Image(post.post_dict)
                 if self.valid_image(image):
                     post.images = [image]
