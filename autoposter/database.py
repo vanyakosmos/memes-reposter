@@ -11,7 +11,7 @@ class AbstractDB(object):
     def __contains__(self, item: str or dict):
         pass
 
-    def add(self, item: dict):
+    def add(self, item_id, datetime):
         pass
 
     def clear(self, period: int):

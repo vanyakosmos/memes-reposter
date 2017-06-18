@@ -11,7 +11,7 @@ else:
 
 
 # setup loggers
-logging.basicConfig(format='%(asctime)s %(levelname)-10s %(name)-25s - %(message)s',
+logging.basicConfig(format='%(asctime)s ~ %(levelname)-10s %(name)-25s %(message)s',
                     datefmt='%Y-%m-%d %H:%M',
                     level=logging_level)
 logging.getLogger('telegram').setLevel(logging.WARNING)
@@ -36,11 +36,13 @@ CLIENT_SECRET = 'fed4a7e79366b16080aa4433dd45c9cfc414daa3'
 
 # telegram
 if DEBUG:
-    CHANNEL_ID = '@test_channel_for_vanya'
+    TELEMGUR_CHANNEL_ID = '@test_channel_for_vanya'
+    SUBREDDIT_CHANNEL_ID = '@test_channel_for_vanya'
     BOT_TOKEN = '333977268:AAFEkwrraTlh1WIZMQOjohpw4QCX1dew6kc'
 else:
-    CHANNEL_ID = '@telemgur'
-    BOT_TOKEN = '357603222:AAHtWyUxNRlUWuWekA4aOKG-cNzwfdusdig'
+    TELEMGUR_CHANNEL_ID = '@telemgur'
+    SUBREDDIT_CHANNEL_ID = '@pop_reddit'
+    BOT_TOKEN = str(os.environ.get('BOT_TOKEN'))
 
 
 # scheduler

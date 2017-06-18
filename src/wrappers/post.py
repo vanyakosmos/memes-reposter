@@ -1,7 +1,5 @@
 from typing import List
 
-from settings import IMAGES_PER_POST, IMAGES_FOR_LONG_POST
-from src.fetcher import AlbumFetcher
 from .image import Image
 
 
@@ -9,44 +7,46 @@ class Post(object):
     """
     Wrapping a post dictionary obtained from Imgur.
     """
-    def __init__(self, post: dict, album_fetcher: AlbumFetcher):
+    def __init__(self, post_dict: dict):
         """
         Args:
-            post (dict): Dictionary of post parameters.
+            post_dict (dict): Dictionary of post parameters.
         """
-        self.post = post
-        self.album_fetcher = album_fetcher
+        self.post_dict = post_dict
+        # self.album_fetcher = AlbumFetcher(post_id=post['id'])
         self.cache = {}
+        self._images: List[Image] or None = None
+        self._is_dump = False
 
     def __str__(self):
         return f"Post(id='{self.id}', link='{self.link}', title='{self.title[:20]}', desc='{self.desc[:20]}')"
 
     @property
     def id(self) -> str:
-        return self.post.get('id')
+        return self.post_dict.get('id')
 
     @property
     def title(self) -> str:
-        title = self.post.get('title')
+        title = self.post_dict.get('title')
         if title:
             return title.strip()
         return ''
 
     @property
     def desc(self) -> str:
-        desc = self.post.get('description')
+        desc = self.post_dict.get('description')
         if desc:
             return desc.strip()
         return ''
 
     @property
     def datetime(self) -> int:
-        return self.post.get('datetime')
+        return self.post_dict.get('datetime')
 
     @property
     def link(self) -> str:
         if self.is_album:
-            return self.post.get('link')
+            return self.post_dict.get('link')
         else:
             return "http://imgur.com/" + self.id
 
@@ -55,58 +55,33 @@ class Post(object):
         if 'tags' in self.cache:
             return self.cache['tags']
         else:
-            tags = ['#' + tag["name"] for tag in self.post['tags']]
+            tags = ['#' + tag["name"] for tag in self.post_dict['tags']]
             self.cache['tags'] = tags
             return tags
 
     @property
     def images_count(self) -> int:
-        return self.post.get('images_count', 1)
+        return self.post_dict.get('images_count', 1)
 
     @property
     def is_album(self) -> bool:
-        return self.post.get('is_album')
+        return self.post_dict.get('is_album')
 
     @property
     def is_dump(self) -> bool:
-        return self.images_count > IMAGES_PER_POST
+        return self._is_dump
+
+    @is_dump.setter
+    def is_dump(self, is_dump):
+        self._is_dump = is_dump
 
     @property
     def images(self) -> list:
-        if 'images' in self.cache:
-            return self.cache['images']
+        if self._images:
+            return self._images
         else:
-            images = []
-            if self.is_album:
-                if self.images_count <= 3:
-                    images = self.collect_images(self.post['images'], 3)
-                else:
-                    response = self.album_fetcher.fetch(self.id)
-                    if response.success:
-                        album = response.data
-                        limit = IMAGES_FOR_LONG_POST if self.is_dump else IMAGES_PER_POST
-                        images = self.collect_images(album, limit)
-            else:
-                image = Image(self.post)
-                if image.valid:
-                    images.append(image)
-            self.cache['images'] = images
-            return images
+            return []
 
-    @property
-    def valid(self) -> bool:
-        if 'valid' in self.cache:
-            return self.cache['valid']
-        else:
-            return len(self.images) > 0
-
-    @staticmethod
-    def collect_images(images: List[dict], limit: int) -> List[Image]:
-        picked_images = []
-        for image_dict in images:
-            if len(picked_images) >= limit:
-                break
-            image = Image(image_dict)
-            if image.valid:
-                picked_images.append(image)
-        return picked_images
+    @images.setter
+    def images(self, images):
+        self._images = images

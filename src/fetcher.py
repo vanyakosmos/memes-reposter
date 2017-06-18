@@ -2,14 +2,10 @@ import requests
 
 from autoposter import AbstractFetcher, Response
 
-
-class ImgurFetcher(AbstractFetcher):
-    def __init__(self, client_id):
-        super().__init__()
-        self.client_id = client_id
+from settings import CLIENT_ID
 
 
-class GalleryFetcher(ImgurFetcher):
+class GalleryFetcher(AbstractFetcher):
     def fetch(self):
         section = 'hot'  # hot | top | user
         sort = 'viral'  # viral | top | time | rising (only available with user section)
@@ -19,7 +15,7 @@ class GalleryFetcher(ImgurFetcher):
 
         url = f'https://api.imgur.com/3/gallery/{section}/{sort}'
         querystring = {"showViral": f"{show_viral}", "mature": f"{show_mature}", "album_previews": f"{album_previews}"}
-        headers = {'authorization': f'Client-ID {self.client_id}'}
+        headers = {'authorization': f'Client-ID {CLIENT_ID}'}
         response = requests.request("GET", url, headers=headers, params=querystring)
         response_json = response.json()
 
@@ -28,10 +24,14 @@ class GalleryFetcher(ImgurFetcher):
                         data=response_json.get('data', None))
 
 
-class AlbumFetcher(ImgurFetcher):
-    def fetch(self, post_id):
-        url = f'https://api.imgur.com/3/album/{post_id}/images'
-        headers = {'authorization': f'Client-ID {self.client_id}'}
+class AlbumFetcher(AbstractFetcher):
+    def __init__(self, post_id):
+        super().__init__()
+        self.post_id = post_id
+
+    def fetch(self):
+        url = f'https://api.imgur.com/3/album/{self.post_id}/images'
+        headers = {'authorization': f'Client-ID {CLIENT_ID}'}
         response = requests.request("GET", url, headers=headers)
         response_json = response.json()
 
@@ -40,6 +40,20 @@ class AlbumFetcher(ImgurFetcher):
                         data=response_json.get('data', None))
 
 
-class SubredditFetcher(ImgurFetcher):
+class SubredditFetcher(AbstractFetcher):
+    def __init__(self, subreddit):
+        super().__init__()
+        self.subreddit = subreddit
+
     def fetch(self):
-        pass
+        sort = 'top'  # time | top
+        window = 'day'  # day | week | month | year | all
+
+        url = f"https://api.imgur.com/3/gallery/r/{self.subreddit}/{sort}/{window}"
+        headers = {'authorization': f"Client-ID {CLIENT_ID}"}
+        response = requests.request("GET", url, headers=headers)
+        response_json = response.json()
+
+        self.log_status(response.status_code)
+        return Response(success=response_json['success'],
+                        data=response_json.get('data', None))

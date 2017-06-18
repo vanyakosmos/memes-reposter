@@ -8,25 +8,14 @@ from settings import POST_TIMEOUT
 from .wrappers import Image, Post
 
 
-class ImgurPostPublisher(AbstractPublisher):
-    def publish(self, post):
-        self.logger.debug(post)
-        success = self.exceptions_handler_wrapper(self.publish_title, post)(post)
-
-        if not success:
-            return
-        else:
-            self.db.add(post)
-
-        for image in post.images:
-            self.logger.debug(f'    | {image}')
-            self.exceptions_handler_wrapper(self.publish_item, image)(image, post)
+class ExceptionsHandlerMixin(object):
+    def __init__(self):
+        self.logger = None
 
     def exceptions_handler_wrapper(self, f, obj):
         def decorated(*args, **kwargs):
             counter = 0
             while counter < 1:
-                # success = exceptions_handler_wrapper(publish_item, post)(bot, image)
                 success = False
                 try:
                     success = f(*args, **kwargs)
@@ -53,6 +42,36 @@ class ImgurPostPublisher(AbstractPublisher):
         if print_post:
             self.logger.error(obj)
 
+
+class CutterMixin(object):
+    @staticmethod
+    def cut_text(text: str, limit: int):
+        limit -= 10
+        if text is None:
+            return ''
+        elif len(text) > limit:
+            text = text[:limit - 5]
+            cut = text.split()[:-1]
+            text = ' '.join(cut)
+            return text + '...'
+        else:
+            return text
+
+
+class ImgurPostPublisher(AbstractPublisher, ExceptionsHandlerMixin, CutterMixin):
+    def publish(self, post: Post):
+        self.logger.debug(post)
+        success = self.exceptions_handler_wrapper(self.publish_title, post)(post)
+
+        if not success:
+            return
+        else:
+            self.db.add(post.id, post.datetime)
+
+        for image in post.images:
+            self.logger.debug(f'    | {image}')
+            self.exceptions_handler_wrapper(self.publish_item, image)(image, post)
+
     def publish_title(self, post: Post):
         text = self.format_title(post)
         self.bot.send_message(chat_id=self.channel_id,
@@ -78,8 +97,7 @@ class ImgurPostPublisher(AbstractPublisher):
             self.bot.send_photo(photo=image.src, **kwargs)
         return True
 
-    @staticmethod
-    def format_title(post):
+    def format_title(self, post):
         strings = ['🌚 ' + butch for butch in post.title.split('\n')]
         if post.is_dump:
             strings.append(f'🔥 Album with {post.images_count} items')
@@ -89,24 +107,37 @@ class ImgurPostPublisher(AbstractPublisher):
         if post.images_count == 1 and post.desc:
             strings.append(post.desc)
         text = '\n'.join(strings)
-        return ImgurPostPublisher.cut_text(text, limit=MAX_MESSAGE_LENGTH)
+        return self.cut_text(text, limit=MAX_MESSAGE_LENGTH)
 
-    @staticmethod
-    def format_image_caption(image: Image, is_single_image: bool):
+    def format_image_caption(self, image: Image, is_single_image: bool):
         if not is_single_image:
-            return ImgurPostPublisher.cut_text(image.desc, limit=MAX_CAPTION_LENGTH)
+            return self.cut_text(image.desc, limit=MAX_CAPTION_LENGTH)
         else:
             return ''
 
-    @staticmethod
-    def cut_text(text: str, limit: int):
-        limit -= 10
-        if text is None:
-            return ''
-        elif len(text) > limit:
-            text = text[:limit - 5]
-            cut = text.split()[:-1]
-            text = ' '.join(cut)
-            return text + '...'
+
+class SubredditPublisher(AbstractPublisher, ExceptionsHandlerMixin, CutterMixin):
+    def publish(self, post: Post):
+        self.logger.debug(post)
+        self.db.add(post.id, post.datetime)
+
+        for image in post.images:
+            self.logger.debug(f'    | {image}')
+            self.exceptions_handler_wrapper(self.publish_item, image)(image, post)
+
+    def publish_item(self, image: Image, post: Post):
+        text = self.cut_text(post.title, limit=MAX_CAPTION_LENGTH)
+
+        kwargs = {
+            'caption': text,
+            'chat_id': self.channel_id,
+            'disable_notification': True,
+            'timeout': POST_TIMEOUT,
+        }
+
+        if image.animated:
+            self.bot.send_video(video=image.src, **kwargs)
         else:
-            return text
+            self.bot.send_photo(photo=image.src, **kwargs)
+        return True
+

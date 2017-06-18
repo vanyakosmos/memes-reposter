@@ -8,12 +8,13 @@ from telegram.ext.dispatcher import run_async
 
 from autoposter import Scheduler
 from src.database import RedisDB
-from src.fetcher import GalleryFetcher
+from src.fetcher import GalleryFetcher, SubredditFetcher
 from src.filter import PostsFilter
-from src.publisher import ImgurPostPublisher
+from src.publisher import ImgurPostPublisher, SubredditPublisher
 from src.stats import get_stats_image
 
-from settings import DEBUG, PORT, BOT_TOKEN, APP_NAME, REDIS_URL, CHANNEL_ID, CLIENT_ID
+from settings import TELEMGUR_CHANNEL_ID, SUBREDDIT_CHANNEL_ID
+from settings import DEBUG, PORT, BOT_TOKEN, APP_NAME, REDIS_URL, CLIENT_ID
 from settings import IMGUR_CHECK_INTERVAL, CLEARING_DB_INTERVAL, POSTING_INTERVAL
 
 
@@ -26,21 +27,22 @@ def boop(_: Bot, update: Update):
     update.message.reply_text('yeah yeah... back to work...')
 
 
-def schedule(channel: str, bot: Bot, updater: Updater):
+def schedule_telemgur(bot: Bot, updater: Updater):
+    channel_name = 'telemgur'
     if DEBUG:
         redis_client = redis.StrictRedis()
     else:
         redis_client = redis.from_url(REDIS_URL)
-    db = RedisDB(channel, redis_client)
+    db = RedisDB(channel_name, redis_client)
 
-    fetcher = GalleryFetcher(client_id=CLIENT_ID)
-    filtr = PostsFilter(db=db, client_id=CLIENT_ID)
-    publisher = ImgurPostPublisher(bot=bot, db=db, channel_id=CHANNEL_ID)
+    fetcher = GalleryFetcher()
+    filtr = PostsFilter(db=db)
+    publisher = ImgurPostPublisher(bot=bot, db=db, channel_id=TELEMGUR_CHANNEL_ID)
 
-    scheduler = Scheduler(name=channel,
+    scheduler = Scheduler(name=channel_name,
                           job_queue=updater.job_queue,
                           db=db,
-                          fetcher=fetcher,
+                          fetchers=[fetcher],
                           filtr=filtr,
                           publisher=publisher,
                           data_collection_interval=IMGUR_CHECK_INTERVAL,
@@ -54,7 +56,46 @@ def schedule(channel: str, bot: Bot, updater: Updater):
         bot.send_photo(chat_id=update.message.chat_id, photo=file)
         file.close()
 
-    updater.dispatcher.add_handler(CommandHandler(channel + '_stats', stats))
+    updater.dispatcher.add_handler(CommandHandler(channel_name + '_stats', stats))
+
+
+def schedule_pop_subreddits(bot: Bot, updater: Updater):
+    channel_name = 'pop_reddit'
+    if DEBUG:
+        redis_client = redis.StrictRedis()
+    else:
+        redis_client = redis.from_url(REDIS_URL)
+    db = RedisDB(channel_name, redis_client)
+
+    subreddits = [
+        'funny',
+        'aww',
+        'pics',
+        'gifs',
+    ]
+
+    fetchers = [SubredditFetcher(subreddit=subreddit) for subreddit in subreddits]
+    filtr = PostsFilter(db=db)
+    publisher = SubredditPublisher(bot=bot, db=db, channel_id=SUBREDDIT_CHANNEL_ID)
+
+    scheduler = Scheduler(name=channel_name,
+                          job_queue=updater.job_queue,
+                          db=db,
+                          fetchers=fetchers,
+                          filtr=filtr,
+                          publisher=publisher,
+                          data_collection_interval=30*60,  # 30m
+                          data_posting_interval=10,
+                          cleanup_interval=CLEARING_DB_INTERVAL)
+    scheduler.run()
+
+    def stats(_: Bot, update):
+        dates = db.dates_list()
+        file = get_stats_image(dates)
+        bot.send_photo(chat_id=update.message.chat_id, photo=file)
+        file.close()
+
+    updater.dispatcher.add_handler(CommandHandler(channel_name + '_stats', stats))
 
 
 def main():
@@ -62,8 +103,8 @@ def main():
     updater = Updater(bot=bot)
     dp = updater.dispatcher
 
-    schedule(channel='telemgur', bot=bot,
-             updater=updater)
+    schedule_telemgur(bot=bot, updater=updater)
+    schedule_pop_subreddits(bot=bot, updater=updater)
 
     dp.add_handler(CommandHandler('boop', boop))
     dp.add_error_handler(error)

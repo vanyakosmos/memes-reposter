@@ -1,8 +1,3 @@
-from telegram import MAX_FILESIZE_DOWNLOAD
-
-from settings import MAX_VIDEO_SIZE, MAX_IMAGE_SIZE, MIN_DIM_RATIO
-
-
 class Image(object):
     """
     wrapping a image dictionary obtained from Imgur.
@@ -61,12 +56,3 @@ class Image(object):
     def type(self) -> str:
         # image/png, image/jpeg, image/gif
         return self.image.get('type')
-
-    @property
-    def valid(self) -> bool:
-        normal_image_size = self.animated or self.size < MAX_IMAGE_SIZE
-        normal_size = self.size < MAX_VIDEO_SIZE
-        large_size = not normal_size and self.size < MAX_FILESIZE_DOWNLOAD
-        good_ration = self.width / self.height > MIN_DIM_RATIO and self.height / self.width > MIN_DIM_RATIO
-
-        return normal_image_size and (normal_size or large_size) and good_ration

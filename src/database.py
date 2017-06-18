@@ -4,7 +4,6 @@ import time
 import redis
 
 from autoposter import AbstractDB
-from .wrappers import Post
 
 
 # deprecated in favor of RedisDB
@@ -26,9 +25,7 @@ class Database(AbstractDB):
         else:
             raise TypeError('Wrong item type')
 
-    def add(self, item: dict):
-        post_id = item['id']
-        datetime = item['datetime']
+    def add(self, post_id, datetime):
         if post_id not in self:
             self._data[post_id] = datetime
             with open(self._path, 'a') as file:
@@ -83,9 +80,7 @@ class RedisDB(AbstractDB):
     def __contains__(self, post_id: str):
         return self.client.hexists(self.data, post_id)
 
-    def add(self, post: Post):
-        post_id = post.id
-        datetime = post.datetime
+    def add(self, post_id, datetime):
         self.client.hset(self.data, post_id, datetime)
         self.client.sadd(self.dates_name, time.time())
 

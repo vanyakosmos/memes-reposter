@@ -1,4 +1,5 @@
 import logging
+from typing import List
 
 from telegram import Bot
 from telegram.ext.jobqueue import Job, JobQueue
@@ -12,9 +13,9 @@ class Scheduler(object):
                  name: str,
                  job_queue: JobQueue,
                  db: AbstractDB,
-                 fetcher: AbstractFetcher,
-                 filtr: AbstractFilter or None,
+                 fetchers: List[AbstractFetcher],
                  publisher: AbstractPublisher,
+                 filtr: AbstractFilter or None = None,
                  data_collection_interval=5*60,  # 5 minutes
                  data_posting_interval=2,  # 2 seconds
                  cleanup_interval=2*24*60*60,  # 2 days
@@ -25,7 +26,7 @@ class Scheduler(object):
         self.job_queue = job_queue
         self.db = db
 
-        self.fetcher = fetcher
+        self.fetchers = fetchers
         self.filter = filtr
         self.publisher = publisher
 
@@ -60,28 +61,26 @@ class Scheduler(object):
             job (Job): Unused ``job`` instance needed as part of callback signature.
         """
         self.logger.info(f'▶︎ {self.name}: Running 🌚 GET_DATA job...')
-        response = self.fetcher.fetch()
         dai_minutes = self.data_collection_interval // 60
 
-        if response.success:
-            if self.filter:
-                self.data_chunks = self.filter.filter(response.data)
-            else:
-                self.data_chunks = response.data
+        data = []
+        for fetcher in self.fetchers:
+            response = fetcher.fetch()
+            if response.success:
+                data.extend(response.data)
+
+        if self.filter:
+            self.data_chunks = self.filter.filter(data)
         else:
-            self.logger.info(f"Failed to receive data."
-                              f"After {dai_minutes} minutes will try again.")
-            self.job_queue.run_once(self.get_data_job,
-                                    when=self.data_collection_interval)
-            return
+            self.data_chunks = data
 
         if self.data_chunks:
             chunks_count = len(self.data_chunks)
             self.logger.info(f"Received {chunks_count} filtered chunks.")
             self.job_queue.run_once(self.post_job, when=0)
         else:
-            self.logger.info(f"No chunks remain after filtration." 
-                             f"After {dai_minutes} minutes will try again.")
+            self.logger.info(f"No chunks remain after filtration or it weren't fetched.")
+            self.logger.info(f"After {dai_minutes} minutes will try again.")
             self.job_queue.run_once(self.get_data_job,
                                     when=self.data_collection_interval)
 
@@ -106,8 +105,8 @@ class Scheduler(object):
             self.publisher.publish(chunk)
             self.job_queue.run_once(self.post_job, when=self.data_posting_interval)
         else:
-            self.logger.info(f"All posts were published. "
-                             f"After {dai_minutes} minutes will try again.")
+            self.logger.info(f"All posts were published.")
+            self.logger.info(f"After {dai_minutes} minutes will try again.")
             self.job_queue.run_once(self.get_data_job, when=self.data_collection_interval)
 
     def cleanup_job(self, bot: Bot, job: Job):
