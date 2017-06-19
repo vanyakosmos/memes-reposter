@@ -20,7 +20,7 @@ class RedisDB(AbstractDB):
         self.client.sadd(self.dates_name, time.time())
 
     def keys(self) -> Set[str]:
-        return {str(key) for key in self.client.hkeys(self.data)}
+        return {key.decode('utf-8') for key in self.client.hkeys(self.data)}
 
     def clear(self, period: int) -> (int, int):
         now = time.time()
