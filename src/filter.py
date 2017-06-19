@@ -35,10 +35,12 @@ class PostsFilter(AbstractFilter, ImageValidatorMixin):
             List[Post]: list of Post objects.
         """
         filtered_posts = []
+        posts_ids = self.db.keys()
+
         for post_dict in posts:
             post = Post(post_dict)
 
-            if post.id in self.db:
+            if post.id in posts_ids:
                 continue
 
             for bad_tag in BANNED_TAGS:
@@ -96,10 +98,12 @@ class SubredditFilter(AbstractFilter, ImageValidatorMixin):
             List[Post]: list of Post objects.
         """
         filtered_posts = []
+        posts_ids = self.db.keys()
+
         for post_dict in posts:
             post = Post(post_dict)
 
-            if post.id in self.db:
+            if post.id in posts_ids:
                 continue
 
             if post.score < self.score:
