@@ -1,11 +1,9 @@
 import logging
-import random
-from typing import List
 
 from telegram import Bot
 from telegram.ext.jobqueue import Job, JobQueue
 
-from autoposter import AbstractFetcher, AbstractFilter, AbstractPublisher
+from autoposter.collector import Collector
 from autoposter.database import AbstractDB
 
 
@@ -14,12 +12,10 @@ class Scheduler(object):
                  name: str,
                  job_queue: JobQueue,
                  db: AbstractDB,
-                 fetchers: List[AbstractFetcher],
-                 publisher: AbstractPublisher,
-                 filtr: AbstractFilter or None = None,
-                 data_collection_interval=5*60,  # 5 minutes
-                 data_posting_interval=2,  # 2 seconds
-                 cleanup_interval=2*24*60*60,  # 2 days
+                 collector: Collector,
+                 data_collection_interval=5*60,     # 5 minutes
+                 data_posting_interval=2,           # 2 seconds
+                 cleanup_interval=2*24*60*60,       # 2 days
                  ):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.name = name
@@ -27,9 +23,7 @@ class Scheduler(object):
         self.job_queue = job_queue
         self.db = db
 
-        self.fetchers = fetchers
-        self.filter = filtr
-        self.publisher = publisher
+        self.collector = collector
 
         self.data_collection_interval = data_collection_interval
         self.data_posting_interval = data_posting_interval
@@ -42,8 +36,8 @@ class Scheduler(object):
 
     def run(self):
         """
-        Scheduling for one run `getting posts job` 
-        and for repetitive running `db cleanup job`.
+        Scheduling for one run `getting data job` 
+        and for repetitive running `database cleanup job`.
         """
         self.logger.debug('Setting up scheduler...')
         self.job_queue.run_once(self.get_data_job, when=0)
@@ -53,72 +47,62 @@ class Scheduler(object):
     def get_data_job(self, bot: Bot, job: Job):
         """
         Trying to obtain data. 
-        If successfully then filter data and schedule `posting job`.
-        Otherwise schedule `this` job to run after ``self.data_acquisition_interval`` seconds.
-        If after filtration remains 0 data chunks then also schedule `this` job.
+        If ``self.collector`` receive 0 data chunks then schedule `this` job again.
+        Otherwise schedule `post data job` to run after ``self.data_posting_interval`` seconds.
 
         Args:
-            bot (Bot): Unused ``bot`` instance needed as part of callback signature.
-            job (Job): Unused ``job`` instance needed as part of callback signature.
+            bot (Bot): Unused ``Bot`` instance needed as part of callback signature.
+            job (Job): Unused ``Job`` instance needed as part of callback signature.
         """
+        del bot, job
         self.logger.info(f'▶︎ {self.name}: Running 🌚 GET_DATA job...')
         dai_minutes = self.data_collection_interval // 60
 
-        data = []
-        for fetcher in self.fetchers:
-            response = fetcher.fetch()
-            if response.success:
-                data.extend(response.data)
+        self.collector.collect()
 
-        if self.filter:
-            self.data_chunks = self.filter.filter(data)
-        else:
-            self.data_chunks = data
-
-        if self.data_chunks:
-            chunks_count = len(self.data_chunks)
-            self.logger.info(f"Received {chunks_count} filtered chunks.")
+        if not self.collector.is_empty:
+            chunks_count = self.collector.size
+            self.logger.info(f"Received {chunks_count} filtered data.")
             self.job_queue.run_once(self.post_job, when=0)
         else:
-            self.logger.info(f"No chunks remain after filtration or it weren't fetched.")
+            self.logger.info(f"No data remain after filtration or it weren't fetched.")
             self.logger.info(f"After {dai_minutes} minutes will try again.")
             self.job_queue.run_once(self.get_data_job,
                                     when=self.data_collection_interval)
 
     def post_job(self, bot: Bot, job: Job):
         """
-        If obtained not empty list of data chunks
-        then publish first post, remove it from posts list and schedule next `posting job`.
-        Otherwise schedule `get posts job`.
+        If obtained not empty list of data
+        then publish data and schedule next `posting job`.
+        Otherwise schedule `get data job`.
 
         Args:
-            bot (Bot): Bot instance needed for publishing post.
-            job (Job): Job object that holds ``job_queue`` and context parameter 
-                with database and list of posts.
+            bot (Bot): Unused ``Bot`` instance needed as part of callback signature.
+            job (Job): Unused ``Job`` instance needed as part of callback signature.
         """
+        del bot, job
         self.logger.info(f'▶︎ {self.name}: Running 📨 POSTING job...')
         dai_minutes = self.data_collection_interval // 60
 
-        if self.data_chunks:
-            chunks_count = len(self.data_chunks)
-            self.logger.info(f"Received {chunks_count} chunk(s) for publication.")
-            index = random.randint(0, chunks_count-1)
-            chunk = self.data_chunks.pop(index)
-            self.publisher.publish(chunk)
+        if not self.collector.is_empty:
+            chunks_count = self.collector.size
+            self.logger.info(f"Received {chunks_count} posts for publication.")
+            self.collector.publish()
             self.job_queue.run_once(self.post_job, when=self.data_posting_interval)
         else:
             self.logger.info(f"All posts were published.")
-            self.logger.info(f"After {dai_minutes} minutes will try again.")
+            self.logger.info(f"After {dai_minutes} minutes will try to collect new.")
             self.job_queue.run_once(self.get_data_job, when=self.data_collection_interval)
 
     def cleanup_job(self, bot: Bot, job: Job):
         """
-        Removing posts from the database that are older than ``CLEARING_DB_INTERVAL``.
+        Removing old data from database.
 
         Args:
-            bot (Bot): Unused ``bot`` instance needed as part of callback signature.
-            job (Job): Unused ``job`` instance needed as part of callback signature.
+            bot (Bot): Unused ``Bot`` instance needed as part of callback signature.
+            job (Job): Unused ``Job`` instance needed as part of callback signature.
         """
+        del bot, job
         self.logger.info(f'▶︎ {self.name}: Running 🔥 CLEANUP_DATABASE job...')
         deleted, remaining = self.db.clear(self.cleanup_interval)
         self.logger.info(f'Deleted from db: {deleted} post(s). Left: {remaining} ')

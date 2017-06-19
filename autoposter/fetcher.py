@@ -22,7 +22,7 @@ class AbstractFetcher(object):
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
 
-    def fetch(self) -> Response:
+    def fetch(self, *args) -> Response:
         """
         Obtain data and setup ``self._success`` and ``self._data`` parameters.
         """

@@ -2,17 +2,17 @@ from typing import List
 
 from telegram import MAX_FILESIZE_DOWNLOAD
 
-from autoposter import AbstractFilter
+from autoposter import AbstractFilter, AbstractDB
 from settings import BANNED_TAGS, IMAGES_FOR_LONG_POST, IMAGES_PER_POST
-
 from settings import MAX_VIDEO_SIZE, MAX_IMAGE_SIZE, MIN_DIM_RATIO
+
 from .fetcher import AlbumFetcher
 from .wrappers import Post, Image
 
 
 class ImageValidatorMixin(object):
     @staticmethod
-    def valid_image(image: Image):
+    def valid_image(image: Image) -> bool:
         normal_image_size = image.animated or image.size < MAX_IMAGE_SIZE
         normal_size = image.size < MAX_VIDEO_SIZE
         large_size = not normal_size and image.size < MAX_FILESIZE_DOWNLOAD
@@ -22,7 +22,11 @@ class ImageValidatorMixin(object):
 
 
 class PostsFilter(AbstractFilter, ImageValidatorMixin):
-    def filter(self, posts):
+    def __init__(self, db: AbstractDB):
+        super().__init__(db)
+        self.album_fetcher = AlbumFetcher()
+
+    def filter(self, posts) -> List[Post]:
         """
         Args:
             posts (List[dict]): Posts obtained from Imgur gallery.
@@ -42,28 +46,29 @@ class PostsFilter(AbstractFilter, ImageValidatorMixin):
                     continue
 
             post.is_dump = post.images_count > IMAGES_PER_POST
-            album_fetcher = AlbumFetcher(post_id=post.id)
             images = self.filtrate_images(images_list=post_dict.get('images', []),
-                                          post=post, album_fetcher=album_fetcher)
+                                          post=post)
             if images:
                 post.images = images
                 filtered_posts.append(post)
 
         return filtered_posts
 
-    def filtrate_images(self, images_list: list, post: Post, album_fetcher: AlbumFetcher):
-        images = []
+    def filtrate_images(self, images_list: List[dict], post: Post) -> List[Image]:
         if post.is_album:
-            response = album_fetcher.fetch()
+            if post.images_count <= 3:
+                return self.collect_images(images_list, 3)
+
+            response = self.album_fetcher.fetch(post.id)
             if response.success:
                 album = response.data
                 limit = IMAGES_FOR_LONG_POST if post.is_dump else IMAGES_PER_POST
-                images = self.collect_images(album, limit)
+                return self.collect_images(album, limit)
         else:
             image = Image(post.post_dict)
             if self.valid_image(image):
-                images.append(image)
-        return images
+                return [image]
+        return []
 
     def collect_images(self, images: List[dict], limit: int) -> List[Image]:
         picked_images = []
@@ -77,7 +82,12 @@ class PostsFilter(AbstractFilter, ImageValidatorMixin):
 
 
 class SubredditFilter(AbstractFilter, ImageValidatorMixin):
-    def filter(self, posts):
+    def __init__(self, db: AbstractDB, subreddit: str, score: int = 50000):
+        super().__init__(db)
+        self.score = score
+        self.subreddit = subreddit
+
+    def filter(self, posts: List[dict]) -> List[Post]:
         """
         Args:
             posts (List[dict]): Posts obtained from Imgur gallery.
@@ -92,8 +102,10 @@ class SubredditFilter(AbstractFilter, ImageValidatorMixin):
             if post.id in self.db:
                 continue
 
-            if post.score < 600:
-                continue
+            if post.score < self.score:
+                break  # assumed that posts sorted by score in descending order
+
+            post.tags = ['#' + self.subreddit]
 
             if post.is_album:
                 pass  # todo

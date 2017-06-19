@@ -1,21 +1,19 @@
 import logging
+from typing import List
 
 import redis
+import telegram
 from telegram import Bot
 from telegram import Update
 from telegram.ext import Updater, CommandHandler
 from telegram.ext.dispatcher import run_async
 
 from autoposter import Scheduler
-from src.database import RedisDB
-from src.fetcher import GalleryFetcher, SubredditFetcher
-from src.filter import PostsFilter, SubredditFilter
-from src.publisher import ImgurPostPublisher, SubredditPublisher
-from src.stats import get_stats_image
-
-from settings import TELEMGUR_CHANNEL_ID, SUBREDDIT_CHANNEL_ID
 from settings import DEBUG, PORT, BOT_TOKEN, APP_NAME, REDIS_URL
 from settings import IMGUR_CHECK_INTERVAL, CLEARING_DB_INTERVAL, POSTING_INTERVAL
+from src.collectors import ImgurCollector, RedditCollector
+from src.database import RedisDB
+from src.stats import get_stats_image
 
 
 def error(_: Bot, update: Update, err: Exception):
@@ -27,75 +25,101 @@ def boop(_: Bot, update: Update):
     update.message.reply_text('yeah yeah... back to work...')
 
 
-def schedule_telemgur(bot: Bot, updater: Updater):
-    channel_name = 'telemgur'
-    if DEBUG:
-        redis_client = redis.StrictRedis()
-    else:
-        redis_client = redis.from_url(REDIS_URL)
-    db = RedisDB(channel_name, redis_client)
+class CommonSetup(object):
+    def __init__(self, channel_name: str, bot: Bot, updater: Updater):
+        self.channel_name = channel_name
+        self.bot = bot
+        self.updater = updater
+        self.collector = None
+        self.dp = updater.dispatcher
+        self.database = self.get_database()
+        self.scheduler = self.get_scheduler()
+        self.setup_commands()
 
-    fetcher = GalleryFetcher()
-    filtr = PostsFilter(db=db)
-    publisher = ImgurPostPublisher(bot=bot, db=db, channel_id=TELEMGUR_CHANNEL_ID)
+    def get_scheduler(self) -> Scheduler:
+        pass
 
-    scheduler = Scheduler(name=channel_name,
-                          job_queue=updater.job_queue,
-                          db=db,
-                          fetchers=[fetcher],
-                          filtr=filtr,
-                          publisher=publisher,
-                          data_collection_interval=IMGUR_CHECK_INTERVAL,
-                          data_posting_interval=POSTING_INTERVAL,
-                          cleanup_interval=CLEARING_DB_INTERVAL)
-    scheduler.run()
+    def start(self):
+        self.scheduler.run()
 
-    def stats(_: Bot, update):
-        dates = db.dates_list()
+    def setup_commands(self):
+        self.dp.add_handler(CommandHandler(self.channel_name + '_stats', self.stats))
+
+    def get_database(self) -> RedisDB:
+        if DEBUG:
+            redis_client = redis.StrictRedis()
+        else:
+            redis_client = redis.from_url(REDIS_URL)
+        return RedisDB(self.channel_name, redis_client)
+
+    def stats(self, bot: Bot, update: Update):
+        dates = self.database.dates_list()
         file = get_stats_image(dates)
         bot.send_photo(chat_id=update.message.chat_id, photo=file)
         file.close()
 
-    updater.dispatcher.add_handler(CommandHandler(channel_name + '_stats', stats))
+
+class ImgurSetup(CommonSetup):
+    def get_scheduler(self):
+        self.collector = ImgurCollector(bot=self.bot, db=self.database)
+        return Scheduler(name=self.channel_name,
+                         job_queue=self.updater.job_queue,
+                         db=self.database,
+                         collector=self.collector,
+                         data_collection_interval=IMGUR_CHECK_INTERVAL,
+                         data_posting_interval=POSTING_INTERVAL,
+                         cleanup_interval=CLEARING_DB_INTERVAL)
 
 
-def schedule_pop_subreddits(bot: Bot, updater: Updater):
-    channel_name = 'pop_reddit'
-    if DEBUG:
-        redis_client = redis.StrictRedis()
-    else:
-        redis_client = redis.from_url(REDIS_URL)
-    db = RedisDB(channel_name, redis_client)
+class RedditSetup(CommonSetup):
+    def get_scheduler(self):
+        self.collector = RedditCollector(bot=self.bot, db=self.database)
 
-    subreddits = [
-        'funny',
-        'aww',
-        'pics',
-        'gifs',
-    ]
+        return Scheduler(name=self.channel_name,
+                         job_queue=self.updater.job_queue,
+                         db=self.database,
+                         collector=self.collector,
+                         data_collection_interval=IMGUR_CHECK_INTERVAL,
+                         data_posting_interval=POSTING_INTERVAL,
+                         cleanup_interval=CLEARING_DB_INTERVAL)
 
-    fetchers = [SubredditFetcher(subreddit=subreddit) for subreddit in subreddits]
-    filtr = SubredditFilter(db=db)
-    publisher = SubredditPublisher(bot=bot, db=db, channel_id=SUBREDDIT_CHANNEL_ID)
+    def setup_commands(self):
+        super().setup_commands()
+        # self.dp.add_handler(CommandHandler(self.channel_name + '_add', self.add_subreddit, pass_args=True))
+        # self.dp.add_handler(CommandHandler(self.channel_name + '_remove', self.remove_subreddit, pass_args=True))
+        self.dp.add_handler(CommandHandler(self.channel_name + '_show', self.show_subreddits))
 
-    scheduler = Scheduler(name=channel_name,
-                          job_queue=updater.job_queue,
-                          db=db,
-                          fetchers=fetchers,
-                          filtr=filtr,
-                          publisher=publisher,
-                          data_collection_interval=30*60,  # 30m
-                          data_posting_interval=POSTING_INTERVAL,
-                          cleanup_interval=CLEARING_DB_INTERVAL)
-    scheduler.run()
+    def add_subreddit(self, bot: Bot, update: Update, args: List[str]):
+        del bot
+        if len(args) != 2:
+            update.message.reply_text('Usage: \\<channel_name>_add <subreddit> <score_limit>')
+            return
 
-    def stats(_: Bot, update):
-        dates = db.dates_list()
-        file = get_stats_image(dates)
-        bot.send_photo(chat_id=update.message.chat_id, photo=file)
-        file.close()
+        subreddit, score = args
+        self.collector.add_subreddit(subreddit, int(score))
+        update.message.reply_text(f'Added subreddit "{subreddit}" with score limit {score}')
 
-    updater.dispatcher.add_handler(CommandHandler(channel_name + '_stats', stats))
+    def remove_subreddit(self, bot: Bot, update: Update, args: List[str]):
+        del bot
+        if len(args) != 1:
+            update.message.reply_text('Usage: \\<channel_name>_remove <subreddit>')
+            return
+
+        subreddit = args[0]
+        self.collector.remove_subreddit(subreddit)
+        update.message.reply_text(f'Removed subreddit "{subreddit}".')
+
+    def show_subreddits(self, bot: Bot, update: Update):
+        del bot
+
+        subreddits = self.collector.get_subreddits()
+        text = 'List of subreddits:\n' \
+               f"`{'subreddit':13s} limit score`\n"
+
+        for sr in subreddits:
+            score = subreddits[sr]
+            text += f'` - {sr:10s} {score}`\n'
+        update.message.reply_text(text, parse_mode=telegram.ParseMode.MARKDOWN)
 
 
 def main():
@@ -103,8 +127,11 @@ def main():
     updater = Updater(bot=bot)
     dp = updater.dispatcher
 
-    schedule_telemgur(bot=bot, updater=updater)
-    schedule_pop_subreddits(bot=bot, updater=updater)
+    imgur_setup = ImgurSetup('telemgur', bot, updater)
+    imgur_setup.start()
+
+    reddit_setup = RedditSetup('pop_reddit', bot, updater)
+    reddit_setup.start()
 
     dp.add_handler(CommandHandler('boop', boop))
     dp.add_error_handler(error)

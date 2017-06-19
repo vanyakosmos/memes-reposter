@@ -25,12 +25,8 @@ class GalleryFetcher(AbstractFetcher):
 
 
 class AlbumFetcher(AbstractFetcher):
-    def __init__(self, post_id):
-        super().__init__()
-        self.post_id = post_id
-
-    def fetch(self):
-        url = f'https://api.imgur.com/3/album/{self.post_id}/images'
+    def fetch(self, post_id):
+        url = f'https://api.imgur.com/3/album/{post_id}/images'
         headers = {'authorization': f'Client-ID {CLIENT_ID}'}
         response = requests.request("GET", url, headers=headers)
         response_json = response.json()
@@ -41,15 +37,11 @@ class AlbumFetcher(AbstractFetcher):
 
 
 class SubredditFetcher(AbstractFetcher):
-    def __init__(self, subreddit):
-        super().__init__()
-        self.subreddit = subreddit
-
-    def fetch(self):
+    def fetch(self, subreddit):
         sort = 'top'  # time | top
         window = 'day'  # day | week | month | year | all
 
-        url = f"https://api.imgur.com/3/gallery/r/{self.subreddit}/{sort}/{window}"
+        url = f"https://api.imgur.com/3/gallery/r/{subreddit}/{sort}/{window}"
         headers = {'authorization': f"Client-ID {CLIENT_ID}"}
         response = requests.request("GET", url, headers=headers)
         response_json = response.json()
