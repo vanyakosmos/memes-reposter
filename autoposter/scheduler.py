@@ -84,7 +84,7 @@ class Scheduler(object):
         self.logger.info(f'▶︎ {self.name}: Running 📨 POSTING job...')
         dai_minutes = self.data_collection_interval // 60
 
-        if self.collector.updated:
+        if self.collector.was_updates():
             self.logger.info(f"Collector was updated. In a moment will run GET_DATA job.")
             self.job_queue.run_once(self.get_data_job, when=0)
             return

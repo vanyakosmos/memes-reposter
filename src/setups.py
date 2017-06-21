@@ -62,8 +62,8 @@ class RedditSetup(CommonSetup):
     def __init__(self, channel_name: str):
         super().__init__(channel_name)
         self.handlers.extend([
-            CommandHandler('add', self.add_subreddit, pass_args=True),
-            CommandHandler('remove', self.remove_subreddit, pass_args=True),
+            CommandHandler('add', self.add_subreddits, pass_args=True),
+            CommandHandler('remove', self.remove_subreddits, pass_args=True),
             CommandHandler('show', self.show_subreddits)
         ])
         self.database: RedditRedisDB
@@ -95,34 +95,46 @@ class RedditSetup(CommonSetup):
             redis_client = redis.from_url(REDIS_URL)
         return RedditRedisDB(self.channel_name, redis_client)
 
-    def add_subreddit(self, bot: Bot, update: Update, args: List[str]):
+    def add_subreddits(self, bot: Bot, update: Update, args: List[str]):
         del bot
-        self.collector.updated = True
-        if len(args) != 2:
-            update.message.reply_text('Usage: \\add <subreddit> <score_limit>')
+        usage_string = 'Nothing was added.\n' \
+                       r'Usage: \add <subreddit:str> <score_limit:int> [<subreddit:str> <score_limit:int> ...]'
+        if len(args) % 2 != 0:
+            update.message.reply_text(usage_string)
             return
 
-        subreddit, score = args
-        score = int(score)
-        self.collector.add_subreddit(subreddit, score)
-        self.database.add_subreddit(subreddit, score)
-        update.message.reply_text(f'Added/updated subreddit "{subreddit}" with score limit {score}')
+        subreddits = {}
+        while args:
+            subreddit, score = args[:2]
+            args = args[2:]
+            if score.isdecimal():
+                score = int(score)
+            else:
+                update.message.reply_text(usage_string)
+                return
+            subreddits[subreddit] = score
+        self.collector.add_subreddits(subreddits)
 
-    def remove_subreddit(self, bot: Bot, update: Update, args: List[str]):
+        answer = "Added/updated subreddits:\n"
+        for subreddit, score in subreddits.items():
+            answer += f" - {subreddit} ~ {score}\n"
+        update.message.reply_text(answer)
+
+    def remove_subreddits(self, bot: Bot, update: Update, args: List[str]):
         del bot
-        self.collector.updated = True
-        if len(args) != 1:
-            update.message.reply_text('Usage: \\remove <subreddit>')
+        if len(args) < 1:
+            update.message.reply_text('Usage: \\remove <subreddit> [<subreddit> ...]')
             return
 
-        subreddit = args[0]
-        self.collector.remove_subreddit(subreddit)
-        self.database.remove_subreddit(subreddit)
-        update.message.reply_text(f'Removed subreddit "{subreddit}".')
+        subreddits = args
+        removed = self.collector.remove_subreddits(subreddits)
+        answer = 'Removed subreddits:\n'
+        for r in removed:
+            answer += f' - {r}\n'
+        update.message.reply_text(answer)
 
     def show_subreddits(self, bot: Bot, update: Update):
         del bot
-
         subreddits = self.collector.get_subreddits()
         text = 'List of subreddits:\n' \
                f"`{'subreddit':13s} limit score`\n"

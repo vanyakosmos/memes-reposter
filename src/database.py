@@ -1,5 +1,5 @@
 import time
-from typing import Set, List
+from typing import Set, List, Dict
 
 import redis
 
@@ -58,13 +58,15 @@ class RedditRedisDB(RedisDB):
         super().__init__(name, redis_client)
         self.SUBREDDITS = self.name + ':subreddits'
 
-    def add_subreddit(self, subreddit, score):
-        self.logger.debug(f'Adding subreddit {subreddit} with score limit {score} to database.')
-        self.client.hset(self.SUBREDDITS, subreddit, score)
+    def add_subreddits(self, subreddits: Dict[str, int]):
+        self.logger.debug(f'Adding subreddits: {subreddits}')
+        if subreddits:
+            self.client.hmset(self.SUBREDDITS, subreddits)
 
-    def remove_subreddit(self, subreddit):
-        self.logger.debug(f'Removing subreddit {subreddit} from database.')
-        self.client.hdel(self.SUBREDDITS, subreddit)
+    def remove_subreddits(self, subreddits: List[str]):
+        self.logger.debug(subreddits)
+        removed = self.client.hdel(self.SUBREDDITS, *subreddits)
+        self.logger.debug(f'Removed subreddits: {removed}')
 
     def get_subreddits(self):
         self.logger.debug('Getting subreddits from database.')

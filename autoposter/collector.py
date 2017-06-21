@@ -9,11 +9,11 @@ class Collector(object):
     def __init__(self, bot: Bot, db: AbstractDB):
         self.bot = bot
         self.db = db
-        self.updated = False
+        self._updated = False
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def collect(self):
-        self.updated = False
+        self._updated = False
 
     def publish(self):
         raise NotImplementedError
@@ -25,5 +25,8 @@ class Collector(object):
     @property
     def is_empty(self) -> bool:
         return self.size == 0
+
+    def was_updates(self):
+        return self._updated
 
 

@@ -93,25 +93,24 @@ class TestRedditRedisDB(unittest.TestCase):
     def test_add_subreddit(self):
         self.assertEqual(self.client.hlen(self.SUBREDDIT), 2)
 
-        self.database.add_subreddit('funny', 1234)
+        self.database.add_subreddits({'funny': 1234})
         self.assertEqual(self.client.hget(self.SUBREDDIT, 'funny'), b'1234')
         self.assertEqual(self.client.hlen(self.SUBREDDIT), 3)
 
-        self.database.add_subreddit('funny', 2345)
+        self.database.add_subreddits({'funny': 2345})
         self.assertEqual(self.client.hget(self.SUBREDDIT, 'funny'), b'2345')
         self.assertEqual(self.client.hlen(self.SUBREDDIT), 3)
 
     def test_remove_subreddit(self):
         self.assertEqual(self.client.hlen(self.SUBREDDIT), 2)
 
-        self.database.remove_subreddit('funny')
+        self.database.remove_subreddits(['funny'])
         self.assertEqual(self.client.hlen(self.SUBREDDIT), 2)
 
         self.client.hset(self.SUBREDDIT, 'funny', 100)
         self.assertEqual(self.client.hlen(self.SUBREDDIT), 3)
 
-        self.database.remove_subreddit('funny')
-        self.database.remove_subreddit('pics')
+        self.database.remove_subreddits(['funny', 'pics'])
         self.assertEqual(self.client.hlen(self.SUBREDDIT), 1)
 
     def test_get_subreddits(self):

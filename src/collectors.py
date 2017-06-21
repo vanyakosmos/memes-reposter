@@ -1,8 +1,9 @@
 import random
-from typing import List
+from typing import List, Dict
 
 from autoposter.collector import Collector
 from settings import TELEMGUR_CHANNEL_ID, SUBREDDIT_CHANNEL_ID
+from src.database import RedditRedisDB
 
 from .fetcher import GalleryFetcher, SubredditFetcher
 from .filter import PostsFilter, SubredditFilter
@@ -48,7 +49,7 @@ class ImgurCollector(Collector):
 
 
 class RedditCollector(Collector):
-    def __init__(self, bot, db, subreddits_scores):
+    def __init__(self, bot, db: RedditRedisDB, subreddits_scores):
         super().__init__(bot, db)
         self.posts: List[Post] = []
 
@@ -58,18 +59,31 @@ class RedditCollector(Collector):
 
         self.filters = {}
         self.subreddits = {}
-        for subreddit, score in subreddits_scores.items():
-            self.add_subreddit(subreddit, score=score)
+        self.add_subreddits(subreddits_scores)
 
-    def add_subreddit(self, subreddit: str, score: int):
-        self.logger.debug(f'Adding subreddit {subreddit} with score limit {score}.')
-        self.subreddits[subreddit] = score
-        self.filters[subreddit] = SubredditFilter(db=self.db, subreddit=subreddit, score=score)
+    def add_subreddits(self, subreddits: Dict[str, int]):
+        self._updated = True
+        for subreddit, score in subreddits.items():
+            if subreddit in self.subreddits:
+                self.logger.debug(f'Updating subreddit "{subreddit}" with new score limit {score}.')
+            else:
+                self.logger.debug(f'Adding subreddit "{subreddit}" with score limit {score}.')
+            self.subreddits[subreddit] = score
+            self.filters[subreddit] = SubredditFilter(db=self.db, subreddit=subreddit, score=score)
+        self.db.add_subreddits(subreddits)
 
-    def remove_subreddit(self, subreddit):
-        self.logger.debug(f'Removing subreddit {subreddit}.')
-        del self.subreddits[subreddit]
-        del self.filters[subreddit]
+    def remove_subreddits(self, subreddits: List[str]) -> List[str]:
+        removed = []
+        for subreddit in subreddits:
+            if subreddit in self.subreddits:
+                self.logger.debug(f'Removing subreddit "{subreddit}".')
+                del self.subreddits[subreddit]
+                del self.filters[subreddit]
+                removed.append(subreddit)
+        self.db.remove_subreddits(subreddits)
+        if removed:
+            self._updated = True
+        return removed
 
     def get_subreddits(self) -> dict:
         return dict(self.subreddits)
