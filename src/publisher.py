@@ -43,8 +43,8 @@ class CutterMixin(object):
             return ''
         elif len(text) > limit:
             text = text[:limit - 5]
-            cut = text.split()[:-1]
-            text = ' '.join(cut)
+            without_last = text.split()[:-1]
+            text = ' '.join(without_last)
             return text + '...'
         else:
             return text
@@ -84,14 +84,14 @@ class ImgurPostPublisher(AbstractPublisher, ExceptionsHandlerMixin, CutterMixin)
         else:
             self.bot.send_photo(photo=image.src, **kwargs)
 
-    def format_title(self, post):
+    def format_title(self, post: Post):
         strings = ['🌚 ' + butch for butch in post.title.split('\n')]
         if post.is_dump:
             strings.append(f'🔥 Album with {post.images_count} items')
         strings.append('🔗 ' + post.link)
         if post.tags:
             strings.append('🏷 ' + ' '.join(post.tags))
-        if post.images_count == 1 and post.desc:
+        if post.images_count == 1:
             strings.append(post.desc)
         text = '\n'.join(strings)
         return self.cut_text(text, limit=MAX_MESSAGE_LENGTH)

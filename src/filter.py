@@ -13,6 +13,9 @@ from .wrappers import Post, Image
 class ImageValidatorMixin(object):
     @staticmethod
     def valid_image(image: Image) -> bool:
+        if image.size == 0:
+            return False
+
         normal_image_size = image.animated or image.size < MAX_IMAGE_SIZE
         normal_size = image.size < MAX_VIDEO_SIZE
         large_size = not normal_size and image.size < MAX_FILESIZE_DOWNLOAD
