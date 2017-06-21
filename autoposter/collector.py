@@ -1,14 +1,19 @@
 import logging
 
+from telegram import Bot
+
+from autoposter import AbstractDB
+
 
 class Collector(object):
-    def __init__(self, bot, db):
+    def __init__(self, bot: Bot, db: AbstractDB):
         self.bot = bot
         self.db = db
+        self.updated = False
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def collect(self):
-        raise NotImplementedError
+        self.updated = False
 
     def publish(self):
         raise NotImplementedError

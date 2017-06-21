@@ -24,6 +24,7 @@ class ImgurCollector(Collector):
         """
         Fetch and filter posts. Store them is ``sell.posts``.
         """
+        super().collect()
         data = []
         response = self.fetcher.fetch()
         if response.success:
@@ -57,7 +58,6 @@ class RedditCollector(Collector):
 
         self.filters = {}
         self.subreddits = {}
-        # for subreddit, score in [('funny', 5000), ('pics', 5000), ('gifs', 5000), ('aww', 5000)]:
         for subreddit, score in subreddits_scores.items():
             self.add_subreddit(subreddit, score=score)
 
@@ -78,6 +78,8 @@ class RedditCollector(Collector):
         """
         Fetch and filter posts. Store them is ``sell.posts``.
         """
+        super().collect()
+        self.posts = []  # in case if collector was marked as updated and scheduler rerun collect() b4 post all posts
         for subreddit in self.filters:
             response = self.fetcher.fetch(subreddit)
             if not response.success:

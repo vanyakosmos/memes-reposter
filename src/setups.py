@@ -97,8 +97,9 @@ class RedditSetup(CommonSetup):
 
     def add_subreddit(self, bot: Bot, update: Update, args: List[str]):
         del bot
+        self.collector.updated = True
         if len(args) != 2:
-            update.message.reply_text('Usage: `\\add <subreddit> <score_limit>')
+            update.message.reply_text('Usage: \\add <subreddit> <score_limit>')
             return
 
         subreddit, score = args
@@ -109,8 +110,9 @@ class RedditSetup(CommonSetup):
 
     def remove_subreddit(self, bot: Bot, update: Update, args: List[str]):
         del bot
+        self.collector.updated = True
         if len(args) != 1:
-            update.message.reply_text('Usage: `\\remove <subreddit>`')
+            update.message.reply_text('Usage: \\remove <subreddit>')
             return
 
         subreddit = args[0]

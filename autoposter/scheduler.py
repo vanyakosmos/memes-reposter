@@ -84,6 +84,11 @@ class Scheduler(object):
         self.logger.info(f'▶︎ {self.name}: Running 📨 POSTING job...')
         dai_minutes = self.data_collection_interval // 60
 
+        if self.collector.updated:
+            self.logger.info(f"Collector was updated. In a moment will run GET_DATA job.")
+            self.job_queue.run_once(self.get_data_job, when=0)
+            return
+
         if not self.collector.is_empty:
             chunks_count = self.collector.size
             self.logger.info(f"Received {chunks_count} posts for publication.")
