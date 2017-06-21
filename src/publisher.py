@@ -26,19 +26,18 @@ class ExceptionsHandlerMixin(object):
     def log_error(self, err: Exception, obj,
                   print_traceback=False,
                   print_post=True):
-        self.logger.error(err.__class__.__name__)
-        self.logger.error(err)
+        self.logger.warning(err.__class__.__name__)
+        self.logger.warning(err)
         if print_traceback:
             for line in traceback.format_exc().split('\n'):
-                self.logger.error(line)
+                self.logger.warning(line)
         if print_post:
-            self.logger.error(obj)
+            self.logger.warning(obj)
 
 
 class CutterMixin(object):
     @staticmethod
     def cut_text(text: str, limit: int):
-        limit -= 10
         if text is None:
             return ''
         elif len(text) > limit:

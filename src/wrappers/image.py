@@ -11,7 +11,7 @@ class Image(object):
 
     def __str__(self):
         return f"Image(id='{self.id}', src='{self.src}', size='{self.size}', " \
-               f"width='{self.width}', height='{self.height}', have_desc='{len(self.desc) > 0}')"
+               f"width='{self.width}', height='{self.height}', has_desc='{len(self.desc) > 0}')"
 
     @property
     def id(self):
