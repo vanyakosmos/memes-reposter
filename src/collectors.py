@@ -47,7 +47,7 @@ class ImgurCollector(Collector):
 
 
 class RedditCollector(Collector):
-    def __init__(self, bot, db):
+    def __init__(self, bot, db, subreddits_scores):
         super().__init__(bot, db)
         self.posts: List[Post] = []
 
@@ -57,14 +57,17 @@ class RedditCollector(Collector):
 
         self.filters = {}
         self.subreddits = {}
-        for subreddit, score in [('funny', 5000), ('pics', 5000), ('gifs', 5000), ('aww', 5000)]:
+        # for subreddit, score in [('funny', 5000), ('pics', 5000), ('gifs', 5000), ('aww', 5000)]:
+        for subreddit, score in subreddits_scores.items():
             self.add_subreddit(subreddit, score=score)
 
     def add_subreddit(self, subreddit: str, score: int):
+        self.logger.debug(f'Adding subreddit {subreddit} with score limit {score}.')
         self.subreddits[subreddit] = score
         self.filters[subreddit] = SubredditFilter(db=self.db, subreddit=subreddit, score=score)
 
     def remove_subreddit(self, subreddit):
+        self.logger.debug(f'Removing subreddit {subreddit}.')
         del self.subreddits[subreddit]
         del self.filters[subreddit]
 
@@ -84,7 +87,7 @@ class RedditCollector(Collector):
 
             posts = self.filters[subreddit].filter(response.data)
             self.posts.extend(posts)
-            self.logger.info(f'Subreddit: {subreddit} ~ Received {len(posts)}')
+            self.logger.info(f'Subreddit: {subreddit:15s} ~ Received {len(posts)}')
 
     def publish(self):
         """
