@@ -65,9 +65,9 @@ class RedditCollector(Collector):
         self._updated = True
         for subreddit, score in subreddits.items():
             if subreddit in self.subreddits:
-                self.logger.debug(f'Updating subreddit "{subreddit}" with new score limit {score}.')
+                self.logger.info(f'Updating subreddit "{subreddit}" with new score limit {score}.')
             else:
-                self.logger.debug(f'Adding subreddit "{subreddit}" with score limit {score}.')
+                self.logger.info(f'Adding subreddit "{subreddit}" with score limit {score}.')
             self.subreddits[subreddit] = score
             self.filters[subreddit] = SubredditFilter(db=self.db, subreddit=subreddit, score=score)
         self.db.add_subreddits(subreddits)
@@ -76,7 +76,7 @@ class RedditCollector(Collector):
         removed = []
         for subreddit in subreddits:
             if subreddit in self.subreddits:
-                self.logger.debug(f'Removing subreddit "{subreddit}".')
+                self.logger.info(f'Removing subreddit "{subreddit}".')
                 del self.subreddits[subreddit]
                 del self.filters[subreddit]
                 removed.append(subreddit)
@@ -109,7 +109,7 @@ class RedditCollector(Collector):
         """
         Publish ONE post into telegram and remove it from ``self.posts`` list.
         """
-        index = random.randint(0, self.size - 1)
+        index = random.randrange(self.size)
         post = self.posts.pop(index)
         self.pics_publisher.publish(post)
 

@@ -83,9 +83,10 @@ class RedditSetup(CommonSetup):
 
     def help_text(self):
         return " - /stats - print posting statistic\n" \
-               " - /add <subreddit> <limit> - add new subreddit (or update old one)" \
+               " - /add <subreddit> <limit> [<subreddit> <limit> ...] - " \
+               " add new subreddit (or update old one)" \
                " with filtration by chosen score limit\n" \
-               " - /remove <subreddit>\n" \
+               " - /remove <subreddit> [<subreddit> ...]\n" \
                " - /show - show table of subreddits and limit scores"
 
     def get_database(self) -> RedisDB:
@@ -99,7 +100,7 @@ class RedditSetup(CommonSetup):
         del bot
         usage_string = 'Nothing was added.\n' \
                        r'Usage: \add <subreddit:str> <score_limit:int> [<subreddit:str> <score_limit:int> ...]'
-        if len(args) % 2 != 0:
+        if len(args) == 0 or len(args) % 2 != 0:
             update.message.reply_text(usage_string)
             return
 
@@ -122,7 +123,7 @@ class RedditSetup(CommonSetup):
 
     def remove_subreddits(self, bot: Bot, update: Update, args: List[str]):
         del bot
-        if len(args) < 1:
+        if len(args) == 0 or len(args) < 1:
             update.message.reply_text('Usage: \\remove <subreddit> [<subreddit> ...]')
             return
 
