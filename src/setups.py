@@ -50,10 +50,7 @@ class ImgurSetup(CommonSetup):
         return " - /stats - print posting statistic"
 
     def get_database(self) -> RedisDB:
-        if DEBUG:
-            redis_client = redis.StrictRedis()
-        else:
-            redis_client = redis.from_url(REDIS_URL)
+        redis_client = redis.from_url(REDIS_URL)
         return RedisDB(self.channel_name, redis_client)
 
 
@@ -65,7 +62,6 @@ class RedditSetup(CommonSetup):
             CommandHandler('remove', self.command_remove_subreddits, pass_args=True),
             CommandHandler('show', self.command_show_subreddits)
         ])
-        self.database: RedditRedisDB
 
     def get_scheduler(self):
         subreddits_scores = self.database.get_subreddits()
@@ -89,17 +85,14 @@ class RedditSetup(CommonSetup):
                " - /show - show table of subreddits and limit scores"
 
     def get_database(self) -> RedisDB:
-        if DEBUG:
-            redis_client = redis.StrictRedis()
-        else:
-            redis_client = redis.from_url(REDIS_URL)
+        redis_client = redis.from_url(REDIS_URL)
         return RedditRedisDB(self.channel_name, redis_client)
 
     @admin_access(LIST_OF_ADMINS)
     def command_add_subreddits(self, bot: Bot, update: Update, args: List[str]):
         del bot
         usage_string = 'Nothing was added.\n' \
-                       r'Usage: \add <subreddit:str> <score_limit:int> [<subreddit:str> <score_limit:int> ...]'
+                       'Usage: /add <subreddit:str> <score_limit:int> [<subreddit:str> <score_limit:int> ...]'
         if len(args) == 0 or len(args) % 2 != 0:
             update.message.reply_text(usage_string)
             return
@@ -125,7 +118,7 @@ class RedditSetup(CommonSetup):
     def command_remove_subreddits(self, bot: Bot, update: Update, args: List[str]):
         del bot
         if len(args) == 0 or len(args) < 1:
-            update.message.reply_text('Usage: \\remove <subreddit> [<subreddit> ...]')
+            update.message.reply_text('Usage: /remove <subreddit> [<subreddit> ...]')
             return
 
         subreddits = args

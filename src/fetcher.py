@@ -2,7 +2,7 @@ import requests
 
 from autoposter import AbstractFetcher, Response
 
-from settings import CLIENT_ID
+from settings import IMGUR_CLIENT_ID
 
 
 class GalleryFetcher(AbstractFetcher):
@@ -15,7 +15,7 @@ class GalleryFetcher(AbstractFetcher):
 
         url = f'https://api.imgur.com/3/gallery/{section}/{sort}'
         querystring = {"showViral": f"{show_viral}", "mature": f"{show_mature}", "album_previews": f"{album_previews}"}
-        headers = {'authorization': f'Client-ID {CLIENT_ID}'}
+        headers = {'authorization': f'Client-ID {IMGUR_CLIENT_ID}'}
         response = requests.request("GET", url, headers=headers, params=querystring)
         response_json = response.json()
 
@@ -27,7 +27,7 @@ class GalleryFetcher(AbstractFetcher):
 class AlbumFetcher(AbstractFetcher):
     def fetch(self, post_id):
         url = f'https://api.imgur.com/3/album/{post_id}/images'
-        headers = {'authorization': f'Client-ID {CLIENT_ID}'}
+        headers = {'authorization': f'Client-ID {IMGUR_CLIENT_ID}'}
         response = requests.request("GET", url, headers=headers)
         response_json = response.json()
 
@@ -42,7 +42,7 @@ class SubredditFetcher(AbstractFetcher):
         window = 'day'  # day | week | month | year | all
 
         url = f"https://api.imgur.com/3/gallery/r/{subreddit}/{sort}/{window}"
-        headers = {'authorization': f"Client-ID {CLIENT_ID}"}
+        headers = {'authorization': f"Client-ID {IMGUR_CLIENT_ID}"}
         response = requests.request("GET", url, headers=headers)
         response_json = response.json()
 

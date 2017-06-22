@@ -4,7 +4,7 @@ from telegram import Bot
 from telegram import Update
 
 from autoposter import Manager
-from settings import DEBUG, PORT, BOT_TOKEN, APP_NAME
+from settings import DEBUG, HEROKU_PORT, BOT_TOKEN, HEROKU_APP_NAME
 from src.setups import RedditSetup, ImgurSetup
 
 
@@ -25,8 +25,8 @@ def main():
     if DEBUG:
         manager.start_polling()
     else:
-        manager.start_webhook(listen="0.0.0.0", port=PORT, url_path=BOT_TOKEN,
-                              webhook_url=f"https://{APP_NAME}.herokuapp.com/{BOT_TOKEN}")
+        manager.start_webhook(listen="0.0.0.0", port=HEROKU_PORT, url_path=BOT_TOKEN,
+                              webhook_url=f"https://{HEROKU_APP_NAME}.herokuapp.com/{BOT_TOKEN}")
 
 
 if __name__ == '__main__':
