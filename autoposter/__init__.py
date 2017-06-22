@@ -5,12 +5,13 @@ from .publisher import AbstractPublisher
 from .collector import Collector
 from .scheduler import Scheduler
 from .channel_setup import ChannelSetup
-from .manager import Manager
+from .manager import Manager, admin_access
 
 
 __author__ = 'Bachynin Ivan'
 
 __all__ = [
     'Scheduler', 'AbstractDB', 'AbstractFetcher', 'Response',
-    'AbstractFilter', 'AbstractPublisher', 'Collector'
+    'AbstractFilter', 'AbstractPublisher', 'Collector',
+    'ChannelSetup', 'admin_access',
 ]

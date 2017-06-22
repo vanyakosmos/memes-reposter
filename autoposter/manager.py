@@ -1,10 +1,36 @@
 import logging
+from functools import wraps
 from typing import Dict
 
 from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
 
 from .channel_setup import ChannelSetup
+
+
+def admin_access(admins_ids):
+    """
+    Decorator for setting up access restriction. 
+    Applicable only to class methods with command signature::
+
+        spam(self, bot: telegram.Bot, update: telegram.Update)
+
+    Args:
+        admins_ids: List of administrators ids.
+
+    Returns:
+        Wrapper for function wrapper.
+    """
+    def access(func):
+        @wraps(func)
+        def wrapped(self, bot: Bot, update: Update, *args, **kwargs):
+            user = update.effective_user
+            if user.id not in admins_ids:
+                self.logger.info(f"Unauthorized access denied for {user}.")
+                return
+            return func(self, bot, update, *args, **kwargs)
+        return wrapped
+    return access
 
 
 class Manager(object):
@@ -56,7 +82,9 @@ class Manager(object):
                "/choose - choose channels.\n" \
                "/chlist - print out channels list.\n"
         if self.chosen_channel:
-            text += f"{self.chosen_channel.name} commands:\n" + self.chosen_channel.help_text()
+            t = self.chosen_channel.help_text()
+            channels_help_text = t if t else ''
+            text += f"{self.chosen_channel.name} commands:\n" + channels_help_text
 
         bot.send_message(chat_id=update.message.chat_id,
                          text=text)

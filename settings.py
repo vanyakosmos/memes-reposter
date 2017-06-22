@@ -69,3 +69,7 @@ MIN_DIM_RATIO = 1/4
 
 # publisher
 POST_TIMEOUT = 60
+
+
+# setup
+LIST_OF_ADMINS = [89599420]

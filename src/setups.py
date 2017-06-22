@@ -6,9 +6,8 @@ from telegram import Bot
 from telegram import Update
 from telegram.ext import CommandHandler
 
-from autoposter import ChannelSetup
-from autoposter import Scheduler
-from settings import DEBUG, REDIS_URL
+from autoposter import Scheduler, ChannelSetup, admin_access
+from settings import DEBUG, REDIS_URL, LIST_OF_ADMINS
 from settings import IMGUR_CHECK_INTERVAL, CLEARING_DB_INTERVAL, POSTING_INTERVAL
 from src.collectors import ImgurCollector, RedditCollector
 from src.database import RedisDB, RedditRedisDB
@@ -19,21 +18,21 @@ class CommonSetup(ChannelSetup):
     def __init__(self, channel_name: str):
         super().__init__(channel_name)
         self.handlers.extend([
-            CommandHandler('stats', self.stats),
-            CommandHandler('boop', self.boop),
+            CommandHandler('stats', self.command_stats),
+            CommandHandler('boop', self.command_boop),
         ])
         self.database: RedisDB
 
-    def stats(self, bot: Bot, update: Update):
+    def command_stats(self, bot: Bot, update: Update):
         dates = self.database.dates_list()
         file = get_stats_image(dates)
         bot.send_photo(chat_id=update.message.chat_id, photo=file)
         file.close()
 
     @staticmethod
-    def boop(bot: Bot, update: Update):
+    def command_boop(bot: Bot, update: Update):
         del bot
-        update.message.reply_text('yeah yeah... back to work...')
+        update.message.reply_text('yeah, yeah... back to work...')
 
 
 class ImgurSetup(CommonSetup):
@@ -62,9 +61,9 @@ class RedditSetup(CommonSetup):
     def __init__(self, channel_name: str):
         super().__init__(channel_name)
         self.handlers.extend([
-            CommandHandler('add', self.add_subreddits, pass_args=True),
-            CommandHandler('remove', self.remove_subreddits, pass_args=True),
-            CommandHandler('show', self.show_subreddits)
+            CommandHandler('add', self.command_add_subreddits, pass_args=True),
+            CommandHandler('remove', self.command_remove_subreddits, pass_args=True),
+            CommandHandler('show', self.command_show_subreddits)
         ])
         self.database: RedditRedisDB
 
@@ -96,7 +95,8 @@ class RedditSetup(CommonSetup):
             redis_client = redis.from_url(REDIS_URL)
         return RedditRedisDB(self.channel_name, redis_client)
 
-    def add_subreddits(self, bot: Bot, update: Update, args: List[str]):
+    @admin_access(LIST_OF_ADMINS)
+    def command_add_subreddits(self, bot: Bot, update: Update, args: List[str]):
         del bot
         usage_string = 'Nothing was added.\n' \
                        r'Usage: \add <subreddit:str> <score_limit:int> [<subreddit:str> <score_limit:int> ...]'
@@ -121,7 +121,8 @@ class RedditSetup(CommonSetup):
             answer += f" - {subreddit} ~ {score}\n"
         update.message.reply_text(answer)
 
-    def remove_subreddits(self, bot: Bot, update: Update, args: List[str]):
+    @admin_access(LIST_OF_ADMINS)
+    def command_remove_subreddits(self, bot: Bot, update: Update, args: List[str]):
         del bot
         if len(args) == 0 or len(args) < 1:
             update.message.reply_text('Usage: \\remove <subreddit> [<subreddit> ...]')
@@ -134,7 +135,7 @@ class RedditSetup(CommonSetup):
             answer += f' - {r}\n'
         update.message.reply_text(answer)
 
-    def show_subreddits(self, bot: Bot, update: Update):
+    def command_show_subreddits(self, bot: Bot, update: Update):
         del bot
         subreddits = self.collector.get_subreddits()
         text = 'List of subreddits:\n' \
