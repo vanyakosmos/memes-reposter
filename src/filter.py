@@ -46,8 +46,8 @@ class PostsFilter(AbstractFilter, ImageValidatorMixin):
             if post.id in posts_ids:
                 continue
 
-            for bad_tag in BANNED_TAGS:
-                if bad_tag in post.tags:
+            for tag in post.tags:
+                if tag in BANNED_TAGS:
                     continue
 
             post.is_dump = post.images_count > IMAGES_PER_POST

@@ -7,7 +7,7 @@ from telegram import Update
 from telegram.ext import CommandHandler
 
 from autoposter import Scheduler, ChannelSetup, admin_access
-from settings import DEBUG, REDIS_URL, LIST_OF_ADMINS
+from settings import REDIS_URL, LIST_OF_ADMINS
 from settings import IMGUR_CHECK_INTERVAL, CLEARING_DB_INTERVAL, POSTING_INTERVAL
 from src.collectors import ImgurCollector, RedditCollector
 from src.database import RedisDB, RedditRedisDB
