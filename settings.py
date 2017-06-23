@@ -1,10 +1,29 @@
 import os
 import logging
 
-
 from dotenv import load_dotenv, find_dotenv
 
 load_dotenv(find_dotenv())
+"""
+With ``dotenv`` you can create `.env` file in the same directory and setup your own environmental variables.
+Example of `.env` file:
+
+    DEBUG=true
+    
+    # telegram
+    BOT_TOKEN=12345:12345
+    
+    # imgur
+    IMGUR_CLIENT_ID=12345
+    
+    # heroku
+    APP_NAME=bla-bla
+    PORT=5000
+    REDIS_URL=redis://127.0.0.1:6379/0
+    
+    # setup
+    ADMIN=12345
+"""
 
 
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
@@ -62,7 +81,6 @@ CLEARING_DB_INTERVAL = 2 * 24 * 60 * 60
 BANNED_TAGS = {'weight loss', 'war', 'army', 'tragedy'}
 IMAGES_PER_POST = 10
 IMAGES_FOR_LONG_POST = 5
-MAX_POST_AGE = 2 * 24 * 60 * 60
 MAX_VIDEO_SIZE = 10 * 1024 * 1024
 MAX_IMAGE_SIZE = 3 * 1024 * 1024
 MIN_DIM_RATIO = 1/4
