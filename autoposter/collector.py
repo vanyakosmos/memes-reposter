@@ -13,9 +13,15 @@ class Collector(object):
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def collect(self):
+        """
+        Collect data from some source.
+        """
         self._updated = False
 
     def publish(self):
+        """
+        Publish fetched data into telegram channel.
+        """
         raise NotImplementedError
 
     @property

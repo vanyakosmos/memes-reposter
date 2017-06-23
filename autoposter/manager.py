@@ -44,6 +44,12 @@ class Manager(object):
         self._setup_commands()
 
     def register(self, *setups: ChannelSetup):
+        """
+        Registering channels setups and setup their dependencies.
+
+        Args:
+            *setups (List[ChannelSetup]):
+        """
         self.logger.debug('Registering setups...')
         for setup in setups:
             setup.setup_dependencies(self.bot, self.updater, self.dispatcher)
@@ -54,6 +60,9 @@ class Manager(object):
         del self.setups[channel_name]
 
     def start_polling(self):
+        """
+        Activates schedulers of all setups, and starts polling updates from Telegram.
+        """
         self.logger.debug('Start polling...')
         for setup in self.setups.values():
             setup.start()
@@ -61,6 +70,10 @@ class Manager(object):
         self.updater.idle()
 
     def start_webhook(self, webhook_url, listen, port, url_path):
+        """
+        Activates schedulers of all setups, setups webhook, and
+        starts small http server to listen for updates via this webhook.
+        """
         self.logger.debug('Start webhook...')
         for setup in self.setups.values():
             setup.start()

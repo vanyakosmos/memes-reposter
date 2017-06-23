@@ -34,11 +34,17 @@ class ChannelSetup(object):
         self.scheduler.run()
 
     def add_commands_handlers(self):
+        """
+        Add command handlers if this channel was chosen.
+        """
         self.logger.debug('Adding commands handlers.')
         for handler in self.handlers:
             self.dispatcher.add_handler(handler)
 
     def remove_command_handlers(self):
+        """
+        Remove command handlers if another channel was chosen.
+        """
         self.logger.debug('Removing commands handlers.')
         for handler in self.handlers:
             self.dispatcher.remove_handler(handler)
@@ -50,4 +56,7 @@ class ChannelSetup(object):
         pass
 
     def help_text(self) -> str:
+        """
+        Text that will appear after choosing channel.
+        """
         pass
