@@ -60,6 +60,7 @@ REDIS_URL = os.getenv("REDIS_URL")
 
 # imgur
 IMGUR_CLIENT_ID = os.getenv('IMGUR_CLIENT_ID')
+REDDIT_NAME = os.getenv('REDDIT_NAME')
 
 
 # telegram
@@ -72,22 +73,22 @@ BOT_TOKEN = os.getenv('BOT_TOKEN')
 
 
 # scheduler
-IMGUR_CHECK_INTERVAL = 10 * 60
-POSTING_INTERVAL = 0
-CLEARING_DB_INTERVAL = 2 * 24 * 60 * 60
+CHECK_INTERVAL = eval(os.getenv('CHECK_INTERVAL'))
+POSTING_INTERVAL = eval(os.getenv('POSTING_INTERVAL'))
+CLEARING_DB_INTERVAL = eval(os.getenv('CLEARING_DB_INTERVAL'))
 
 
 # filter
-BANNED_TAGS = {'weight loss', 'war', 'army', 'tragedy'}
-IMAGES_PER_POST = 10
-IMAGES_FOR_LONG_POST = 5
-MAX_VIDEO_SIZE = 10 * 1024 * 1024
-MAX_IMAGE_SIZE = 3 * 1024 * 1024
-MIN_DIM_RATIO = 1/4
+BANNED_TAGS = eval(os.getenv('BANNED_TAGS'))
+IMAGES_PER_POST = int(os.getenv('IMAGES_PER_POST'))
+IMAGES_FOR_LONG_POST = int(os.getenv('IMAGES_FOR_LONG_POST'))
+MAX_VIDEO_SIZE = eval(os.getenv('MAX_VIDEO_SIZE'))
+MAX_IMAGE_SIZE = eval(os.getenv('MAX_IMAGE_SIZE'))
+MIN_DIM_RATIO = eval(os.getenv('MIN_DIM_RATIO'))
 
 
 # publisher
-POST_TIMEOUT = 60
+POST_TIMEOUT = int(os.getenv('POST_TIMEOUT'))
 
 
 # setup

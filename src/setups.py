@@ -8,7 +8,7 @@ from telegram.ext import CommandHandler
 
 from autoposter import Scheduler, ChannelSetup, admin_access
 from settings import REDIS_URL, LIST_OF_ADMINS
-from settings import IMGUR_CHECK_INTERVAL, CLEARING_DB_INTERVAL, POSTING_INTERVAL
+from settings import CHECK_INTERVAL, CLEARING_DB_INTERVAL, POSTING_INTERVAL
 from src.collectors import ImgurCollector, RedditCollector
 from src.database import RedisDB, RedditRedisDB
 from src.stats import get_stats_image
@@ -42,7 +42,7 @@ class ImgurSetup(CommonSetup):
                          job_queue=self.updater.job_queue,
                          db=self.database,
                          collector=self.collector,
-                         data_collection_interval=IMGUR_CHECK_INTERVAL,
+                         data_collection_interval=CHECK_INTERVAL,
                          data_posting_interval=POSTING_INTERVAL,
                          cleanup_interval=CLEARING_DB_INTERVAL)
 
@@ -72,7 +72,7 @@ class RedditSetup(CommonSetup):
                          job_queue=self.updater.job_queue,
                          db=self.database,
                          collector=self.collector,
-                         data_collection_interval=IMGUR_CHECK_INTERVAL,
+                         data_collection_interval=CHECK_INTERVAL,
                          data_posting_interval=POSTING_INTERVAL,
                          cleanup_interval=CLEARING_DB_INTERVAL)
 
