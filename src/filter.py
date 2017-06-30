@@ -1,4 +1,5 @@
 from typing import List
+import re
 
 from telegram import MAX_FILESIZE_DOWNLOAD
 
@@ -7,7 +8,7 @@ from settings import BANNED_TAGS, IMAGES_FOR_LONG_POST, IMAGES_PER_POST
 from settings import MAX_VIDEO_SIZE, MAX_IMAGE_SIZE, MIN_DIM_RATIO
 
 from .fetcher import AlbumFetcher
-from .wrappers import Post, Image
+from .wrappers import Post, Image, RedditPost
 
 
 class ImageValidatorMixin(object):
@@ -86,8 +87,8 @@ class PostsFilter(AbstractFilter, ImageValidatorMixin):
         return picked_images
 
 
-class SubredditFilter(AbstractFilter, ImageValidatorMixin):
-    def __init__(self, db: AbstractDB, subreddit: str, score: int = 50000):
+class RedditFilter(AbstractFilter):
+    def __init__(self, db: AbstractDB, subreddit: str, score: int):
         super().__init__(db)
         self.score = score
         self.subreddit = subreddit
@@ -104,22 +105,43 @@ class SubredditFilter(AbstractFilter, ImageValidatorMixin):
         posts_ids = self.db.keys()
 
         for post_dict in posts:
-            post = Post(post_dict)
+            post = post_dict['data']
 
-            if post.id in posts_ids:
+            if post['id'] in posts_ids:
                 continue
 
-            if post.score < self.score:
+            if post['score'] < self.score:
                 break  # assumed that posts sorted by score in descending order
 
-            post.tags = ['#' + self.subreddit]
-
-            if post.is_album:
-                pass  # todo
-            else:
-                image = Image(post.post_dict)
-                if self.valid_image(image):
-                    post.images = [image]
-                    filtered_posts.append(post)
+            filtered_post = self._map_post(post)
+            filtered_posts.append(filtered_post)
 
         return filtered_posts
+
+    @staticmethod
+    def _has_ext(file: str, *exts):
+        return any([file.endswith(ext) for ext in exts])
+
+    def _map_post(self, post):
+        comments = "reddit.com" + re.sub(r'^/r/[^/]+/comments/([^/]+)/.+$',
+                                         '/comments/\g<1>',
+                                         post['permalink'])
+        post['url'] = re.sub(r'(.+)\?.+', '\g<1>', post['url'])
+        if self._has_ext(post['url'], '.png', '.jpg'):
+            typ = 'photo'
+        elif self._has_ext(post['url'], '.gif', '.gifv'):
+            typ = 'video'
+            if self._has_ext(post['url'], '.gifv'):
+                post['url'] = re.sub(r'^(.+)\.gifv?$', '\g<1>.mp4', post['url'])
+        else:
+            typ = 'link'
+        return RedditPost(
+            id=post['id'],
+            title=post['title'],
+            score=post['score'],
+            subreddit=post['subreddit'],
+            comments=comments,
+            url=post['url'],
+            datetime=post['created_utc'],
+            type=typ
+        )

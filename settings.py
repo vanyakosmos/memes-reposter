@@ -61,6 +61,7 @@ REDIS_URL = os.getenv("REDIS_URL")
 # imgur
 IMGUR_CLIENT_ID = os.getenv('IMGUR_CLIENT_ID')
 REDDIT_NAME = os.getenv('REDDIT_NAME')
+FETCH_LIMIT = int(os.getenv('FETCH_LIMIT'))
 
 
 # telegram

@@ -5,9 +5,9 @@ from autoposter.collector import Collector
 from settings import TELEMGUR_CHANNEL_ID, SUBREDDIT_CHANNEL_ID
 from src.database import RedditRedisDB
 
-from .fetcher import GalleryFetcher, SubredditFetcher
-from .filter import PostsFilter, SubredditFilter
-from .publisher import ImgurPostPublisher, SubredditPublisher
+from .fetcher import GalleryFetcher, RedditFetcher
+from .filter import PostsFilter, RedditFilter
+from .publisher import ImgurPostPublisher, RedditPublisher
 from .wrappers import Post
 
 
@@ -53,9 +53,9 @@ class RedditCollector(Collector):
         super().__init__(bot, db)
         self.posts: List[Post] = []
 
-        self.fetcher = SubredditFetcher()
-        self.pics_publisher = SubredditPublisher(bot=self.bot, db=self.db,
-                                                 channel_id=SUBREDDIT_CHANNEL_ID)
+        self.fetcher = RedditFetcher()
+        self.pics_publisher = RedditPublisher(bot=self.bot, db=self.db,
+                                              channel_id=SUBREDDIT_CHANNEL_ID)
 
         self.filters = {}
         self.subreddits = {}
@@ -69,7 +69,7 @@ class RedditCollector(Collector):
             else:
                 self.logger.info(f'Adding subreddit "{subreddit}" with score limit {score}.')
             self.subreddits[subreddit] = score
-            self.filters[subreddit] = SubredditFilter(db=self.db, subreddit=subreddit, score=score)
+            self.filters[subreddit] = RedditFilter(db=self.db, subreddit=subreddit, score=score)
         self.db.add_subreddits(subreddits)
 
     def remove_subreddits(self, subreddits: List[str]) -> List[str]:

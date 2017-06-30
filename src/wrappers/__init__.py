@@ -1,2 +1,2 @@
 from .image import Image
-from .post import Post
+from .post import Post, RedditPost

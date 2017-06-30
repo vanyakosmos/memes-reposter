@@ -1,3 +1,4 @@
+from collections import namedtuple
 from typing import List
 
 from .image import Image
@@ -87,3 +88,6 @@ class Post(object):
     @images.setter
     def images(self, images):
         self._images = images
+
+RedditPost = namedtuple('RedditPost', ['id', 'score', 'title', 'subreddit',
+                                       'comments', 'url', 'type', 'datetime'])

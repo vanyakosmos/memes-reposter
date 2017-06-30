@@ -5,7 +5,7 @@ from telegram.error import TimedOut, BadRequest, TelegramError
 
 from autoposter import AbstractPublisher
 from settings import POST_TIMEOUT
-from .wrappers import Image, Post
+from .wrappers import Image, Post, RedditPost
 
 
 class ExceptionsHandlerMixin(object):
@@ -17,7 +17,7 @@ class ExceptionsHandlerMixin(object):
             try:
                 f(*args, **kwargs)
             except (TimedOut, BadRequest) as e:
-                self.log_error(e, obj)
+                self.log_error(e, obj, print_traceback=True)
             except (TelegramError, Exception) as e:
                 self.log_error(e, obj, print_traceback=True)
 
@@ -102,27 +102,30 @@ class ImgurPostPublisher(AbstractPublisher, ExceptionsHandlerMixin, CutterMixin)
             return ''
 
 
-class SubredditPublisher(AbstractPublisher, ExceptionsHandlerMixin, CutterMixin):
-    def publish(self, post: Post):
+class RedditPublisher(AbstractPublisher, ExceptionsHandlerMixin, CutterMixin):
+    def publish(self, post: RedditPost):
         self.logger.debug(post)
         self.db.add(post.id, post.datetime)
 
-        for image in post.images:
-            self.logger.debug(f'    | {image}')
-            self.exceptions_handler_wrapper(self.publish_item, image)(image, post)
+        self.exceptions_handler_wrapper(self.publish_item, post)(post)
 
-    def publish_item(self, image: Image, post: Post):
-        text = self.cut_text(post.title, limit=MAX_CAPTION_LENGTH-10)
-        text += ' ' + ' '.join(post.tags)
-
-        kwargs = {
-            'caption': text,
-            'chat_id': self.channel_id,
-            'disable_notification': True,
-            'timeout': POST_TIMEOUT,
-        }
-
-        if image.animated:
-            self.bot.send_video(video=image.src, **kwargs)
+    def publish_item(self, post: RedditPost):
+        if post.type == 'link':
+            text = post.title
+            text += '\n' + post.url
+            text += '\n#' + post.subreddit + ' ' + post.comments
+            self.bot.send_message(text=text,
+                                  chat_id=self.channel_id,
+                                  timeout=POST_TIMEOUT)
         else:
-            self.bot.send_photo(photo=image.src, **kwargs)
+            text = self.cut_text(post.title, limit=MAX_CAPTION_LENGTH-40)
+            text += '\n#' + post.subreddit + ' ' + post.comments
+            kwargs = {
+                'caption': text,
+                'chat_id': self.channel_id,
+                'timeout': POST_TIMEOUT,
+            }
+            if post.type == 'photo':
+                self.bot.send_photo(photo=post.url, **kwargs)
+            elif post.type == 'video':
+                self.bot.send_video(video=post.url, **kwargs)
