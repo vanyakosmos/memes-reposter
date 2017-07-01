@@ -123,9 +123,7 @@ class RedditFilter(AbstractFilter):
         return any([file.endswith(ext) for ext in exts])
 
     def _map_post(self, post):
-        comments = "reddit.com" + re.sub(r'^/r/[^/]+/comments/([^/]+)/.+$',
-                                         '/comments/\g<1>',
-                                         post['permalink'])
+        comments = "https://redd.it/" + post['id']
         post['url'] = re.sub(r'(.+)\?.+', '\g<1>', post['url'])
         if self._has_ext(post['url'], '.png', '.jpg'):
             typ = 'photo'
