@@ -123,16 +123,33 @@ class RedditFilter(AbstractFilter):
         return any([file.endswith(ext) for ext in exts])
 
     def _map_post(self, post):
+        self.logger.debug('Domain:  ' + post['domain'])
+        self.logger.debug('Url:     ' + post['url'])
         comments = "https://redd.it/" + post['id']
         post['url'] = re.sub(r'(.+)\?.+', '\g<1>', post['url'])
         if self._has_ext(post['url'], '.png', '.jpg'):
             typ = 'photo'
         elif self._has_ext(post['url'], '.gif', '.gifv'):
             typ = 'video'
-            if self._has_ext(post['url'], '.gifv'):
+            if self._has_ext(post['url'], '.gifv') and re.match(r'(i.)?imgur.com', post['domain']):
                 post['url'] = re.sub(r'^(.+)\.gifv?$', '\g<1>.mp4', post['url'])
+        elif re.match(r'^https?://imgur.com/[^/]+$', post['url']):
+            typ = 'photo'
+            post['url'] += '.png'
+        elif re.match(r'^https?://imgur.com/r/[^/]+/[^/]+$', post['url']):
+            typ = 'photo'
+            post['url'] = re.sub(r'^https?://imgur.com/r/[^/]+/([^/]+)$',
+                                 r'https://imgur.com/\g<1>.png',
+                                 post['url'])
+        elif post['domain'] == 'gfycat.com':
+            typ = 'video'
+            post['url'] = re.sub(r'https?://gfycat.com/(.+)',
+                                 r'https://thumbs.gfycat.com/\g<1>-size_restricted.gif',
+                                 post['url'])
         else:
             typ = 'link'
+        self.logger.debug('Url:     ' + post['url'])
+        self.logger.debug('Type:    ' + typ + '\n')
         return RedditPost(
             id=post['id'],
             title=post['title'],
