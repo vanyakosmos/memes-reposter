@@ -4,26 +4,6 @@ import logging
 from dotenv import load_dotenv, find_dotenv
 
 load_dotenv(find_dotenv())
-"""
-With ``dotenv`` you can create `.env` file in the same directory and setup your own environmental variables.
-Example of `.env` file:
-
-    DEBUG=true
-    
-    # telegram
-    BOT_TOKEN=12345:12345
-    
-    # imgur
-    IMGUR_CLIENT_ID=12345
-    
-    # heroku
-    APP_NAME=bla-bla
-    PORT=5000
-    REDIS_URL=redis://127.0.0.1:6379/0
-    
-    # setup
-    ADMIN=12345
-"""
 
 
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
@@ -49,48 +29,50 @@ logging.addLevelName(logging.WARNING,   '🤔 WARNING')
 logging.addLevelName(logging.ERROR,     '🚨 ERROR')
 
 
+# telegram
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+IMGUR_CHANNEL_ID = os.getenv('CHANNEL_TELEMGUR')
+REDDIT_CHANNEL_ID = os.getenv('CHANNEL_SUBREDDIT')
+if DEBUG:
+    IMGUR_CHANNEL_ID = os.getenv('CHANNEL_TEST')
+    REDDIT_CHANNEL_ID = os.getenv('CHANNEL_TEST')
+
+
 # heroku
 HEROKU_APP_NAME = os.getenv('APP_NAME')
 HEROKU_PORT = int(os.getenv('PORT', '5000'))
+HOST = os.getenv('HOST', '0.0.0.0')
 
 
 # database
 REDIS_URL = os.getenv("REDIS_URL")
 
 
-# imgur
-IMGUR_CLIENT_ID = os.getenv('IMGUR_CLIENT_ID')
-REDDIT_NAME = os.getenv('REDDIT_NAME')
-FETCH_LIMIT = int(os.getenv('FETCH_LIMIT'))
+# misc
+LIST_OF_ADMINS = [int(os.getenv('ADMIN')), ]
+FETCH_LIMIT = int(os.getenv('FETCH_LIMIT')) if DEBUG else 100
 
 
-# telegram
-TELEMGUR_CHANNEL_ID = os.getenv('CHANNEL_TELEMGUR')
-SUBREDDIT_CHANNEL_ID = os.getenv('CHANNEL_SUBREDDIT')
-if DEBUG:
-    TELEMGUR_CHANNEL_ID = os.getenv('CHANNEL_TEST')
-    SUBREDDIT_CHANNEL_ID = os.getenv('CHANNEL_TEST')
-BOT_TOKEN = os.getenv('BOT_TOKEN')
+reddit_settings = {
+    'channel_id': REDDIT_CHANNEL_ID,
+    'username': os.getenv('REDDIT_NAME'),
+    'post_interval': eval(os.getenv('REDDIT_POST_INTERVAL', '20 * 60')),
+    'db_clear_age': eval(os.getenv('REDDIT_DB_CLEAR_AGE', '1 * 24 * 60 * 60')),
+    'db_clear_interval': eval(os.getenv('REDDIT_DB_CLEAR_INTERVAL', '1 * 24 * 60 * 60')),
+}
 
+imgur_settings = {
+    'channel_id': IMGUR_CHANNEL_ID,
+    'client_id': os.getenv('IMGUR_CLIENT_ID'),
+    'post_interval': eval(os.getenv('IMGUR_POST_INTERVAL', '20 * 60')),
+    'db_clear_age': eval(os.getenv('IMGUR_DB_CLEAR_AGE', '1 * 24 * 60 * 60')),
+    'db_clear_interval': eval(os.getenv('IMGUR_DB_CLEAR_INTERVAL', '1 * 24 * 60 * 60')),
+    'max_video_size': eval(os.getenv('MAX_VIDEO_SIZE')),
+    'max_image_size': eval(os.getenv('MAX_IMAGE_SIZE')),
+    'min_dim_ratio': eval(os.getenv('MIN_DIM_RATIO')),
+}
 
-# scheduler
-CHECK_INTERVAL = eval(os.getenv('CHECK_INTERVAL'))
-POSTING_INTERVAL = eval(os.getenv('POSTING_INTERVAL'))
-CLEARING_DB_INTERVAL = eval(os.getenv('CLEARING_DB_INTERVAL'))
-
-
-# filter
+# move in-store settings
 BANNED_TAGS = eval(os.getenv('BANNED_TAGS'))
 IMAGES_PER_POST = int(os.getenv('IMAGES_PER_POST'))
 IMAGES_FOR_LONG_POST = int(os.getenv('IMAGES_FOR_LONG_POST'))
-MAX_VIDEO_SIZE = eval(os.getenv('MAX_VIDEO_SIZE'))
-MAX_IMAGE_SIZE = eval(os.getenv('MAX_IMAGE_SIZE'))
-MIN_DIM_RATIO = eval(os.getenv('MIN_DIM_RATIO'))
-
-
-# publisher
-POST_TIMEOUT = int(os.getenv('POST_TIMEOUT'))
-
-
-# setup
-LIST_OF_ADMINS = [int(os.getenv('ADMIN')), ]
