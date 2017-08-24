@@ -1,5 +1,4 @@
 import logging
-from typing import Dict
 
 from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
@@ -15,7 +14,7 @@ class Manager(object):
         self.updater = Updater(token)
         self.dispatcher = self.updater.dispatcher
 
-        self.channels: Dict[str, BaseChannel] = {}
+        self.channels = {}
         self.chosen_channel = None
         self.admins = admins
 
@@ -60,7 +59,7 @@ class Manager(object):
                "/list - print list of available channels.\n"
         if self.chosen_channel:
             channel_help = self.chosen_channel.help_text() or ' - no commands'
-            text += f"\n`{self.chosen_channel.label} ({self.chosen_channel.name})` commands:\n" + channel_help
+            text += f"\n`{self.chosen_channel.label} ({self.chosen_channel.channel_id})` commands:\n" + channel_help
         bot.send_message(chat_id=update.message.chat_id,
                          text=text)
 

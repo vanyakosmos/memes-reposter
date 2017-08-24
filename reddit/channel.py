@@ -1,7 +1,7 @@
 from typing import List
 
 from telegram import Bot, Update, ParseMode
-from telegram.ext import Updater, CommandHandler
+from telegram.ext import CommandHandler
 
 from core.channel import BaseChannel
 from settings import REDIS_URL, REDDIT_CHANNEL_ID
@@ -17,15 +17,18 @@ class RedditChannel(BaseChannel):
             CommandHandler('remove', self.command_remove, pass_args=True),
             CommandHandler('show', self.command_list),
         ]
-        self.name = REDDIT_CHANNEL_ID
         self.store = RedditStore('reddit',
                                  url=REDIS_URL,
                                  clear_age=1 * 60 * 60)  # fixme: clear age and interval must be in one place (?)
+        self.pipes = [RedditPipe()]
+
+    def get_channel_id(self):
+        return REDDIT_CHANNEL_ID
 
     def start(self):
-        pipe = RedditPipe()
-        pipe.set_up(self.name, self.updater, self.store)
-        pipe.start_posting_cycle()
+        for pipe in self.pipes:
+            pipe.set_up(self.channel_id, self.updater, self.store)
+            pipe.start_posting_cycle()
 
     def help_text(self):
         lines = [

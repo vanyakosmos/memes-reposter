@@ -16,11 +16,14 @@ class BaseChannel(object):
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.label = self.__class__.__name__
-        self.name = '@' + self.label
+        self.channel_id = self.get_channel_id()
         self.pipes: List[BasePipe] = []
         self.updater = None
         self.dispatcher = None
         self.commands_handlers = []
+
+    def get_channel_id(self):
+        raise NotImplementedError('Specify channel id. Name must be started with "@".')
 
     def set_up(self, updater: Updater):
         self.updater = updater
@@ -31,7 +34,7 @@ class BaseChannel(object):
         Schedule posting for each pipe.
         """
         for pipe in self.pipes:
-            pipe.set_up(self.name, self.updater)
+            pipe.set_up(self.channel_id, self.updater)
             pipe.start_posting_cycle()
 
     def add_commands_handlers(self):
