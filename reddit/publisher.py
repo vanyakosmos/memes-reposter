@@ -1,3 +1,4 @@
+from telegram import MAX_CAPTION_LENGTH
 from telegram.ext import Updater
 
 from core.publisher import BasePublisher
@@ -33,12 +34,8 @@ class RedditPublisher(BasePublisher):
                                   chat_id=self.channel_id,
                                   timeout=self.timeout)
         else:
-            lines = [
-                post.title,
-                # post.comments,
-                '#' + post.subreddit + ' ' + post.comments
-            ]
-            caption = self.cut_text('\n'.join(lines))
+            title = self.cut_text(post.title, limit=MAX_CAPTION_LENGTH-len(post.subreddit)-len(post.comments)-5)
+            caption = title + '\n' + '#' + post.subreddit + ' ' + post.comments
             kwargs = {
                 'caption': caption,
                 'chat_id': self.channel_id,
@@ -49,7 +46,7 @@ class RedditPublisher(BasePublisher):
             elif post.type == 'video':
                 self.bot.send_video(video=post.url, **kwargs)
 
-    def cut_text(self, text: str, limit=200):
+    def cut_text(self, text: str, limit=MAX_CAPTION_LENGTH):
         if text is None:
             return ''
         elif len(text) > limit:
