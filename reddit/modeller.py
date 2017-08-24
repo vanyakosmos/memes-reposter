@@ -1,11 +1,11 @@
 from typing import List
 
-from telegram_autoposter.modeller import Modeller
+from core.modeller import BaseModeller
 
 from .models import Post
 
 
-class RedditModeller(Modeller):
+class RedditModeller(BaseModeller):
     def model(self, subreddits, *args, **kwargs) -> List[List[Post]]:
         self.logger.debug('Modelling...')
         result = []

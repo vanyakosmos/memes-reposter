@@ -1,30 +1,30 @@
-from telegram_autoposter.pipes import Pipe
-
 from telegram.ext import Updater
 
-from settings import reddit_settings
+from core.pipe import BasePipe
 from .fetcher import RedditFetcher
 from .filters import ScoreFilter, UniqueFilter
 from .modeller import RedditModeller
-from .poster import RedditPoster
-from .store import Store
+from .publisher import RedditPublisher
+from .store import RedditStore
 
 
-class RedditPipe(Pipe):
-    post_interval = 30
+class RedditPipe(BasePipe):
     modeller_class = RedditModeller
-    poster_class = RedditPoster
 
-    def __init__(self, channel_id: str, updater: Updater, store: Store):
-        super().__init__(channel_id, updater)
-        self.store = store
+    def __init__(self):
+        super().__init__()
+        self.store = None
         self.limits = []
+        self.post_interval = 60
 
-    def pre_schedule_hook(self):
-        self.post_interval = int(self.store.get_setting('post_interval'))
-        self.scheduler.add_job(self.store.clear, reddit_settings['db_clear_interval'])
+    def set_up(self, channel_id: str, updater: Updater, store: RedditStore):
+        self.store = store
+        super(RedditPipe, self).set_up(channel_id, updater)
 
-    def pre_post_hook(self):
+    def pre_cycle_hook(self):
+        self.scheduler.run_repeating(self.store.clear_ids, interval=2 * 60 * 60, first=0)
+
+    def pre_fetch_hook(self):
         self.set_limits()
 
     def set_limits(self):
@@ -33,29 +33,18 @@ class RedditPipe(Pipe):
         for name, score in limits.items():
             self.limits.append((name, score))
 
-    def fetch_data(self):
+    def fetch(self):
         subreddits = []
         fetcher = RedditFetcher()
         for name, score in self.limits:
             subreddits.append(fetcher.fetch(name))
         return subreddits
 
-    def filter_data(self, subreddits):
-        score_filter = ScoreFilter()
-        unique_filter = UniqueFilter()
+    def get_pre_filters(self):
+        return [UniqueFilter(self.store)]
 
-        posts = []
-        self.logger.debug(f'posts size: {sum([len(s) for s in subreddits])}')
+    def get_post_filters(self):
+        return [ScoreFilter(self.limits)]
 
-        for i, subreddit in enumerate(subreddits):
-            filtered = score_filter.filter(subreddit, self.limits[i][1])
-            posts.extend(filtered)
-        self.logger.debug(f'posts size: {len(posts)}')
-
-        posts = unique_filter.filter(posts, self.store)
-        self.logger.debug(f'posts size: {len(posts)}')
-        return posts
-
-    def post_data(self, data):
-        poster = RedditPoster(self.channel_id, self.updater, self.store)
-        poster.post(data)
+    def get_publisher(self):
+        return RedditPublisher(self.channel_id, self.updater, self.store)

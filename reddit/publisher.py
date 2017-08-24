@@ -1,42 +1,46 @@
-from typing import List
-
-from telegram_autoposter.poster import Poster
 from telegram.ext import Updater
 
+from core.publisher import BasePublisher
+from core.store import IdStore
 from .models import Post
-from .store import Store
 
 
-class RedditPoster(Poster):
-    timeout = 30  # seconds
-
-    def __init__(self, channel_id: str, updater: Updater, store: Store):
+class RedditPublisher(BasePublisher):
+    def __init__(self, channel_id: str, updater: Updater, store: IdStore):
         super().__init__(channel_id, updater)
         self.store = store
+        self.timeout = 60  # seconds
 
-    def post(self, posts: List[Post], *args, **kwargs):
-        for post in posts:
-            try:
-                self.post_one(post)
-            except Exception as e:
-                self.logger.error(e)
+    def publish(self, post: Post, *args, **kwargs):
+        self.store.save_id(post.id)
+        self.logger.debug(post)
+
+        try:
+            self.post_one(post)
+        except Exception as e:
+            self.logger.error(e)
 
     def post_one(self, post: Post):
-        self.logger.debug(post)
-        self.store.save_id(post.id)
-
         if post.type == 'link':
-            text = post.title
-            text += '\n' + post.url
-            text += '\n#' + post.subreddit + ' ' + post.comments
-            self.bot.send_message(text=text,
+            lines = [
+                post.title,
+                post.url,
+                # post.comments,
+                '#' + post.subreddit + ' ' + post.comments
+            ]
+            caption = '\n'.join(lines)
+            self.bot.send_message(text=caption,
                                   chat_id=self.channel_id,
                                   timeout=self.timeout)
         else:
-            text = self.cut_text(post.title)
-            text += '\n#' + post.subreddit + ' ' + post.comments
+            lines = [
+                post.title,
+                # post.comments,
+                '#' + post.subreddit + ' ' + post.comments
+            ]
+            caption = self.cut_text('\n'.join(lines))
             kwargs = {
-                'caption': text,
+                'caption': caption,
                 'chat_id': self.channel_id,
                 'timeout': self.timeout,
             }

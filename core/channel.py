@@ -7,8 +7,6 @@ from core.pipe import BasePipe
 
 
 class BaseChannel(object):
-    pipes: List[BasePipe] = []
-
     def __init__(self):
         """
         - name: name of channel in telegram. **Must** starts with "@".
@@ -19,6 +17,7 @@ class BaseChannel(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.label = self.__class__.__name__
         self.name = '@' + self.label
+        self.pipes: List[BasePipe] = []
         self.updater = None
         self.dispatcher = None
         self.commands_handlers = []
