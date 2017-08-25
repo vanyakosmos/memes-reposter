@@ -1,6 +1,6 @@
 from core.channel import BaseChannel
 from core.decorators import log
-from settings import REDIS_URL, IMGUR_CHANNEL_ID
+from settings import REDIS_URL, IMGUR_CHANNEL_ID, CLEAR_AGE
 from .pipes import ImgurPipe
 from .store import ImgurStore
 from .settings import ImgurSettings
@@ -12,7 +12,7 @@ class ImgurChannel(BaseChannel):
         super().__init__()
         self.store = ImgurStore('imgur',
                                 url=REDIS_URL,
-                                clear_age=2 * 24 * 60 * 60)
+                                clear_age=CLEAR_AGE)
         self.settings = ImgurSettings(self.store)
 
         self.commanders = [

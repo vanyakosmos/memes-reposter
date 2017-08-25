@@ -1,5 +1,6 @@
 from telegram.ext import Updater
 
+from settings import CLEAR_INTERVAL
 from core.pipe import BasePipe
 from core.decorators import log
 from .fetcher import RedditFetcher
@@ -24,7 +25,7 @@ class RedditPipe(BasePipe):
 
     @log
     def pre_cycle_hook(self):
-        self.scheduler.run_repeating(self.store.clear_ids, interval=2 * 60 * 60, first=0)
+        self.scheduler.run_repeating(self.store.clear_ids, interval=CLEAR_INTERVAL, first=0)
 
     @log
     def pre_fetch_hook(self):

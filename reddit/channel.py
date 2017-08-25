@@ -5,7 +5,7 @@ from telegram.ext import CommandHandler
 
 from core.channel import BaseChannel
 from core.decorators import log
-from settings import REDIS_URL, REDDIT_CHANNEL_ID
+from settings import REDIS_URL, REDDIT_CHANNEL_ID, CLEAR_AGE
 from .pipes import RedditPipe
 from .store import RedditStore
 
@@ -20,7 +20,7 @@ class RedditChannel(BaseChannel):
         ]
         self.store = RedditStore('reddit',
                                  url=REDIS_URL,
-                                 clear_age=1 * 60 * 60)  # fixme: clear age and interval must be in one place (?)
+                                 clear_age=CLEAR_AGE)
 
     def get_channel_id(self):
         return REDDIT_CHANNEL_ID
