@@ -8,6 +8,7 @@ from .filters import ScoreFilter, UniqueFilter
 from .modeller import RedditModeller
 from .publisher import RedditPublisher
 from .store import RedditStore
+from .settings import RedditSettings
 
 
 class RedditPipe(BasePipe):
@@ -16,15 +17,18 @@ class RedditPipe(BasePipe):
     def __init__(self):
         super().__init__()
         self.store = None
+        self.settings = None
         self.limits = []
         self.post_interval = 60
 
-    def set_up(self, channel_id: str, updater: Updater, store: RedditStore):
+    def set_up(self, channel_id: str, updater: Updater, store: RedditStore, settings: RedditSettings):
         self.store = store
+        self.settings = settings
         super(RedditPipe, self).set_up(channel_id, updater)
 
     @log
     def pre_cycle_hook(self):
+        self.post_interval = self.settings.post_interval
         self.scheduler.run_repeating(self.store.clear_ids, interval=CLEAR_INTERVAL, first=0)
 
     @log

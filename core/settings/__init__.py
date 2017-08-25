@@ -40,6 +40,7 @@ class Settings(object):
             raise SettingsError('Unknown setting.')
         field = self.fields[key]
         if field.valid(value):
+            value = field.modify(value)
             self.store.set_setting(key, value)
             self._settings[key] = value
             setattr(self, key, value)

@@ -34,7 +34,7 @@ class RedditChannel(BaseChannel):
     @log
     def start(self):
         for pipe in self.pipes:
-            pipe.set_up(self.channel_id, self.updater, self.store)
+            pipe.set_up(self.channel_id, self.updater, self.store, self.settings)
             pipe.start_posting_cycle()
 
     def help_text(self):
