@@ -4,7 +4,8 @@ from settings import REDIS_URL, IMGUR_CHANNEL_ID, CLEAR_AGE
 from .pipes import ImgurPipe
 from .store import ImgurStore
 from .settings import ImgurSettings
-from .commands import TagsCommander, SettingsCommander
+from core.commands import SettingsCommander
+from .commands import TagsCommander
 
 
 class ImgurChannel(BaseChannel):
@@ -16,19 +17,19 @@ class ImgurChannel(BaseChannel):
         self.settings = ImgurSettings(self.store)
 
         self.commanders = [
-            TagsCommander(self.store),
-            SettingsCommander(self.settings, restart_callback=self.start),
+            TagsCommander('tags', self.store),
+            SettingsCommander('sets', self.settings, restart_callback=self.start),
         ]
-
-    @property
-    def commands_handlers(self):
-        return [commander.handler for commander in self.commanders]
 
     def get_channel_id(self):
         return IMGUR_CHANNEL_ID
 
     def get_pipes(self):
         return [ImgurPipe()]
+
+    @property
+    def commands_handlers(self):
+        return [commander.handler for commander in self.commanders]
 
     @log
     def start(self):
@@ -37,8 +38,4 @@ class ImgurChannel(BaseChannel):
             pipe.start_posting_cycle()
 
     def help_text(self):
-        usages = [
-            commander.get_usage()
-            for commander in self.commanders
-        ]
-        return '\n'.join(usages)
+        return '\n'.join([c.get_usage() for c in self.commanders])

@@ -5,11 +5,11 @@ from telegram.ext import CommandHandler
 
 from core.decorators import log
 from core.commands import Commander, ArgParser
-from .store import ImgurStore
+from .store import RedditStore
 
 
-class TagsCommander(Commander):
-    def __init__(self, name, store: ImgurStore):
+class SubredditsCommander(Commander):
+    def __init__(self, name, store: RedditStore):
         super().__init__(name)
         self._handler = CommandHandler(self.name, self.callback, pass_args=True)
         self.store = store
@@ -19,18 +19,18 @@ class TagsCommander(Commander):
 
         # add
         parser_add = self.get_sub_command(subparsers, 'add',
-                                          help='add new tags',
-                                          usage='<tag> [<tag>]*')
-        parser_add.add_argument('tags', nargs='*')
+                                          help='update (add/edit) subreddit',
+                                          usage='<name> <score limit>')
+        parser_add.add_argument('keys', nargs=2)
 
         # remove
         parser_remove = self.get_sub_command(subparsers, 'remove', aliases=['delete'],
-                                             help='remove tags',
-                                             usage='<tag> [<tag>]*')
-        parser_remove.add_argument('tags', nargs='*')
+                                             help='remove subreddits',
+                                             usage='<name> [<name>]*')
+        parser_remove.add_argument('keys', nargs='+')
 
         # show
-        self.get_sub_command(subparsers, 'show', help='show list of banned tags')
+        self.get_sub_command(subparsers, 'show', help='show list of subreddits and its score limits')
 
         return parser
 
@@ -40,11 +40,11 @@ class TagsCommander(Commander):
 
         elif args.command == 'add':
             usage = self.subparsers['add'].format_usage()
-            self.add(bot, update, args.tags, usage)
+            self.add(bot, update, args.keys, usage)
 
         elif args.command in ['remove', 'delete']:
             usage = self.subparsers['remove'].format_usage()
-            self.remove(bot, update, args.tags, usage)
+            self.remove(bot, update, args.keys, usage)
 
         elif args.command == 'show':
             self.show(bot, update)
@@ -56,24 +56,37 @@ class TagsCommander(Commander):
     @log
     def show(self, bot: Bot, update: Update):
         del bot
-        tags = self.store.get_tags()
-        tags = [f'` - {tag}`' for tag in tags]
-        tags = '\n'.join(tags)
-        text = 'Banned tags:\n' + tags
+        subreddits = self.store.get()
+        title = 'subreddit'.ljust(13)
+        text = f"`{title} limit score`\n"
+
+        for name, score in subreddits.items():
+            text += f'` - {name:10s} {score}`\n'
         update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
     @log
-    def add(self, bot: Bot, update: Update, tags: List[str], usage):
-        if len(tags) == 0:
+    def add(self, bot: Bot, update: Update, args: List[str], usage: str):
+        if len(args) != 2:
             self.send_code(update, usage)
             return
-        self.store.add_tags(tags)
+
+        subreddits = {}
+        name, score = args
+        if score.isdecimal():
+            score = int(score)
+        else:
+            self.send_code(update, usage)
+            return
+        subreddits[name] = score
+
+        self.store.add(subreddits)
         self.show(bot, update)
 
     @log
-    def remove(self, bot: Bot, update: Update, tags: List[str], usage):
-        if len(tags) == 0:
+    def remove(self, bot: Bot, update: Update, args: List[str], usage: str):
+        if len(args) < 1:
             self.send_code(update, usage)
             return
-        self.store.remove_tags(tags)
+
+        self.store.remove(args)
         self.show(bot, update)

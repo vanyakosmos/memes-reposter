@@ -1,5 +1,4 @@
 import os
-import socket
 from dotenv import load_dotenv, find_dotenv
 
 from settings.logging import set_up_logging
@@ -7,7 +6,6 @@ from settings.logging import set_up_logging
 load_dotenv(find_dotenv())
 
 
-print('hostname', socket.gethostname())
 DEBUG = os.getenv('DEBUG', 'true').lower() == 'true'
 
 
@@ -38,11 +36,10 @@ HOST = os.getenv('HOST', '0.0.0.0')
 
 # database
 REDIS_URL = os.getenv("REDIS_URL")
+CLEAR_AGE = eval(os.getenv("CLEAR_AGE", '2 * 24 * 60 * 60'))
+CLEAR_INTERVAL = eval(os.getenv("CLEAR_INTERVAL", '2 * 24 * 60 * 60'))
 
 
 # misc
 ADMINS = eval(os.getenv('ADMINS', '[]'))
 FETCH_LIMIT = int(os.getenv('FETCH_LIMIT', '3')) if DEBUG else 100
-
-
-print(locals())

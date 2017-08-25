@@ -11,7 +11,7 @@ class ArgParser(argparse.ArgumentParser):
         msg = 'Error:\n'
         msg += self.format_usage()
         msg += message
-        raise Exception(msg)
+        raise argparse.ArgumentError(msg)
 
 
 class HelpAction(argparse.Action):
@@ -31,15 +31,12 @@ class HelpAction(argparse.Action):
 
 
 class Commander(object):
-    def __init__(self):
+    def __init__(self, name):
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.name = self.get_name()
+        self.name = name
         self._handler = CommandHandler(self.name, self.callback, pass_args=True)
         self.subparsers = {}
         self.parser = self.get_parser()
-
-    def get_name(self) -> str:
-        raise NotImplementedError('Specify commander\'s name.')
 
     @property
     def handler(self):
@@ -71,9 +68,10 @@ class Commander(object):
     def callback(self, bot: Bot, update: Update, args: List[str]):
         try:
             args = self.parser.parse_args(args)
-            self.distribute(bot, update, args)
-        except Exception as e:
+        except argparse.ArgumentError as e:
             self.send_code(update, str(e))
+            return
+        self.distribute(bot, update, args)
 
     def send_code(self, update: Update, text: str):
         update.message.reply_text('```\n' + text + '\n```', parse_mode=ParseMode.MARKDOWN)
