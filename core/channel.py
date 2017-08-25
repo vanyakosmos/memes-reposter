@@ -4,6 +4,7 @@ from typing import List
 from telegram.ext import Updater
 
 from core.pipe import BasePipe
+from core.decorators import log
 
 
 class BaseChannel(object):
@@ -29,6 +30,7 @@ class BaseChannel(object):
         self.updater = updater
         self.dispatcher = updater.dispatcher
 
+    @log
     def start(self):
         """
         Schedule posting for each pipe.
@@ -37,6 +39,7 @@ class BaseChannel(object):
             pipe.set_up(self.channel_id, self.updater)
             pipe.start_posting_cycle()
 
+    @log
     def add_commands_handlers(self):
         """
         Used by manager class when changing channel command namespace.
@@ -44,6 +47,7 @@ class BaseChannel(object):
         for handler in self.commands_handlers:
             self.dispatcher.add_handler(handler)
 
+    @log
     def remove_commands_handlers(self):
         """
         Used by manager class when changing channel command namespace.

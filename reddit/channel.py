@@ -4,6 +4,7 @@ from telegram import Bot, Update, ParseMode
 from telegram.ext import CommandHandler
 
 from core.channel import BaseChannel
+from core.decorators import log
 from settings import REDIS_URL, REDDIT_CHANNEL_ID
 from .pipes import RedditPipe
 from .store import RedditStore
@@ -25,6 +26,7 @@ class RedditChannel(BaseChannel):
     def get_channel_id(self):
         return REDDIT_CHANNEL_ID
 
+    @log
     def start(self):
         for pipe in self.pipes:
             pipe.set_up(self.channel_id, self.updater, self.store)
@@ -40,6 +42,7 @@ class RedditChannel(BaseChannel):
 
         return '\n'.join([' - ' + line for line in lines])
 
+    @log
     def command_add(self, bot: Bot, update: Update, args: List[str]):
         usage_string = ('Nothing was added.\n'
                         'Usage: `/add <subreddit> <score_limit> [<subreddit> <score_limit>]*`')
@@ -61,6 +64,7 @@ class RedditChannel(BaseChannel):
         self.store.add(subreddits)
         self.command_list(bot, update)
 
+    @log
     def command_remove(self, bot: Bot, update: Update, args: List[str]):
         if len(args) == 0 or len(args) < 1:
             update.message.reply_text('Usage: /remove <subreddit> [<subreddit> ...]')
@@ -69,6 +73,7 @@ class RedditChannel(BaseChannel):
         self.store.remove(args)
         self.command_list(bot, update)
 
+    @log
     def command_list(self, bot: Bot, update: Update):
         del bot
         subreddits = self.store.get()

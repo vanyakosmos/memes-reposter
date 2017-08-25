@@ -3,6 +3,8 @@ from time import time
 
 import redis
 
+from core.decorators import log
+
 
 class IdStore(object):
     def save_id(self, id):
@@ -38,12 +40,15 @@ class RedisStore(IdStore, SettingsStore):
         self.key_settings = self.prefix + ':settings'
 
     # ids
+    @log
     def save_id(self, id):
         self.client.hset(self.key_ids, id, time())
 
+    @log
     def has_id(self, id):
         return self.client.hexists(self.key_ids, id)
 
+    @log
     def clear_ids(self):
         self.logger.info('Clearing database...')
         now = time()
@@ -56,13 +61,16 @@ class RedisStore(IdStore, SettingsStore):
         self.logger.info(f'Deleted: {len(old_posts)}.')
 
     # settings
+    @log
     def set_setting(self, key, value):
         self.client.hset(self.key_settings, key, value)
 
+    @log
     def get_setting(self, key):
         res = self.client.hget(self.key_settings, key)
         return res and res.decode('utf-8')
 
+    @log
     def get_settings(self):
         sets = self.client.hgetall(self.key_settings)
         res = {}

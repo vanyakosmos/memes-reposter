@@ -1,7 +1,7 @@
-from core.pipe import BasePipe
-
 from telegram.ext import Updater
 
+from core.pipe import BasePipe
+from core.decorators import log
 from .fetchers import GalleryFetcher
 from .filters import UniqueFilter, SizeFilter, TagsFilter
 from .modeller import ImgurModeller
@@ -24,18 +24,23 @@ class ImgurPipe(BasePipe):
         self.store = store
         self.settings = settings
 
+    @log
     def pre_cycle_hook(self):
         self.post_interval = self.settings.post_interval
         self.scheduler.run_repeating(self.store.clear_ids, interval=2 * 24 * 60 * 60, first=0)
 
+    @log
     def get_pre_filters(self):
         return [UniqueFilter(self.store)]
 
+    @log
     def get_modeller(self):
         return ImgurModeller(self.settings)
 
+    @log
     def get_post_filters(self):
         return [TagsFilter(self.store), SizeFilter()]
 
+    @log
     def get_publisher(self):
         return ImgurPublisher(self.channel_id, self.updater, self.store)

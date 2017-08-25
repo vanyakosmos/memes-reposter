@@ -4,7 +4,7 @@ from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
 
 from core.channel import BaseChannel
-from core.decorators import admin_access
+from core.decorators import admin_access, log
 
 
 class Manager(object):
@@ -18,10 +18,12 @@ class Manager(object):
         self.chosen_channel = None
         self.admins = admins
 
+    @log
     def register(self, channel: BaseChannel):
         channel.set_up(self.updater)
         self.channels[channel.label] = channel
 
+    @log
     def activate(self):
         for label, channel in self.channels.items():
             channel.start()
@@ -52,6 +54,7 @@ class Manager(object):
         self.updater.bot.set_webhook(webhook_url)
         self.updater.idle()
 
+    @log
     @admin_access()
     def command_help(self, bot: Bot, update: Update):
         text = "/help or /start - print this message.\n" \
@@ -63,6 +66,7 @@ class Manager(object):
         bot.send_message(chat_id=update.message.chat_id,
                          text=text)
 
+    @log
     @admin_access()
     def command_list(self, bot: Bot, update: Update):
         del bot
@@ -71,6 +75,7 @@ class Manager(object):
             text += f' - {label} ({channel.name})\n'
         update.message.reply_text(text)
 
+    @log
     @admin_access()
     def command_choose(self, bot: Bot, update: Update):
         channels = []
@@ -85,6 +90,7 @@ class Manager(object):
                          text='Choose channel.',
                          reply_markup=reply_markup)
 
+    @log
     @admin_access()
     def command_accept_choice(self, bot: Bot, update: Update):
         query = update.callback_query
@@ -98,6 +104,7 @@ class Manager(object):
         update.message = query.message  # because callback update doesn't have message at all,
         self.command_help(bot, update)  # whereas command_help use message.chat_id
 
+    @log
     def command_error(self, bot: Bot, update: Update, error):
         del bot
         self.logger.warning('Update "%s" caused error "%s"' % (update, error))

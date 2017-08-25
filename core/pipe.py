@@ -8,6 +8,7 @@ from core.filter import BaseFilter
 from core.modeller import BaseModeller
 from core.publisher import BasePublisher
 from core.scheduler import Scheduler
+from core.decorators import log
 
 
 class BasePipe(object):
@@ -22,83 +23,102 @@ class BasePipe(object):
         self.updater = None
         self.scheduler = None
 
+    @log
     def set_up(self, channel_id: str, updater: Updater):
         self.channel_id = channel_id
         self.updater = updater
         self.scheduler = Scheduler(self.updater.job_queue)
 
+    @log
     def start_posting_cycle(self):
         self.scheduler.stop()
         self.pre_cycle_hook()
         self.scheduler.run_once(self._fetch, 0)
 
+    @log
     def pre_cycle_hook(self):
         pass
 
     # fetch
+    @log
     def _fetch(self):
         self.pre_fetch_hook()
         data = self.fetch()
         self._pre_model_filter(data)
 
+    @log
     def fetch(self):
         fetcher = self.get_fetcher()
         return fetcher.fetch()
 
+    @log
     def get_fetcher(self) -> BaseFetcher:
         return self.fetcher_class()
 
+    @log
     def pre_fetch_hook(self):
         pass
 
     # pre model filter
+    @log
     def _pre_model_filter(self, data):
-        data = self.pre_model_filtration(data)
+        data = self.pre_model_filter(data)
         self._model(data)
 
-    def pre_model_filtration(self, data):
+    @log
+    def pre_model_filter(self, data):
         filters = self.get_pre_filters()
         for flr in filters:
             data = flr.filter(data)
         return data
 
+    @log
     def get_pre_filters(self) -> List[BaseFilter]:
         return []
 
     # model
+    @log
     def _model(self, data):
         posts = self.model(data)
         self._post_model_filter(posts)
 
+    @log
     def model(self, data):
         modeller = self.get_modeller()
         return modeller.model(data)
 
+    @log
     def get_modeller(self) -> BaseModeller:
         return self.modeller_class()
 
     # post model filter
+    @log
     def _post_model_filter(self, posts):
         posts = self.post_model_filter(posts)
         self._publish(posts)
 
+    @log
     def post_model_filter(self, posts):
         filters = self.get_post_filters()
         for flr in filters:
             posts = flr.filter(posts)
         return posts
 
+    @log
     def get_post_filters(self) -> List[BaseFilter]:
         return []
 
     # publish
+    @log
     def _publish(self, posts):
         publisher = self.get_publisher()
         self.schedule_posts(publisher, posts)
 
+    @log
     def get_publisher(self) -> BasePublisher:
         return self.publisher_class(self.channel_id, self.updater)
 
+    @log
     def schedule_posts(self, publisher: BasePublisher, posts: list):
         """
         Recursively post item and schedule posting for next one.

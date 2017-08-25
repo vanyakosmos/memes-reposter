@@ -1,6 +1,7 @@
 from telegram.ext import Updater
 
 from core.pipe import BasePipe
+from core.decorators import log
 from .fetcher import RedditFetcher
 from .filters import ScoreFilter, UniqueFilter
 from .modeller import RedditModeller
@@ -21,9 +22,11 @@ class RedditPipe(BasePipe):
         self.store = store
         super(RedditPipe, self).set_up(channel_id, updater)
 
+    @log
     def pre_cycle_hook(self):
         self.scheduler.run_repeating(self.store.clear_ids, interval=2 * 60 * 60, first=0)
 
+    @log
     def pre_fetch_hook(self):
         self.set_limits()
 
@@ -33,6 +36,7 @@ class RedditPipe(BasePipe):
         for name, score in limits.items():
             self.limits.append((name, score))
 
+    @log
     def fetch(self):
         subreddits = []
         fetcher = RedditFetcher()
@@ -40,11 +44,14 @@ class RedditPipe(BasePipe):
             subreddits.append(fetcher.fetch(name))
         return subreddits
 
+    @log
     def get_pre_filters(self):
         return [UniqueFilter(self.store)]
 
+    @log
     def get_post_filters(self):
         return [ScoreFilter(self.limits)]
 
+    @log
     def get_publisher(self):
         return RedditPublisher(self.channel_id, self.updater, self.store)

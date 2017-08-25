@@ -1,13 +1,17 @@
+import logging
+
 from functools import wraps
 from telegram import Bot, Update
 
 
-def admin_access():
+def admin_access(admins_list=None):
     def access(func):
         @wraps(func)
         def wrapped(self, bot: Bot, update: Update, *args, **kwargs):
             user = update.effective_user
-            admins = getattr(self, 'admins', None)
+            admins = None
+            if admins_list is None:
+                admins = getattr(self, 'admins', None)
 
             if admins is None:
                 self.logger.warning('Specify self.admins (list of users ids) parameter in '
@@ -21,3 +25,31 @@ def admin_access():
             return func(self, bot, update, *args, **kwargs)
         return wrapped
     return access
+
+
+def log(func):
+    logger = logging.getLogger(func.__module__)
+
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        logger.debug('Called ::' + func.__name__)
+        return func(self, *args, **kwargs)
+    return wrapper
+
+
+def mega_log(print_res=False, print_end=False):
+    def decorator(func):
+        logger = logging.getLogger(func.__module__)
+
+        @wraps(func)
+        def wrapped(self, *args, **kwargs):
+            logger.debug('Entering: %s', func.__name__)
+            result = func(self, *args, **kwargs)
+            if print_res:
+                logger.debug(result)
+            if print_end:
+                logger.debug('Exiting: %s', func.__name__)
+            return result
+
+        return wrapped
+    return decorator

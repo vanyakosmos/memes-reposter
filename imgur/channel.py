@@ -5,6 +5,7 @@ from telegram.ext import CommandHandler
 
 from core.settings import SettingsError
 from core.channel import BaseChannel
+from core.decorators import log
 from settings import REDIS_URL, IMGUR_CHANNEL_ID
 from .pipes import ImgurPipe
 from .store import ImgurStore
@@ -30,8 +31,8 @@ class ImgurChannel(BaseChannel):
     def get_channel_id(self):
         return IMGUR_CHANNEL_ID
 
+    @log
     def start(self):
-        self.logger.debug('start')
         for pipe in self.pipes:
             pipe.set_up(self.channel_id, self.updater, self.store, self.settings)
             pipe.start_posting_cycle()
@@ -46,6 +47,7 @@ class ImgurChannel(BaseChannel):
         ]
         return '\n'.join([' - ' + line for line in lines])
 
+    @log
     def command_get_tags(self, bot: Bot, update: Update):
         del bot
         tags = self.store.get_tags()
@@ -54,6 +56,7 @@ class ImgurChannel(BaseChannel):
         text = 'Banned tags:\n' + tags
         update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 
+    @log
     def command_add_tags(self, bot: Bot, update: Update, args: List[str]):
         help_msg = 'Usage: `/add_tags <tag> [<tag>]*`'
         if len(args) == 0:
@@ -62,6 +65,7 @@ class ImgurChannel(BaseChannel):
         self.store.add_tags(args)
         self.command_get_tags(bot, update)
 
+    @log
     def command_remove_tags(self, bot: Bot, update: Update, args: List[str]):
         help_msg = 'Usage: `/remove_tags <tag> [<tag>]*`'
         if len(args) == 0:
@@ -70,6 +74,7 @@ class ImgurChannel(BaseChannel):
         self.store.remove_tags(args)
         self.command_get_tags(bot, update)
 
+    @log
     def command_get_settings(self, bot: Bot, update: Update):
         del bot
         ss = []
@@ -80,6 +85,7 @@ class ImgurChannel(BaseChannel):
         msg = 'Settings list:\n' + ss
         update.message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
 
+    @log
     def command_change_setting(self, bot: Bot, update: Update, args: List[str]):
         help_msg = 'Usage: `/setting <key> <value>`'
         if len(args) != 2:
