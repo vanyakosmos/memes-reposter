@@ -26,10 +26,16 @@ class ImgurChannel(BaseChannel):
                                 url=REDIS_URL,
                                 clear_age=2 * 24 * 60 * 60)
         self.settings = ImgurSettings(self.store)
-        self.pipes = [ImgurPipe()]
+
+    @property
+    def commands_handlers(self):
+        return [commander.handler for commander in self.commanders]
 
     def get_channel_id(self):
         return IMGUR_CHANNEL_ID
+
+    def get_pipes(self):
+        return [ImgurPipe()]
 
     @log
     def start(self):

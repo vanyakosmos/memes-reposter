@@ -18,17 +18,24 @@ class BaseChannel(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.label = self.__class__.__name__
         self.channel_id = self.get_channel_id()
-        self.pipes: List[BasePipe] = []
+        self.pipes = self.get_pipes()
         self.updater = None
         self.dispatcher = None
-        self.commands_handlers = []
+        # self.commands_handlers = []
 
     def get_channel_id(self):
         raise NotImplementedError('Specify channel id. Name must be started with "@".')
 
+    def get_pipes(self) -> List[BasePipe]:
+        raise NotImplementedError('Specify list of pipes. Set up them in ::start method.')
+
     def set_up(self, updater: Updater):
         self.updater = updater
         self.dispatcher = updater.dispatcher
+
+    @property
+    def commands_handlers(self):
+        return []
 
     @log
     def start(self):

@@ -1,6 +1,6 @@
 import logging
 
-from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
 
 from core.channel import BaseChannel
@@ -98,11 +98,13 @@ class Manager(object):
             self.chosen_channel.remove_commands_handlers()
         self.chosen_channel: BaseChannel = self.channels[query.data]
         self.chosen_channel.add_commands_handlers()
-        bot.edit_message_text(text=f'Channel "{query.data}" was chosen.',
+        bot.edit_message_text(text=f'Chose {query.data} ({self.chosen_channel.channel_id}).',
                               chat_id=query.message.chat_id,
                               message_id=query.message.message_id)
-        update.message = query.message  # because callback update doesn't have message at all,
-        self.command_help(bot, update)  # whereas command_help use message.chat_id
+        update.message = query.message  # because callback update doesn't have message at all
+        help = self.chosen_channel.help_text()
+        update.message.reply_text('```\n' + help + '\n```', parse_mode=ParseMode.MARKDOWN)
+        # self.command_help(bot, update)  # whereas command_help use message.chat_id
 
     @log
     def command_error(self, bot: Bot, update: Update, error):
