@@ -18,7 +18,7 @@ class RedditChannel(BaseChannel):
 
         self.commanders = [
             SubredditsCommander('subs', self.store),
-            SettingsCommander('sets', self.settings, restart_callback=self.start),
+            SettingsCommander('sets', self.settings),
             ActivityCommander('act', self.store),
         ]
 

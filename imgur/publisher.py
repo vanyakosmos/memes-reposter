@@ -1,8 +1,7 @@
-from telegram import MAX_CAPTION_LENGTH
+from telegram import MAX_CAPTION_LENGTH, Message
 from telegram.ext import Updater
 
 from core.publisher import BasePublisher
-
 from core.store import IdStore
 from .models import Post, Image
 
@@ -12,30 +11,38 @@ class ImgurPublisher(BasePublisher):
         super().__init__(channel_id, updater)
         self.store = store
         self.timeout = 60
+        self.messages = []
 
-    def publish(self, post, *args, **kwargs):
+    def publish(self, post: Post, *args, **kwargs):
         self.store.save_id(post.id)
-        self.logger.debug(post)
+        self.logger.info('Posting: ' + str(post))
+        self.messages = []
 
         try:
             self.post_album(post)
         except Exception as e:
             self.logger.error(e)
+            self.logger.info(f'Deleting post: {post}')
+            for msg in self.messages:
+                self.logger.info(f'Deleting msg: {msg.message_id}')
+                msg.delete()
 
     def post_album(self, post: Post):
-        self.post_title(post)
+        msg = self.post_title(post)
+        self.messages.append(msg)
 
         for image in post.images:
-            self.post_image(image, post.is_album)
+            msg = self.post_image(image, post.is_album)
+            self.messages.append(msg)
 
-    def post_title(self, post: Post):
+    def post_title(self, post: Post) -> Message:
         text = self.format_header(post)
-        self.bot.send_message(chat_id=self.channel_id,
-                              text=text,
-                              disable_web_page_preview=True,
-                              timeout=self.timeout)
+        return self.bot.send_message(chat_id=self.channel_id,
+                                     text=text,
+                                     disable_web_page_preview=True,
+                                     timeout=self.timeout)
 
-    def post_image(self, image: Image, is_album):
+    def post_image(self, image: Image, is_album) -> Message:
         text = self.format_caption(image) if is_album else ''
         kwargs = {
             'caption': text,
@@ -44,9 +51,9 @@ class ImgurPublisher(BasePublisher):
             'timeout': self.timeout,
         }
         if image.animated:
-            self.bot.send_video(video=image.url, **kwargs)
+            return self.bot.send_video(video=image.url, **kwargs)
         else:
-            self.bot.send_photo(photo=image.url, **kwargs)
+            return self.bot.send_photo(photo=image.url, **kwargs)
 
     def post_single(self, post: Post):
         text = '\n'.join([post.title, post.desc])

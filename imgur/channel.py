@@ -18,7 +18,7 @@ class ImgurChannel(BaseChannel):
 
         self.commanders = [
             TagsCommander('tags', self.store),
-            SettingsCommander('sets', self.settings, restart_callback=self.start),
+            SettingsCommander('sets', self.settings),
             ActivityCommander('act', self.store),
         ]
 
