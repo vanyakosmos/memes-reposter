@@ -3,7 +3,7 @@ from io import BytesIO
 from time import time
 from typing import List, Any
 
-# Specify render backend. 'Agg' can only generate images. Default TkAgg unsupported on Heroku.
+# Specify render backend. 'Agg' can only generate images. Default 'TkAgg' is unsupported on Heroku.
 import matplotlib; matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
