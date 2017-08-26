@@ -14,7 +14,7 @@ class RedditPublisher(BasePublisher):
 
     def publish(self, post: Post, *args, **kwargs):
         self.store.save_id(post.id)
-        self.logger.debug(post)
+        self.logger.info('Posting: ' + str(post))
 
         try:
             self.post_one(post)
