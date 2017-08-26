@@ -60,8 +60,8 @@ class SubredditsCommander(Commander):
         title = 'subreddit'.ljust(13)
         title = f"`{title} limit score`\n"
 
-        subs = [f'` - {name:10s} {score}`\n' for name, score in subreddits.items()]
-        subs = subs or ' > nothing'
+        subs = [f'` - {name:10s} {score}`' for name, score in subreddits.items()]
+        subs = '\n'.join(subs) or ' > nothing'
 
         update.message.reply_text(title + subs, parse_mode=ParseMode.MARKDOWN)
 
