@@ -11,7 +11,7 @@ class ArgParser(argparse.ArgumentParser):
         msg = 'Error:\n'
         msg += self.format_usage()
         msg += message
-        raise argparse.ArgumentError(msg)
+        raise Exception(msg)
 
 
 class HelpAction(argparse.Action):
@@ -68,7 +68,7 @@ class Commander(object):
     def callback(self, bot: Bot, update: Update, args: List[str]):
         try:
             args = self.parser.parse_args(args)
-        except argparse.ArgumentError as e:
+        except Exception as e:
             self.send_code(update, str(e))
             return
         self.distribute(bot, update, args)

@@ -58,7 +58,7 @@ class TagsCommander(Commander):
         del bot
         tags = self.store.get_tags()
         tags = [f'` - {tag}`' for tag in tags]
-        tags = '\n'.join(tags)
+        tags = '\n'.join(tags) or ' > nothing'
         text = 'Banned tags:\n' + tags
         update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
 

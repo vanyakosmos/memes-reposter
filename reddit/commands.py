@@ -21,13 +21,13 @@ class SubredditsCommander(Commander):
         parser_add = self.get_sub_command(subparsers, 'add',
                                           help='update (add/edit) subreddit',
                                           usage='<name> <score limit>')
-        parser_add.add_argument('keys', nargs=2)
+        parser_add.add_argument('keys', nargs='*')  # choose '*' if want to use -h/--help
 
         # remove
         parser_remove = self.get_sub_command(subparsers, 'remove', aliases=['delete'],
                                              help='remove subreddits',
                                              usage='<name> [<name>]*')
-        parser_remove.add_argument('keys', nargs='+')
+        parser_remove.add_argument('keys', nargs='*')
 
         # show
         self.get_sub_command(subparsers, 'show', help='show list of subreddits and its score limits')
@@ -58,11 +58,12 @@ class SubredditsCommander(Commander):
         del bot
         subreddits = self.store.get()
         title = 'subreddit'.ljust(13)
-        text = f"`{title} limit score`\n"
+        title = f"`{title} limit score`\n"
 
-        for name, score in subreddits.items():
-            text += f'` - {name:10s} {score}`\n'
-        update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+        subs = [f'` - {name:10s} {score}`\n' for name, score in subreddits.items()]
+        subs = subs or ' > nothing'
+
+        update.message.reply_text(title + subs, parse_mode=ParseMode.MARKDOWN)
 
     @log
     def add(self, bot: Bot, update: Update, args: List[str], usage: str):
