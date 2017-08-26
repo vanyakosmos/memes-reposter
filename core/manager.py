@@ -61,10 +61,11 @@ class Manager(object):
                "/choose - choose channels.\n" \
                "/list - print list of available channels.\n"
         if self.chosen_channel:
-            channel_help = self.chosen_channel.help_text() or ' - no commands'
-            text += f"\n`{self.chosen_channel.label} ({self.chosen_channel.channel_id})` commands:\n" + channel_help
+            help = self.chosen_channel.help_text() or ' - no commands'
+            help = '```\n' + help + '\n```'
+            text += f"\n{self.chosen_channel.label} ({self.chosen_channel.channel_id}) commands:\n" + help
         bot.send_message(chat_id=update.message.chat_id,
-                         text=text)
+                         text=text, parse_mode=ParseMode.MARKDOWN)
 
     @log
     @admin_access()
