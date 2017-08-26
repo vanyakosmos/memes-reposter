@@ -4,7 +4,7 @@ from settings import REDIS_URL, IMGUR_CHANNEL_ID, CLEAR_AGE
 from .pipes import ImgurPipe
 from .store import ImgurStore
 from .settings import ImgurSettings
-from core.commands import SettingsCommander
+from core.commands import SettingsCommander, ActivityCommander
 from .commands import TagsCommander
 
 
@@ -19,6 +19,7 @@ class ImgurChannel(BaseChannel):
         self.commanders = [
             TagsCommander('tags', self.store),
             SettingsCommander('sets', self.settings, restart_callback=self.start),
+            ActivityCommander('act', self.store),
         ]
 
     def get_channel_id(self):

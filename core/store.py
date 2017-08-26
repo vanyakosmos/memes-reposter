@@ -1,5 +1,6 @@
 import logging
 from time import time
+from typing import Dict
 
 import redis
 
@@ -14,6 +15,9 @@ class IdStore(object):
         raise NotImplementedError
 
     def clear_ids(self):
+        raise NotImplementedError
+
+    def get_ids(self):
         raise NotImplementedError
 
 
@@ -47,6 +51,11 @@ class RedisStore(IdStore, SettingsStore):
     @log
     def has_id(self, id):
         return self.client.hexists(self.key_ids, id)
+
+    @log
+    def get_ids(self) -> Dict[str, int]:
+        ids = self.client.hgetall(self.key_ids)
+        return {id.decode('utf-8'): float(date) for id, date in ids.items()}
 
     @log
     def clear_ids(self):
