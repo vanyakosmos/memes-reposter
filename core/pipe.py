@@ -31,7 +31,6 @@ class BasePipe(object):
 
     @log
     def start_posting_cycle(self):
-        self.scheduler.stop()
         self.pre_cycle_hook()
         self.scheduler.run_once(self._fetch, 0)
 
@@ -112,7 +111,7 @@ class BasePipe(object):
     @log
     def _publish(self, posts):
         publisher = self.get_publisher()
-        self.schedule_posts(publisher, posts)
+        self.scheduler.run_once(self.schedule_posts, 0, None, publisher, posts)
 
     @log
     def get_publisher(self) -> BasePublisher:
@@ -129,7 +128,7 @@ class BasePipe(object):
         if posts:
             head, *tail = posts
             publisher.publish(head)
-            self.scheduler.run_once(self.schedule_posts, 0, publisher, tail)
+            self.scheduler.run_once(self.schedule_posts, 0, None, publisher, tail)
         else:
             self.logger.info('Finished posting.')
             self.scheduler.run_once(self.start_posting_cycle, self.post_interval)

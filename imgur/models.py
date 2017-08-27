@@ -32,14 +32,14 @@ class Post(object):
             return 'https://imgur.com/' + self.id
 
     def __str__(self):
+        return f'Post(id="{self.id}", is_long={self.is_long}, url="{self.url}")'
+
+    def __repr__(self):
         return (f'Post(\n'
                 f'   id="{self.id}", \n'
                 f'   is_long={self.is_long}, \n'
                 f'   title="{self.title}", \n'
                 f'   url="{self.url}")')
-
-    def __repr__(self):
-        return str(self)
 
 
 class Image(object):

@@ -4,7 +4,7 @@ from settings import REDIS_URL, REDDIT_CHANNEL_ID, CLEAR_AGE
 from .pipes import RedditPipe
 from .store import RedditStore
 from .settings import RedditSettings
-from core.commands import SettingsCommander
+from core.commands import SettingsCommander, ActivityCommander
 from .commands import SubredditsCommander
 
 
@@ -18,7 +18,8 @@ class RedditChannel(BaseChannel):
 
         self.commanders = [
             SubredditsCommander('subs', self.store),
-            SettingsCommander('sets', self.settings, restart_callback=self.start),
+            SettingsCommander('sets', self.settings),
+            ActivityCommander('act', self.store),
         ]
 
     def get_channel_id(self):

@@ -1,3 +1,4 @@
+pytz
 matplotlib==2.0.2
 requests
 python-telegram-bot

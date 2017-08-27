@@ -7,11 +7,10 @@ from core.commands import Commander, ArgParser
 
 
 class SettingsCommander(Commander):
-    def __init__(self, name, settings: Settings, restart_callback):
+    def __init__(self, name, settings: Settings):
         super().__init__(name)
         self._handler = CommandHandler(self.name, self.callback, pass_args=True)
         self.settings = settings
-        self.restart_callback = restart_callback
 
     def get_parser(self) -> ArgParser:
         parser, subparsers = self.get_parser_and_subparsers()
@@ -57,7 +56,6 @@ class SettingsCommander(Commander):
         key, value = args.keys
         try:
             self.settings.set(key, value)
-            self.restart_callback()
         except SettingsError as e:
             update.message.reply_text(str(e))
         self.show(bot, update)
