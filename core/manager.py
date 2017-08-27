@@ -15,7 +15,7 @@ class Manager(object):
         self.dispatcher = self.updater.dispatcher
 
         self.channels = {}
-        self.chosen_channel = None
+        self.chosen_channels = {}
         self.admins = admins
 
     @log
@@ -60,10 +60,12 @@ class Manager(object):
         text = "/help or /start - print this message.\n" \
                "/choose - choose channels.\n" \
                "/list - print list of available channels.\n"
-        if self.chosen_channel:
-            help = self.chosen_channel.help_text() or ' - no commands'
+
+        chosen_channel = self.chosen_channels.get(update.message.chat_id, None)
+        if chosen_channel:
+            help = chosen_channel.help_text() or ' - no commands'
             help = '```\n' + help + '\n```'
-            text += f"\n{self.chosen_channel.label} ({self.chosen_channel.channel_id}) commands:\n" + help
+            text += f"\n`{chosen_channel.label} ({chosen_channel.channel_id}) commands:`\n" + help
         bot.send_message(chat_id=update.message.chat_id,
                          text=text, parse_mode=ParseMode.MARKDOWN)
 
@@ -73,7 +75,7 @@ class Manager(object):
         del bot
         text = 'Channels list:\n'
         for label, channel in self.channels.items():
-            text += f' - {label} ({channel.name})\n'
+            text += f' - {label} ({channel.channel_id})\n'
         update.message.reply_text(text)
 
     @log
@@ -95,17 +97,22 @@ class Manager(object):
     @admin_access()
     def command_accept_choice(self, bot: Bot, update: Update):
         query = update.callback_query
-        if self.chosen_channel:
-            self.chosen_channel.remove_commands_handlers()
-        self.chosen_channel: BaseChannel = self.channels[query.data]
-        self.chosen_channel.add_commands_handlers()
-        bot.edit_message_text(text=f'Chose {query.data} ({self.chosen_channel.channel_id}).',
+        update.message = query.message  # because callback update doesn't have message at all
+        chat_id = update.message.chat_id
+
+        chosen_channel = self.chosen_channels.get(chat_id, None)
+        if chosen_channel:
+            chosen_channel.remove_commands_handlers(chat_id)
+
+        chosen_channel: BaseChannel = self.channels[query.data]
+        self.chosen_channels[chat_id] = chosen_channel
+        chosen_channel.add_commands_handlers(chat_id)
+
+        bot.edit_message_text(text=f'Chose {query.data} ({chosen_channel.channel_id}).',
                               chat_id=query.message.chat_id,
                               message_id=query.message.message_id)
-        update.message = query.message  # because callback update doesn't have message at all
-        help = self.chosen_channel.help_text()
+        help = chosen_channel.help_text()
         update.message.reply_text('```\n' + help + '\n```', parse_mode=ParseMode.MARKDOWN)
-        # self.command_help(bot, update)  # whereas command_help use message.chat_id
 
     @log
     def command_error(self, bot: Bot, update: Update, error):
