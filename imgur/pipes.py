@@ -4,7 +4,7 @@ from settings import CLEAR_INTERVAL
 from core.pipe import BasePipe
 from core.decorators import log
 from .fetchers import GalleryFetcher
-from .filters import UniqueFilter, SizeFilter, TagsFilter
+from .filters import UniqueFilter, SizeFilter, TagsFilter, ScoreFilter
 from .modeller import ImgurModeller
 from .publisher import ImgurPublisher
 from .store import ImgurStore
@@ -32,7 +32,7 @@ class ImgurPipe(BasePipe):
 
     @log
     def get_pre_filters(self):
-        return [UniqueFilter(self.store)]
+        return [UniqueFilter(self.store), ScoreFilter(self.settings), ]
 
     @log
     def get_modeller(self):
@@ -40,7 +40,7 @@ class ImgurPipe(BasePipe):
 
     @log
     def get_post_filters(self):
-        return [TagsFilter(self.store), SizeFilter()]
+        return [TagsFilter(self.store), SizeFilter(self.settings), ]
 
     @log
     def get_publisher(self):

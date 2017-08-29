@@ -13,8 +13,6 @@ class ActiveUsersFilter(BaseFilter):
         self.active_users = active_users
 
     def filter(self, message: Message):
-        print('filtering command')
-        print(message.from_user.id, self.active_users)
         return message.from_user.id in self.active_users
 
 
