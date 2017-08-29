@@ -1,3 +1,6 @@
+import re
+
+
 class Field(object):
     validators = []
 
@@ -19,3 +22,13 @@ class IntField(Field):
 
     def modify(self, value: str):
         return int(value)
+
+
+class FloatFiled(Field):
+    validators = [lambda x: re.match(r'^\d+(\.\d+)?$', x) is not None, ]
+
+    def __init__(self, default=0.0):
+        super().__init__(default)
+
+    def modify(self, value: str):
+        return float(value)

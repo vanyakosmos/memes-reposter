@@ -73,12 +73,11 @@ class ImgurPublisher(BasePublisher):
             self.bot.send_photo(photo=image.url, **kwargs)
 
     def format_header(self, post: Post):
-        strings = ['🌚 ' + post.title.strip()]
+        strings = []
         if post.is_long:
-            strings.append(f'🔥 Album with {post.size} images')
-        strings.append('🔗 ' + post.url)
-        if post.tags:
-            strings.append('🏷 ' + ' '.join(['#' + tag for tag in post.tags]))
+            strings.append(f'🔥 Album [ {post.size} ]')
+        strings.append(post.title.strip())
+        strings.append(post.url)
         if post.desc:
             strings.append(post.desc)
         text = '\n'.join(strings)

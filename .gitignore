@@ -2,3 +2,6 @@ playground/
 __pycache__/
 .idea
 .env
+*.png
+playground.py
+
