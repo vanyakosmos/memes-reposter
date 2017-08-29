@@ -1,10 +1,19 @@
 import logging
 from typing import List
 
-from telegram.ext import Updater
+from telegram import Message
+from telegram.ext import Updater, BaseFilter, CommandHandler
 
 from core.pipe import BasePipe
 from core.decorators import log
+
+
+class ActiveUsersFilter(BaseFilter):
+    def __init__(self, active_users):
+        self.active_users = active_users
+
+    def filter(self, message: Message):
+        return message.from_user.id in self.active_users
 
 
 class BaseChannel(object):
@@ -21,7 +30,7 @@ class BaseChannel(object):
         self.pipes = self.get_pipes()
         self.updater = None
         self.dispatcher = None
-        # self.commands_handlers = []
+        self.active_users = set()
 
     def get_channel_id(self):
         raise NotImplementedError('Specify channel id. Name must be started with "@".')
@@ -32,9 +41,12 @@ class BaseChannel(object):
     def set_up(self, updater: Updater):
         self.updater = updater
         self.dispatcher = updater.dispatcher
+        active_user_filter = ActiveUsersFilter(self.active_users)
+        for handler in self.commands_handlers:
+            handler.filters = active_user_filter
 
     @property
-    def commands_handlers(self):
+    def commands_handlers(self) -> List[CommandHandler]:
         return []
 
     @log
@@ -47,18 +59,20 @@ class BaseChannel(object):
             pipe.start_posting_cycle()
 
     @log
-    def add_commands_handlers(self):
+    def add_commands_handlers(self, chat_id):
         """
         Used by manager class when changing channel command namespace.
         """
+        self.active_users.add(chat_id)
         for handler in self.commands_handlers:
             self.dispatcher.add_handler(handler)
 
     @log
-    def remove_commands_handlers(self):
+    def remove_commands_handlers(self, chat_id):
         """
         Used by manager class when changing channel command namespace.
         """
+        self.active_users.remove(chat_id)
         for handler in self.commands_handlers:
             self.dispatcher.remove_handler(handler)
 
