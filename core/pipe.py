@@ -24,7 +24,7 @@ class BasePipe(object):
         self.scheduler = None
 
     @log
-    def set_up(self, channel_id: str, updater: Updater):
+    def set_up(self, channel_id: str, updater: Updater, **kwargs):
         self.channel_id = channel_id
         self.updater = updater
         self.scheduler = Scheduler(self.updater.job_queue)

@@ -21,7 +21,9 @@ class RedditPipe(BasePipe):
         self.limits = []
         self.post_interval = 60
 
-    def set_up(self, channel_id: str, updater: Updater, store: RedditStore, settings: RedditSettings):
+    def set_up(self, channel_id: str, updater: Updater, **kwargs):
+        store: RedditStore = kwargs['store']
+        settings: RedditSettings = kwargs['settings']
         self.store = store
         self.settings = settings
         super(RedditPipe, self).set_up(channel_id, updater)

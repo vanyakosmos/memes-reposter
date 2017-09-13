@@ -41,8 +41,13 @@ class TagsFilter(BaseFilter):
 
     def filter(self, posts: List[Post], *args, **kwargs):
         banned_tags = self.store.get_tags()
-        has_tag = lambda p: p.tags in banned_tags
-        has_word = lambda p: any(map(lambda b: b in p.title, banned_tags))
+
+        def has_tag(p: Post):
+            return p.tags in banned_tags
+
+        def has_word(p: Post):
+            title_words = set(p.title.lower().split())
+            return any(map(lambda b: b in title_words, banned_tags))
 
         res = [post for post in posts if not has_tag(post) and not has_word(post)]
         self.logger.debug('> ' + str(len(posts)))
