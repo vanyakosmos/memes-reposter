@@ -26,9 +26,11 @@ class Post(object):
 
     def _get_type_and_url(self, item: dict) -> (str, str):
         item['url'] = re.sub(r'\?.*$', '', item['url'])
+        # regular image
         if self._has_ext(item['url'], '.png', '.jpg'):
             return 'photo', item['url']
 
+        # video with explicit extension
         elif self._has_ext(item['url'], '.gif', '.gifv'):
             if self._has_ext(item['url'], '.gifv') and re.match(r'(i.)?imgur.com', item['domain']):
                 url = re.sub(r'^(.+)\.gifv?$', '\g<1>.mp4', item['url'])
@@ -36,20 +38,29 @@ class Post(object):
                 url = item['url']
             return 'video', url
 
+        # imgur single image post
         elif re.match(r'^https?://imgur.com/[^/]+$', item['url']):
             url = item['url'] + '.png'
             return 'photo', url
 
+        # imgur single image post with reddit tag
         elif re.match(r'^https?://imgur.com/r/[^/]+/[^/]+$', item['url']):
             url = re.sub(r'^https?://imgur.com/r/[^/]+/([^/]+)$',
                          r'https://imgur.com/\g<1>.png',
                          item['url'])
             return 'photo', url
 
+        # gfycat video
         elif item['domain'] == 'gfycat.com':
             url = re.sub(r'https?://gfycat.com/(.+)',
                          r'https://thumbs.gfycat.com/\g<1>-size_restricted.gif',
                          item['url'])
             return 'video', url
+
+        # reddit hosted video
+        elif re.match(r'^https?://v\.redd\.it/[^/]+$', item['url']):
+            url = item['url'] + '/DASH_600_K'
+            return 'video', url
+
         else:
             return 'link', item['url']

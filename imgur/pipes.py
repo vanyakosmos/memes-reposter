@@ -20,7 +20,9 @@ class ImgurPipe(BasePipe):
         self.settings = None
         self.post_interval = 10 * 60
 
-    def set_up(self, channel_id: str, updater: Updater, store: ImgurStore, settings: ImgurSettings):
+    def set_up(self, channel_id: str, updater: Updater, **kwargs):
+        store: ImgurStore = kwargs['store']
+        settings: ImgurSettings = kwargs['settings']
         super(ImgurPipe, self).set_up(channel_id, updater)
         self.store = store
         self.settings = settings

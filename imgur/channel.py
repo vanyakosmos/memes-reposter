@@ -35,7 +35,7 @@ class ImgurChannel(BaseChannel):
     @log
     def start(self):
         for pipe in self.pipes:
-            pipe.set_up(self.channel_id, self.updater, self.store, self.settings)
+            pipe.set_up(self.channel_id, self.updater, store=self.store, settings=self.settings)
             pipe.start_posting_cycle()
 
     def help_text(self):

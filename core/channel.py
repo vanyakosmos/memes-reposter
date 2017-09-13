@@ -22,7 +22,8 @@ class BaseChannel(object):
         - name: name of channel in telegram. **Must** starts with "@".
         - label: identifier for channel. **Must** be unique.
         - pipe_classes:
-        - commands_handlers: list of command handlers which would be attached when we need them and detached when we don't.
+        - commands_handlers: list of command handlers which would be attached
+        when we need them and detached when we don't.
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.label = self.__class__.__name__
