@@ -1,4 +1,4 @@
-from urllib.parse import unquote
+from html import unescape
 import re
 
 
@@ -8,7 +8,7 @@ class Post(object):
 
         self.id = item['id']
         self.subreddit = item['subreddit']
-        self.title = unquote(item['title'])
+        self.title = unescape(item['title'])
         self.score = int(item['score'])
         self.url = url
         self.comments = 'https://redd.it/' + item['id']
