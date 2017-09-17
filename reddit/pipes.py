@@ -4,7 +4,7 @@ from settings import CLEAR_INTERVAL
 from core.pipe import BasePipe
 from core.decorators import log
 from .fetcher import RedditFetcher
-from .filters import ScoreFilter, UniqueFilter
+from .filters import ScoreFilter, UniqueFilter, NSFWFilter
 from .modeller import RedditModeller
 from .publisher import RedditPublisher
 from .store import RedditStore
@@ -57,7 +57,7 @@ class RedditPipe(BasePipe):
 
     @log
     def get_post_filters(self):
-        return [ScoreFilter(self.limits)]
+        return [ScoreFilter(self.limits), NSFWFilter()]
 
     @log
     def get_publisher(self):

@@ -14,6 +14,7 @@ class Post(object):
         self.comments = 'https://redd.it/' + item['id']
         self.created_at = int(item['created_utc'])
         self.type = type
+        self.nsfw = item['over_18']
 
     def __str__(self):
         return f'Post(id="{self.id}", url="{self.url}")'

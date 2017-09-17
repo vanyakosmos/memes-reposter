@@ -41,4 +41,9 @@ class ScoreFilter(BaseFilter):
         return posts
 
 
-
+class NSFWFilter(BaseFilter):
+    def filter(self, posts: List[Post], *args, **kwargs) -> List[Post]:
+        filtered_posts = [p for p in posts if not p.nsfw]
+        self.logger.debug(f'> {len(posts)}')
+        self.logger.debug(f'< {len(filtered_posts)}')
+        return filtered_posts
