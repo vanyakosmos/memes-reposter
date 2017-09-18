@@ -1,4 +1,4 @@
-from urllib.parse import unquote
+from html import unescape
 import re
 
 
@@ -8,12 +8,13 @@ class Post(object):
 
         self.id = item['id']
         self.subreddit = item['subreddit']
-        self.title = unquote(item['title'])
+        self.title = unescape(item['title'])
         self.score = int(item['score'])
         self.url = url
         self.comments = 'https://redd.it/' + item['id']
         self.created_at = int(item['created_utc'])
         self.type = type
+        self.nsfw = item['over_18']
 
     def __str__(self):
         return f'Post(id="{self.id}", url="{self.url}")'
@@ -30,6 +31,12 @@ class Post(object):
         if self._has_ext(item['url'], '.png', '.jpg'):
             return 'photo', item['url']
 
+        # giphy video. must be on because of custom giphy player
+        elif re.match(r'^https?://media\.giphy\.com/media/(\w+)/giphy\.(?:gif|mp4)$', item['url']):
+            gif_id = re.findall(r'^https?://media.giphy.com/media/(\w+)/giphy.(?:gif|mp4)', item['url'])[0]
+            print('giphy', gif_id)
+            return 'video', f'https://i.giphy.com/media/{gif_id}/giphy.mp4'
+
         # video with explicit extension
         elif self._has_ext(item['url'], '.gif', '.gifv'):
             if self._has_ext(item['url'], '.gifv') and re.match(r'(i.)?imgur.com', item['domain']):
@@ -39,7 +46,7 @@ class Post(object):
             return 'video', url
 
         # imgur single image post
-        elif re.match(r'^https?://imgur.com/[^/]+$', item['url']):
+        elif re.match(r'^https?://(m\.)?imgur.com/[^/]+$', item['url']):
             url = item['url'] + '.png'
             return 'photo', url
 

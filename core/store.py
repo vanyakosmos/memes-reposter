@@ -14,6 +14,9 @@ class IdStore(object):
     def has_id(self, id):
         raise NotImplementedError
 
+    def has_ids(self, ids: list):
+        raise NotImplementedError
+
     def clear_ids(self):
         raise NotImplementedError
 
@@ -51,6 +54,14 @@ class RedisStore(IdStore, SettingsStore):
     @log
     def has_id(self, id):
         return self.client.hexists(self.key_ids, id)
+
+    @log
+    def has_ids(self, ids: list):
+        pipe = self.client.pipeline()
+        for id in ids:
+            pipe.hexists(self.key_ids, id)
+        res = pipe.execute()
+        return res
 
     @log
     def get_ids(self) -> Dict[str, int]:
