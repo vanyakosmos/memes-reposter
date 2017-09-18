@@ -4,7 +4,6 @@ from core.filter import BaseFilter
 from core.store import IdStore
 from .settings import ImgurSettings
 from .models import Post
-from .store import ImgurStore
 
 
 # pre
@@ -14,7 +13,10 @@ class UniqueFilter(BaseFilter):
         self.store = store
 
     def filter(self, posts: list, *args, **kwargs):
-        res = [post for post in posts if not self.store.has_id(post['id'])]
+        ids = [p['id'] for p in posts]
+        posted = self.store.has_ids(ids)
+        res = [posts[i] for i in range(len(ids)) if not posted[i]]
+
         self.logger.debug('> ' + str(len(posts)))
         self.logger.debug('< ' + str(len(res)))
         return res
@@ -35,21 +37,21 @@ class ScoreFilter(BaseFilter):
 
 # post
 class TagsFilter(BaseFilter):
-    def __init__(self, store: ImgurStore):
+    def __init__(self, banned_tags: set):
         super().__init__()
-        self.store = store
+        self.banned_tags = banned_tags
+
+    def has_tag(self, p: Post):
+        return any(map(lambda b: b in self.banned_tags, p.tags))
+
+    def has_word(self, p: Post):
+        title_words = set(p.title.lower().split())
+        return any(map(lambda b: b in title_words, self.banned_tags))
 
     def filter(self, posts: List[Post], *args, **kwargs):
-        banned_tags = self.store.get_tags()
-
-        def has_tag(p: Post):
-            return p.tags in banned_tags
-
-        def has_word(p: Post):
-            title_words = set(p.title.lower().split())
-            return any(map(lambda b: b in title_words, banned_tags))
-
-        res = [post for post in posts if not has_tag(post) and not has_word(post)]
+        res = [post for post in posts
+               if not self.has_tag(post)
+               and not self.has_word(post)]
         self.logger.debug('> ' + str(len(posts)))
         self.logger.debug('< ' + str(len(res)))
         return res

@@ -42,7 +42,8 @@ class ImgurPipe(BasePipe):
 
     @log
     def get_post_filters(self):
-        return [TagsFilter(self.store), SizeFilter(self.settings), ]
+        tags = self.store.get_tags()
+        return [TagsFilter(tags), SizeFilter(self.settings), ]
 
     @log
     def get_publisher(self):

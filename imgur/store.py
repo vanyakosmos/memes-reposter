@@ -9,12 +9,12 @@ class ImgurStore(store.RedisStore):
         self.key_tags = prefix + ':tags'
 
     # banned tags
-    def get_tags(self):
+    def get_tags(self) -> set:
         tags = self.client.smembers(self.key_tags)
         if tags:
-            return [tag.decode('utf-8') for tag in tags]
+            return {tag.decode('utf-8') for tag in tags}
         else:
-            return []
+            return set()
 
     def add_tags(self, tags: List[str]):
         if tags:
