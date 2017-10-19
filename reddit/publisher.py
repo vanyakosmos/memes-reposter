@@ -1,4 +1,4 @@
-from telegram import MAX_CAPTION_LENGTH
+from telegram import MAX_CAPTION_LENGTH, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
 from telegram.ext import Updater
 
 from core.publisher import BasePublisher
@@ -21,25 +21,37 @@ class RedditPublisher(BasePublisher):
         except Exception as e:
             self.logger.error(e)
 
+    def build_keyboard_markup(self, post: Post, pass_original=True):
+        keyboard = []
+        if pass_original:
+            keyboard.append(InlineKeyboardButton('original', url=post.url))
+        keyboard.append(InlineKeyboardButton('comments', url=post.comments))
+
+        return InlineKeyboardMarkup([
+            keyboard
+        ])
+
     def post_one(self, post: Post):
-        if post.type == 'link':
-            lines = [
-                post.title,
-                post.url,
-                # post.comments,
-                '#' + post.subreddit + ' ' + post.comments
-            ]
-            caption = '\n'.join(lines)
-            self.bot.send_message(text=caption,
+        if post.type in ('text', 'link'):
+            title = f'<b>{post.title}</b>\n\n'
+            if post.type == 'link':
+                text = title + f'{post.url}'
+            else:
+                text = title + f'{post.url}'  # fixme: post.text
+
+            keyboard_markup = self.build_keyboard_markup(post, pass_original=False)
+            self.bot.send_message(text=text,
                                   chat_id=self.channel_id,
+                                  reply_markup=keyboard_markup,
+                                  parse_mode=ParseMode.HTML,
                                   timeout=self.timeout)
         else:
-            title = self.cut_text(post.title, limit=MAX_CAPTION_LENGTH-len(post.subreddit)-len(post.comments)-5)
-            caption = title + '\n' + '#' + post.subreddit + ' ' + post.comments
+            keyboard_markup = self.build_keyboard_markup(post)
             kwargs = {
-                'caption': caption,
+                'caption': self.cut_text(post.title),
                 'chat_id': self.channel_id,
                 'timeout': self.timeout,
+                'reply_markup': keyboard_markup,
             }
             if post.type == 'photo':
                 self.bot.send_photo(photo=post.url, **kwargs)
