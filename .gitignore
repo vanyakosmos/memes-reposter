@@ -3,4 +3,4 @@ __pycache__/
 .env
 *.png
 playground.py
-
+.python-version
