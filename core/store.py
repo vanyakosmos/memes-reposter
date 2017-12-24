@@ -95,13 +95,14 @@ class MongoStore(IdStore, SettingsStore):
                 '$lt': now - self.clear_age
             }
         })
-        deleted = res.deleted_count
-        logger.info(f'Deleted: {deleted}.')
+        logger.info(f'Deleted: {res.deleted_count}.')
 
     # settings
     @log
     def set_setting(self, key, value):
-        self.settings.update(self.fset, {key: value})
+        self.settings.update(self.fset, {
+            '$set': {key: value}
+        })
 
     @log
     def get_setting(self, key):
