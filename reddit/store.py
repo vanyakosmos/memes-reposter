@@ -2,6 +2,7 @@ from time import time
 from typing import Dict, List
 
 from core import store
+from .models import Post
 
 
 class RedditStore(store.MongoStore):
@@ -31,9 +32,12 @@ class RedditStore(store.MongoStore):
             }
         })
 
-    def save_post(self, post: dict):
-        post['timestamp'] = time()
-        self.posts.insert_one(post)
+    def save_post(self, post: Post):
+        self.posts.insert_one({
+            'id': post.id,
+            'url': post.url,
+            'timestamp': time(),
+        })
 
     def has_urls(self, urls):
         posts = self.posts.find()
