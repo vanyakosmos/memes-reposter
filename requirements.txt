@@ -1,6 +1,6 @@
+pymongo
 pytz==2017.3
 matplotlib==2.1.1
 requests==2.18.4
 python-telegram-bot==9.0.0
-redis==2.10.6
 python-dotenv==0.7.1

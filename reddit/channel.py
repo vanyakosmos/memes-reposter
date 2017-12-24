@@ -1,18 +1,18 @@
 from core.channel import BaseChannel
+from core.commands import ActivityCommander, SettingsCommander
 from core.decorators import log
-from settings import REDIS_URL, REDDIT_CHANNEL_ID, CLEAR_AGE
-from .pipes import RedditPipe
-from .store import RedditStore
-from .settings import RedditSettings
-from core.commands import SettingsCommander, ActivityCommander
+from settings import CLEAR_AGE, REDDIT_CHANNEL_ID, MONGODB_URI
 from .commands import SubredditsCommander
+from .pipes import RedditPipe
+from .settings import RedditSettings
+from .store import RedditStore
 
 
 class RedditChannel(BaseChannel):
     def __init__(self):
         super().__init__()
-        self.store = RedditStore('reddit',
-                                 url=REDIS_URL,
+        self.store = RedditStore(name='reddit',
+                                 url=MONGODB_URI,
                                  clear_age=CLEAR_AGE)
         self.settings = RedditSettings(self.store)
 
