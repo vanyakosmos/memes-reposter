@@ -31,6 +31,10 @@ class RedditChannel(BaseChannel):
     def get_pipes(self):
         return [RedditPipe()]
 
+    def set_up(self, updater: Updater):
+        super().set_up(updater)
+        self.dispatcher.add_handler(CallbackQueryHandler(self.buttons_handler))
+
     @property
     def commands_handlers(self):
         return [c.handler for c in self.commanders]
@@ -44,15 +48,15 @@ class RedditChannel(BaseChannel):
     def help_text(self):
         return '\n'.join([c.get_usage() for c in self.commanders])
 
-    def callback_handler(self, bot: Bot, update: Update):
+    def buttons_handler(self, _: Bot, update: Update):
         query = update.callback_query
         data = query.data.split(':')
 
-        if data[0] != 'reddit':
-            self.logger.debug('not reddit button')
+        if len(data) != 2:
+            self.logger.debug('broken button')
             return
 
-        post_id, data = data[1], data[2]
+        post_id, data = data
 
         if data != 'clap':
             self.logger.debug('not a clap')
@@ -73,6 +77,6 @@ class RedditChannel(BaseChannel):
         if post['type'] not in ('text', 'link'):
             row.append(InlineKeyboardButton('original', url=post['url']))
         row.append(InlineKeyboardButton('comments', url=post['comments']))
-        row.append(InlineKeyboardButton(clap_button, callback_data=f'reddit:{post_id}:clap'))
+        row.append(InlineKeyboardButton(clap_button, callback_data=f'{post_id}:clap'))
         markup = InlineKeyboardMarkup([row])
         query.edit_message_reply_markup(reply_markup=markup)
