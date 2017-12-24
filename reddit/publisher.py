@@ -1,19 +1,22 @@
+import html
+
 from telegram import MAX_CAPTION_LENGTH, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
 from telegram.ext import Updater
 
 from core.publisher import BasePublisher
-from core.store import IdStore
+from .store import RedditStore
 from .models import Post
 
 
 class RedditPublisher(BasePublisher):
-    def __init__(self, channel_id: str, updater: Updater, store: IdStore):
+    def __init__(self, channel_id: str, updater: Updater, store: RedditStore):
         super().__init__(channel_id, updater)
         self.store = store
         self.timeout = 60  # seconds
 
     def publish(self, post: Post, *args, **kwargs):
-        self.store.save_id(post.id)
+        # self.store.save_id(post.id)
+        self.store.save_post({'id': post.id, 'url': post.url})
         self.logger.info('Posting: ' + str(post))
 
         try:
@@ -33,7 +36,9 @@ class RedditPublisher(BasePublisher):
 
     def post_one(self, post: Post):
         if post.type in ('text', 'link'):
-            title = f'<b>{post.title}</b>\n\n'
+
+            title = html.escape(post.title)
+            title = f'<b>{title}</b>\n\n'
             if post.type == 'link':
                 text = title + f'{post.url}'
             else:

@@ -39,15 +39,12 @@ class Post(object):
         if self._has_ext(item['url'], '.png', '.jpg'):
             result['type'] = 'photo'
             result['url'] = item['url']
-            # return 'photo', item['url']
 
         # giphy video. must be on because of custom giphy player
         elif re.match(r'^https?://media\.giphy\.com/media/(\w+)/giphy\.(?:gif|mp4)$', item['url']):
             gif_id = re.findall(r'^https?://media.giphy.com/media/(\w+)/giphy.(?:gif|mp4)', item['url'])[0]
-            # print('giphy', gif_id)
             result['type'] = 'video'
             result['url'] = f'https://i.giphy.com/media/{gif_id}/giphy.mp4'
-            # return 'video', f'https://i.giphy.com/media/{gif_id}/giphy.mp4'
 
         # video with explicit extension
         elif self._has_ext(item['url'], '.gif', '.gifv'):
@@ -56,14 +53,12 @@ class Post(object):
             else:
                 result['url'] = item['url']
             result['type'] = 'video'
-            # return 'video', url
 
         # imgur single image post
         elif re.match(r'^https?://(m\.)?imgur.com/[^/]+$', item['url']):
             url = item['url'] + '.png'
             result['type'] = 'photo'
             result['url'] = url
-            # return 'photo', url
 
         # imgur single image post with reddit tag
         elif re.match(r'^https?://imgur.com/r/[^/]+/[^/]+$', item['url']):
@@ -72,23 +67,12 @@ class Post(object):
                          item['url'])
             result['type'] = 'photo'
             result['url'] = url
-            # return 'photo', url
-
-        # gfycat video
-        elif item['domain'] == 'gfycat.com':
-            url = re.sub(r'https?://gfycat.com/(.+)',
-                         r'https://thumbs.gfycat.com/\g<1>-size_restricted.gif',
-                         item['url'])
-            result['type'] = 'video'
-            result['url'] = url
-            # return 'video', url
 
         # reddit hosted video
         elif re.match(r'^https?://v\.redd\.it/[^/]+$', item['url']):
             url = item['url'] + '/DASH_600_K'
             result['type'] = 'video'
             result['url'] = url
-            # return 'video', url
 
         # text post from reddit
         elif re.match(r'^https?://(www.)?reddit.com/.*$', item['url']):

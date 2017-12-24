@@ -1,25 +1,33 @@
 from typing import List
 
+from pymongo.errors import DuplicateKeyError
+
 from core import store
 
 
-class ImgurStore(store.RedisStore):
-    def __init__(self, prefix, url, clear_age):
-        super().__init__(prefix, url, clear_age)
-        self.key_tags = prefix + ':tags'
+class ImgurStore(store.MongoStore):
+    def __init__(self, name, url, clear_age):
+        super().__init__(name, url, clear_age)
+        self.tags = self.get_collection('tags')
+        self.tags.create_index('name', unique=True)
 
-    # banned tags
     def get_tags(self) -> set:
-        tags = self.client.smembers(self.key_tags)
-        if tags:
-            return {tag.decode('utf-8') for tag in tags}
-        else:
-            return set()
+        tags = self.tags.find()
+        tags = {t['name'] for t in tags}
+        return tags
 
     def add_tags(self, tags: List[str]):
-        if tags:
-            self.client.sadd(self.key_tags, *[tag.lower() for tag in tags])
+        for t in tags:
+            try:
+                self.tags.insert_one({
+                    'name': t
+                })
+            except DuplicateKeyError:
+                pass
 
     def remove_tags(self, tags: List[str]):
-        if tags:
-            self.client.srem(self.key_tags, *[tag.lower() for tag in tags])
+        self.tags.delete_many({
+            'name': {
+                '$in': tags
+            }
+        })

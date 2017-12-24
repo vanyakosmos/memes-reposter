@@ -1,18 +1,18 @@
 from core.channel import BaseChannel
+from core.commands import ActivityCommander, SettingsCommander
 from core.decorators import log
-from settings import REDIS_URL, IMGUR_CHANNEL_ID, CLEAR_AGE
-from .pipes import ImgurPipe
-from .store import ImgurStore
-from .settings import ImgurSettings
-from core.commands import SettingsCommander, ActivityCommander
+from settings import CLEAR_AGE, IMGUR_CHANNEL_ID, MONGODB_URI
 from .commands import TagsCommander
+from .pipes import ImgurPipe
+from .settings import ImgurSettings
+from .store import ImgurStore
 
 
 class ImgurChannel(BaseChannel):
     def __init__(self):
         super().__init__()
         self.store = ImgurStore('imgur',
-                                url=REDIS_URL,
+                                url=MONGODB_URI,
                                 clear_age=CLEAR_AGE)
         self.settings = ImgurSettings(self.store)
 

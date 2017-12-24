@@ -1,23 +1,48 @@
-from typing import List, Dict
+from time import time
+from typing import Dict, List
 
 from core import store
 
 
-class RedditStore(store.RedisStore):
-    def __init__(self, prefix, url, clear_age):
-        super().__init__(prefix, url, clear_age)
-        self.key_subreddits = prefix + ':subreddits'
+class RedditStore(store.MongoStore):
+    def __init__(self, name, url, clear_age):
+        super().__init__(name, url, clear_age)
+        self.subs = self.get_collection('subs')
 
-    # subreddits
     def get(self) -> Dict[str, int]:
-        res = self.client.hgetall(self.key_subreddits)
-        subreddits = {}
-        for name, score in res.items():
-            subreddits[name.decode('utf-8')] = int(score)
-        return subreddits
+        subs = self.subs.find()
+        res = {
+            s['name']: s['limit']
+            for s in subs
+        }
+        return res
 
     def add(self, subreddits: Dict[str, int]):
-        self.client.hmset(self.key_subreddits, subreddits)
+        for name, limit in subreddits.items():
+            self.subs.update_one(
+                {'name': name},
+                {'$set': {'name': name, 'limit': limit}},
+                upsert=True)
 
     def remove(self, subreddits: List[str]):
-        self.client.hdel(self.key_subreddits, *subreddits)
+        self.subs.delete_many({
+            'name': {
+                '$in': subreddits
+            }
+        })
+
+    def save_post(self, post: dict):
+        post['timestamp'] = time()
+        self.posts.insert_one(post)
+
+    def has_urls(self, urls):
+        posts = self.posts.find()
+        posts_urls = {
+            p.get('url', None)
+            for p in posts
+        }
+        res = [
+            url in posts_urls
+            for url in urls
+        ]
+        return res
