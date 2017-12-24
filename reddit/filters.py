@@ -3,6 +3,7 @@ from typing import List
 from core.filter import BaseFilter
 from core.store import IdStore
 from .models import Post
+from .store import RedditStore
 
 
 # before modelling
@@ -39,6 +40,24 @@ class ScoreFilter(BaseFilter):
         self.logger.debug(f'> {sum([len(s) for s in subreddits])}')
         self.logger.debug(f'< {len(posts)}')
         return posts
+
+
+class UniqueUrlFilter(BaseFilter):
+    def __init__(self, store: RedditStore):
+        super().__init__()
+        self.store = store
+
+    def filter(self, posts: List[Post], *args, **kwargs):
+        urls = [post.url for post in posts]
+        posted = self.store.has_urls(urls)
+        filtered_posts = [
+            post
+            for post, was_posted in zip(posts, posted)
+            if not was_posted
+        ]
+        self.logger.debug(f'> {len(posts)}')
+        self.logger.debug(f'< {len(filtered_posts)}')
+        return filtered_posts
 
 
 class NSFWFilter(BaseFilter):

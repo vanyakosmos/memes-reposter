@@ -1,3 +1,4 @@
+from time import time
 from typing import Dict, List
 
 from core import store
@@ -29,3 +30,19 @@ class RedditStore(store.MongoStore):
                 '$in': subreddits
             }
         })
+
+    def save_post(self, post: dict):
+        post['timestamp'] = time()
+        self.posts.insert_one(post)
+
+    def has_urls(self, urls):
+        posts = self.posts.find()
+        posts_urls = {
+            p.get('url', None)
+            for p in posts
+        }
+        res = [
+            url in posts_urls
+            for url in urls
+        ]
+        return res
