@@ -15,8 +15,7 @@ class RedditPublisher(BasePublisher):
         self.timeout = 60  # seconds
 
     def publish(self, post: Post, *args, **kwargs):
-        # self.store.save_id(post.id)
-        self.store.save_post({'id': post.id, 'url': post.url})
+        self.store.save_post(post)
         self.logger.info('Posting: ' + str(post))
 
         try:
@@ -25,20 +24,18 @@ class RedditPublisher(BasePublisher):
             self.logger.error(e)
 
     def build_keyboard_markup(self, post: Post, pass_original=True):
-        keyboard = []
+        row = []
         if pass_original:
-            keyboard.append(InlineKeyboardButton('original', url=post.url))
-        keyboard.append(InlineKeyboardButton('comments', url=post.comments))
-
-        return InlineKeyboardMarkup([
-            keyboard
-        ])
+            row.append(InlineKeyboardButton('original', url=post.url))
+        row.append(InlineKeyboardButton('comments', url=post.comments))
+        row.append(InlineKeyboardButton('👏', callback_data=f'{post.id}:clap'))
+        return InlineKeyboardMarkup([row])
 
     def post_one(self, post: Post):
         if post.type in ('text', 'link'):
 
             title = html.escape(post.title)
-            title = f'<b>{title}</b>\n\n'
+            title = f'{title}\n'
             if post.type == 'link':
                 text = title + f'{post.url}'
             else:
