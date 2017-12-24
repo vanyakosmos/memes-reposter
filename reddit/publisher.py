@@ -24,14 +24,12 @@ class RedditPublisher(BasePublisher):
             self.logger.error(e)
 
     def build_keyboard_markup(self, post: Post, pass_original=True):
-        keyboard = []
+        row = []
         if pass_original:
-            keyboard.append(InlineKeyboardButton('original', url=post.url))
-        keyboard.append(InlineKeyboardButton('comments', url=post.comments))
-
-        return InlineKeyboardMarkup([
-            keyboard
-        ])
+            row.append(InlineKeyboardButton('original', url=post.url))
+        row.append(InlineKeyboardButton('comments', url=post.comments))
+        row.append(InlineKeyboardButton('👏', callback_data=f'{post.id}:clap'))
+        return InlineKeyboardMarkup([row])
 
     def post_one(self, post: Post):
         if post.type in ('text', 'link'):

@@ -35,8 +35,13 @@ class RedditStore(store.MongoStore):
     def save_post(self, post: Post):
         self.posts.insert_one({
             'id': post.id,
+            'title': post.title,
+            'subreddit': post.subreddit,
             'url': post.url,
+            'comments': post.comments,
+            'type': post.type,
             'timestamp': time(),
+            'claps': 0,
         })
 
     def has_urls(self, urls):
@@ -50,3 +55,10 @@ class RedditStore(store.MongoStore):
             for url in urls
         ]
         return res
+
+    def get_post(self, post_id):
+        post = self.posts.find_one({'id': post_id})
+        return post
+
+    def clap(self, post_id):
+        self.posts.update_one({'id': post_id}, {'$inc': {'claps': 1}})
