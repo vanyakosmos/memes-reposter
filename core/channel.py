@@ -1,11 +1,11 @@
 import logging
 from typing import List
 
-from telegram import Message
-from telegram.ext import Updater, BaseFilter, CommandHandler
+from telegram import Bot, Message, Update
+from telegram.ext import BaseFilter, CommandHandler, Updater
 
-from core.pipe import BasePipe
 from core.decorators import log
+from core.pipe import BasePipe
 
 
 class ActiveUsersFilter(BaseFilter):
@@ -81,4 +81,7 @@ class BaseChannel(object):
         """
         Used by manager class to print out info about commands specified for channel.
         """
+        pass
+
+    def callback_handler(self, bot: Bot, update: Update):
         pass

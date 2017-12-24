@@ -28,7 +28,7 @@ class RedditPublisher(BasePublisher):
         if pass_original:
             row.append(InlineKeyboardButton('original', url=post.url))
         row.append(InlineKeyboardButton('comments', url=post.comments))
-        row.append(InlineKeyboardButton('👏', callback_data=f'{post.id}:clap'))
+        row.append(InlineKeyboardButton('👏', callback_data=f'reddit:{post.id}:clap'))
         return InlineKeyboardMarkup([row])
 
     def post_one(self, post: Post):

@@ -1,7 +1,7 @@
 import logging
 
 from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, run_async
 
 from core.channel import BaseChannel
 from core.decorators import admin_access, log
@@ -83,7 +83,8 @@ class Manager(object):
     def command_choose(self, bot: Bot, update: Update):
         channels = []
         for label, channel in self.channels.items():
-            button = InlineKeyboardButton(text=label, callback_data=label)
+            data = f'manager:{label}'
+            button = InlineKeyboardButton(text=label, callback_data=data)
             channels.append(button)
 
         keyboard = [channels]
@@ -95,6 +96,7 @@ class Manager(object):
 
     @log
     @admin_access()
+    @run_async
     def command_accept_choice(self, bot: Bot, update: Update):
         query = update.callback_query
         update.message = query.message  # because callback update doesn't have message at all
@@ -104,11 +106,20 @@ class Manager(object):
         if chosen_channel:
             chosen_channel.remove_commands_handlers(chat_id)
 
-        chosen_channel: BaseChannel = self.channels[query.data]
+        data = query.data.split(':')
+        if data[0] != 'manager':
+            self.logger.debug('not manager button')
+            for name, channel in self.channels.items():
+                channel.callback_handler(bot, update)
+            return
+
+        channel_name = data[1]
+
+        chosen_channel: BaseChannel = self.channels[channel_name]
         self.chosen_channels[chat_id] = chosen_channel
         chosen_channel.add_commands_handlers(chat_id)
 
-        bot.edit_message_text(text=f'Chose {query.data} ({chosen_channel.channel_id}).',
+        bot.edit_message_text(text=f'Chose {channel_name} ({chosen_channel.channel_id}).',
                               chat_id=query.message.chat_id,
                               message_id=query.message.message_id)
         help = chosen_channel.help_text()
