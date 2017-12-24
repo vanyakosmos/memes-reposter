@@ -1,7 +1,9 @@
 import os
-from dotenv import load_dotenv, find_dotenv
+
+from dotenv import find_dotenv, load_dotenv
 
 from settings.logging import set_up_logging
+
 
 load_dotenv(find_dotenv())
 
@@ -35,6 +37,7 @@ HOST = os.getenv('HOST', '0.0.0.0')
 
 
 # database
+MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/test')
 REDIS_URL = os.getenv("REDIS_URL")
 CLEAR_AGE = eval(os.getenv("CLEAR_AGE", '2 * 24 * 60 * 60'))
 CLEAR_INTERVAL = eval(os.getenv("CLEAR_INTERVAL", '2 * 24 * 60 * 60'))

@@ -2,9 +2,12 @@ import logging
 from time import time
 from typing import Dict
 
-import redis
+import pymongo
 
 from core.decorators import log
+
+
+logger = logging.getLogger(__name__)
 
 
 class IdStore(object):
@@ -32,69 +35,80 @@ class SettingsStore(object):
         raise NotImplementedError
 
 
-class RedisStore(IdStore, SettingsStore):
-    def __init__(self, prefix, url, clear_age):
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.prefix = prefix
+class MongoStore(IdStore, SettingsStore):
+    def __init__(self, name: str, url: str, clear_age: int):
+        self.name = name
         self.clear_age = clear_age or 24 * 60 * 60
 
-        if url:
-            self.client = redis.Redis.from_url(url)
-        else:
-            self.client = redis.Redis()
+        self.client = pymongo.MongoClient(url)
+        self.db = self.client.get_database()
 
-        self.key_ids = self.prefix + ':ids'
-        self.key_settings = self.prefix + ':settings'
+        self.posts = self.get_collection('posts')
+        self.settings = self.get_collection('settings')
+        self.fset = self.get_settings_instance_filter()
+
+    def get_collection(self, name: str):
+        return self.db.get_collection('_'.join([self.name, name]))
+
+    def get_settings_instance_filter(self):
+        s = self.settings.find_one({}, {'_id': 1})
+        if s is None:
+            s = self.settings.insert_one({})
+            s = {'_id': s.inserted_id}
+        return s
 
     # ids
     @log
     def save_id(self, id):
-        self.client.hset(self.key_ids, id, time())
+        self.posts.insert_one({'id': id, 'timestamp': time()})
 
     @log
     def has_id(self, id):
-        return self.client.hexists(self.key_ids, id)
+        post = self.posts.find_one({'id': id})
+        return post is not None
 
     @log
     def has_ids(self, ids: list):
-        pipe = self.client.pipeline()
-        for id in ids:
-            pipe.hexists(self.key_ids, id)
-        res = pipe.execute()
+        posts = self.posts.find({})
+        posts_ids = {p['id'] for p in posts}
+        res = [
+            id in posts_ids
+            for id in ids
+        ]
         return res
 
     @log
     def get_ids(self) -> Dict[str, int]:
-        ids = self.client.hgetall(self.key_ids)
-        return {id.decode('utf-8'): float(date) for id, date in ids.items()}
+        posts = self.posts.find()
+        res = {
+            p['id']: p['timestamp']
+            for p in posts
+        }
+        return res
 
     @log
     def clear_ids(self):
-        self.logger.info('Clearing database...')
+        logger.info('Clearing database...')
         now = time()
-        old_posts = []
-        for post_id, datetime in self.client.hgetall(self.key_ids).items():
-            if now - float(datetime) > self.clear_age:
-                old_posts.append(post_id)
-        if old_posts:
-            self.client.hdel(self.key_ids, *old_posts)
-        self.logger.info(f'Deleted: {len(old_posts)}.')
+        res = self.posts.delete_many({
+            'timestamp': {
+                '$lt': now - self.clear_age
+            }
+        })
+        deleted = res.deleted_count
+        logger.info(f'Deleted: {deleted}.')
 
     # settings
     @log
     def set_setting(self, key, value):
-        self.client.hset(self.key_settings, key, value)
+        self.settings.update(self.fset, {key: value})
 
     @log
     def get_setting(self, key):
-        res = self.client.hget(self.key_settings, key)
-        return res and res.decode('utf-8')
+        s: dict = self.settings.find_one(self.fset)
+        return s.get(key, None)
 
     @log
     def get_settings(self):
-        sets = self.client.hgetall(self.key_settings)
-        res = {}
-        for key, value in sets.items():
-            key, value = key.decode('utf-8'), value.decode('utf-8')
-            res[key] = value
-        return res
+        s: dict = self.settings.find_one(self.fset, {'_id': 0})
+        return s

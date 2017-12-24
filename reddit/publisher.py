@@ -1,3 +1,5 @@
+import html
+
 from telegram import MAX_CAPTION_LENGTH, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
 from telegram.ext import Updater
 
@@ -33,7 +35,9 @@ class RedditPublisher(BasePublisher):
 
     def post_one(self, post: Post):
         if post.type in ('text', 'link'):
-            title = f'<b>{post.title}</b>\n\n'
+
+            title = html.escape(post.title)
+            title = f'<b>{title}</b>\n\n'
             if post.type == 'link':
                 text = title + f'{post.url}'
             else:
