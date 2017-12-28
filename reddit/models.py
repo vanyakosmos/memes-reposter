@@ -68,6 +68,14 @@ class Post(object):
             result['type'] = 'photo'
             result['url'] = url
 
+        # gfycat video
+        elif item['domain'] == 'gfycat.com':
+            url = re.sub(r'https?://gfycat.com/(.+)',
+                         r'https://fat.gfycat.com/\g<1>.mp4',
+                         item['url'])
+            result['type'] = 'video'
+            result['url'] = url
+
         # reddit hosted video
         elif re.match(r'^https?://v\.redd\.it/[^/]+$', item['url']):
             url = item['url'] + '/DASH_600_K'
