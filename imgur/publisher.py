@@ -1,9 +1,9 @@
-from telegram import MAX_CAPTION_LENGTH, Message
+from telegram import InputMediaPhoto, InputMediaVideo, MAX_CAPTION_LENGTH, Message
 from telegram.ext import Updater
 
 from core.publisher import BasePublisher
 from core.store import IdStore
-from .models import Post, Image
+from .models import Image, Post
 
 
 class ImgurPublisher(BasePublisher):
@@ -31,9 +31,20 @@ class ImgurPublisher(BasePublisher):
         msg = self.post_title(post)
         self.messages.append(msg)
 
-        for image in post.images:
+        if len(post.images) == 1:
+            image = post.images[0]
             msg = self.post_image(image, post.is_album)
             self.messages.append(msg)
+            return
+
+        media = [
+            self.get_media_input(image)
+            for image in post.images[:10]
+        ]
+
+        self.bot.send_media_group(media=media,
+                                  chat_id=self.channel_id,
+                                  timeout=self.timeout * len(media))
 
     def post_title(self, post: Post) -> Message:
         text = self.format_header(post)
@@ -41,6 +52,14 @@ class ImgurPublisher(BasePublisher):
                                      text=text,
                                      disable_web_page_preview=True,
                                      timeout=self.timeout)
+
+    def get_media_input(self, image: Image):
+        caption = self.format_caption(image)
+        if image.animated:
+            inp = InputMediaVideo(image.url, caption=caption)
+        else:
+            inp = InputMediaPhoto(image.url, caption=caption)
+        return inp
 
     def post_image(self, image: Image, is_album) -> Message:
         text = self.format_caption(image) if is_album else ''
@@ -54,23 +73,6 @@ class ImgurPublisher(BasePublisher):
             return self.bot.send_video(video=image.url, **kwargs)
         else:
             return self.bot.send_photo(photo=image.url, **kwargs)
-
-    def post_single(self, post: Post):
-        text = '\n'.join([post.title, post.desc])
-        caption = self.cut_text(text)
-
-        image = post.images[0]
-
-        kwargs = {
-            'caption': caption,
-            'chat_id': self.channel_id,
-            'disable_notification': True,
-            'timeout': self.timeout,
-        }
-        if image.animated:
-            self.bot.send_video(video=image.url, **kwargs)
-        else:
-            self.bot.send_photo(photo=image.url, **kwargs)
 
     def format_header(self, post: Post):
         strings = []
