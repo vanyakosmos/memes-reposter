@@ -66,3 +66,21 @@ class NSFWFilter(BaseFilter):
         self.logger.debug(f'> {len(posts)}')
         self.logger.debug(f'< {len(filtered_posts)}')
         return filtered_posts
+
+
+class BullshitFilter(BaseFilter):
+    # todo: store bs words in DB
+    bullshit = {
+        'meet', 'surgeries', 'surgery', 'war', 'donated', 'donate',
+        'reddit', 'adopted', 'adopt', 'chemotherapy', 'cancer',
+        'medical',
+    }
+
+    def contains_bs(self, title: str):
+        return any([word in self.bullshit for word in title.lower().split()])
+
+    def filter(self, posts: List[Post], *args, **kwargs) -> List[Post]:
+        filtered_posts = [p for p in posts if not self.contains_bs(p.title)]
+        self.logger.debug(f'> {len(posts)}')
+        self.logger.debug(f'< {len(filtered_posts)}')
+        return filtered_posts
