@@ -75,11 +75,11 @@ class BullshitFilter(BaseFilter):
         'meet', 'surgeries', 'surgery', 'war', 'donated', 'donate',
         'reddit', 'adopted', 'adopt', 'chemotherapy', 'cancer',
         'medical', 'pounds', 'baby', 'toddler', 'wedding', 'bride',
-        'rescue', 'rescued', 'adopting', 'adopted',
+        'rescue', 'rescued', 'adopting', 'adopted', 'citizenship', 'citizen',
     }
 
     def contains_bs(self, title: str):
-        title = re.sub(r'[.?,!-]', ' ', title)
+        title = re.sub(r'[^\s\w]+', ' ', title)
         words = title.lower().split()
         return any([word in self.bullshit for word in words])
 
