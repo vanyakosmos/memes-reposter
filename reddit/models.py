@@ -13,6 +13,7 @@ class Post(object):
         self.score = int(item['score'])
         self.url = url
         self.comments = 'https://redd.it/' + item['id']
+        self.comments_full = f'https://reddit.com/r/{item["subreddit"]}/comments/{item["id"]}'
         self.created_at = int(item['created_utc'])
         self.type = type
         self.nsfw = item['over_18']
