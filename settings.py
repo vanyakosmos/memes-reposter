@@ -1,18 +1,39 @@
 import os
+import logging
 
 from dotenv import find_dotenv, load_dotenv
-
-from settings.logging import set_up_logging
 
 
 load_dotenv(find_dotenv())
 
 
-DEBUG = os.getenv('DEBUG', 'true').lower() == 'true'
+def set_up_logging(debug):
+    if debug:
+        logging_level = logging.DEBUG
+    else:
+        logging_level = logging.INFO
 
+    logging.basicConfig(format='%(asctime)s ~ %(levelname)-10s %(name)-25s %(message)s',
+                        datefmt='%Y-%m-%d %H:%M',
+                        level=logging_level)
+
+    logging.getLogger('matplotlib').setLevel(logging.WARNING)
+    logging.getLogger('telegram').setLevel(logging.WARNING)
+    logging.getLogger('requests').setLevel(logging.WARNING)
+    logging.getLogger('JobQueue').setLevel(logging.WARNING)
+
+    logging.addLevelName(logging.DEBUG, '🐛 DEBUG')
+    logging.addLevelName(logging.INFO, '📑 INFO')
+    logging.addLevelName(logging.WARNING, '🤔 WARNING')
+    logging.addLevelName(logging.ERROR, '🚨 ERROR')
+
+
+DEBUG = os.getenv('DEBUG', 'true').lower() in 'true 1 on ok yes y'.split()
 
 # setup loggers
 set_up_logging(debug=DEBUG)
+logger = logging.getLogger(__name__)
+logger.info(os.getenv('DEBUG'))
 
 
 # telegram
