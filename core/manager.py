@@ -1,15 +1,17 @@
 import logging
 
-from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
+from telegram import Update, Bot, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode, CallbackQuery
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
 
 from core.channel import BaseChannel
 from core.decorators import admin_access, log
 
 
+logger = logging.getLogger(__name__)
+
+
 class Manager(object):
     def __init__(self, token: str, admins=None):
-        self.logger = logging.getLogger(self.__class__.__name__)
         self.token = token
         self.updater = Updater(token)
         self.dispatcher = self.updater.dispatcher
@@ -38,7 +40,7 @@ class Manager(object):
         }
         for name, command in commands.items():
             self.dispatcher.add_handler(CommandHandler(name, command))
-        self.dispatcher.add_handler(CallbackQueryHandler(self.command_accept_choice))
+        self.dispatcher.add_handler(CallbackQueryHandler(self.query_callback))
         self.dispatcher.add_error_handler(self.command_error)
 
     def start_polling(self):
@@ -94,9 +96,17 @@ class Manager(object):
                          reply_markup=reply_markup)
 
     @log
+    def query_callback(self, bot: Bot, update: Update):
+        for label, channel in self.channels.items():
+            if channel.callback_query(bot, update):
+                return
+
+        self.command_accept_choice(bot, update)
+
+    @log
     @admin_access()
     def command_accept_choice(self, bot: Bot, update: Update):
-        query = update.callback_query
+        query: CallbackQuery = update.callback_query
         update.message = query.message  # because callback update doesn't have message at all
         chat_id = update.message.chat_id
 
@@ -117,4 +127,4 @@ class Manager(object):
     @log
     def command_error(self, bot: Bot, update: Update, error):
         del bot
-        self.logger.warning('Update "%s" caused error "%s"' % (update, error))
+        logger.warning('Update "%s" caused error "%s"' % (update, error))

@@ -1,11 +1,13 @@
 import logging
-
 from functools import wraps
+
 from telegram import Bot, Update
 
 
 def admin_access(admins_list=None):
     def access(func):
+        logger = logging.getLogger(__name__)
+
         @wraps(func)
         def wrapped(self, bot: Bot, update: Update, *args, **kwargs):
             user = update.effective_user
@@ -14,16 +16,18 @@ def admin_access(admins_list=None):
                 admins = getattr(self, 'admins', None)
 
             if admins is None:
-                self.logger.warning('Specify self.admins (list of users ids) parameter in '
-                                    'manager or channel classes in order to restrict access to bot.')
+                logger.warning('Specify self.admins (list of users ids) parameter in '
+                               'manager or channel classes in order to restrict access to bot.')
                 return func(self, bot, update, *args, **kwargs)
 
             if user.id not in admins:
-                self.logger.info(f"Unauthorized access denied for {user}.")
+                logger.info(f"Unauthorized access denied for {user}.")
                 return
 
             return func(self, bot, update, *args, **kwargs)
+
         return wrapped
+
     return access
 
 
@@ -34,6 +38,7 @@ def log(func):
     def wrapper(self, *args, **kwargs):
         logger.debug('Called ::' + func.__name__)
         return func(self, *args, **kwargs)
+
     return wrapper
 
 
@@ -52,4 +57,5 @@ def mega_log(print_res=False, print_end=False):
             return result
 
         return wrapped
+
     return decorator

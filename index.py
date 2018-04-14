@@ -4,6 +4,7 @@ from reddit import RedditChannel
 from imgur import ImgurChannel
 from settings import BOT_TOKEN, DEBUG, PORT, HOST, HEROKU_APP_NAME, ADMINS
 
+
 if __name__ == '__main__':
     manager = Manager(token=BOT_TOKEN, admins=ADMINS)
 
