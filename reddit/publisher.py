@@ -27,7 +27,7 @@ class RedditPublisher(BasePublisher):
         keyboard = []
         if pass_original:
             keyboard.append(InlineKeyboardButton('original', url=post.url))
-        keyboard.append(InlineKeyboardButton('comments', url=post.comments))
+        keyboard.append(InlineKeyboardButton('comments', url=post.comments_full))
 
         return InlineKeyboardMarkup([
             keyboard

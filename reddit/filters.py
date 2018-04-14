@@ -1,3 +1,4 @@
+import re
 from typing import List
 
 from core.filter import BaseFilter
@@ -73,11 +74,14 @@ class BullshitFilter(BaseFilter):
     bullshit = {
         'meet', 'surgeries', 'surgery', 'war', 'donated', 'donate',
         'reddit', 'adopted', 'adopt', 'chemotherapy', 'cancer',
-        'medical',
+        'medical', 'pounds', 'baby', 'toddler', 'wedding', 'bride',
+        'rescue', 'rescued', 'adopting', 'adopted', 'citizenship', 'citizen',
     }
 
     def contains_bs(self, title: str):
-        return any([word in self.bullshit for word in title.lower().split()])
+        title = re.sub(r'[^\s\w]+', ' ', title)
+        words = title.lower().split()
+        return any([word in self.bullshit for word in words])
 
     def filter(self, posts: List[Post], *args, **kwargs) -> List[Post]:
         filtered_posts = [p for p in posts if not self.contains_bs(p.title)]
