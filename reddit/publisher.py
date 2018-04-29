@@ -1,11 +1,12 @@
 import html
 
-from telegram import MAX_CAPTION_LENGTH, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, MAX_CAPTION_LENGTH, ParseMode
+from telegram.error import TelegramError, TimedOut
 from telegram.ext import Updater
 
 from core.publisher import BasePublisher
-from .store import RedditStore
 from .models import Post
+from .store import RedditStore
 
 
 class RedditPublisher(BasePublisher):
@@ -15,11 +16,16 @@ class RedditPublisher(BasePublisher):
         self.timeout = 60  # seconds
 
     def publish(self, post: Post, *args, **kwargs):
-        self.store.save_post(post)
         self.logger.info('Posting: ' + str(post))
 
         try:
             self.post_one(post)
+            self.store.save_post(post)
+        except TimedOut:
+            self.logger.warning(f'Post timeout: {post}')
+            self.store.save_post(post)
+        except TelegramError as e:
+            self.logger.warning(f'Telegram error: {e}')
         except Exception as e:
             self.logger.error(e)
 
