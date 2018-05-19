@@ -32,7 +32,7 @@ class RedditPublisher(BasePublisher):
     def build_keyboard_markup(self, post: Post, pass_original=True):
         keyboard = []
         if pass_original:
-            keyboard.append(InlineKeyboardButton('original', url=post.url))
+            keyboard.append(InlineKeyboardButton('original', url=post.media_url))
         keyboard.append(InlineKeyboardButton('comments', url=post.comments_full))
 
         return InlineKeyboardMarkup([
@@ -64,9 +64,9 @@ class RedditPublisher(BasePublisher):
                 'reply_markup': keyboard_markup,
             }
             if post.type == 'photo':
-                self.bot.send_photo(photo=post.url, **kwargs)
+                self.bot.send_photo(photo=post.media_url, **kwargs)
             elif post.type == 'video':
-                self.bot.send_video(video=post.url, **kwargs)
+                self.bot.send_video(video=post.media_url, **kwargs)
 
     def cut_text(self, text: str, limit=MAX_CAPTION_LENGTH):
         if text is None:

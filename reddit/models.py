@@ -2,16 +2,25 @@ from html import unescape
 import re
 
 
+GIPHY_REGEX = re.compile(r'^https?://media\.giphy\.com/media/(\w+)/giphy\.(?:gif|mp4)$')
+GFYCAT_REGEX = re.compile(r'^https?://(?:\w+\.)?gfycat.com/(?:\w+/)*(\w+)(?:\.mp4)?$')
+IMGUR_REGEX = re.compile(r'^https?://(m\.)?imgur.com/[^/]+$')
+IMGUR2_REGEX = re.compile(r'^https?://imgur.com/r/[^/]+/[^/]+$')
+REDDIT_REGEX = re.compile(r'^https?://v\.redd\.it/[^/]+$')
+REDDIT2_REGEX = re.compile(r'^https?://(www.)?reddit.com/.*$')
+
+
 class Post(object):
     def __init__(self, item):
         meta = self._get_meta(item)
-        url, type, text = meta['url'], meta['type'], meta['text'],
+        media_url, type, text = meta['url'], meta['type'], meta['text'],
 
         self.id = item['id']
         self.subreddit = item['subreddit']
         self.title = unescape(item['title'])
         self.score = int(item['score'])
-        self.url = url
+        self.url = item['url']
+        self.media_url = media_url
         self.comments = 'https://redd.it/' + item['id']
         self.comments_full = f'https://reddit.com/r/{item["subreddit"]}/comments/{item["id"]}'
         self.created_at = int(item['created_utc'])
@@ -20,10 +29,11 @@ class Post(object):
         self.text = text
 
     def __str__(self):
-        return f'Post(id="{self.id}", url="{self.url}")'
+        return (f'Post(id:{repr(self.id)} t:{repr(self.title)} type:{repr(self.type)} '
+                f'url:{repr(self.url)} murl:{repr(self.media_url)}')
 
     def __repr__(self):
-        return f'Post(id="{self.id}", title="{self.title}, url="{self.url}"")'
+        return str(self)
 
     def _has_ext(self, file: str, *exts):
         return any([file.endswith(ext) for ext in exts])
@@ -40,10 +50,14 @@ class Post(object):
         if self._has_ext(item['url'], '.png', '.jpg'):
             result['type'] = 'photo'
             result['url'] = item['url']
-
+        # gficat
+        elif item['domain'] == 'gfycat.com':
+            url = GFYCAT_REGEX.sub(r'https://giant.gfycat.com/\g<1>.mp4', item['url'])
+            result['type'] = 'video'
+            result['url'] = url
         # giphy video. must be on because of custom giphy player
-        elif re.match(r'^https?://media\.giphy\.com/media/(\w+)/giphy\.(?:gif|mp4)$', item['url']):
-            gif_id = re.findall(r'^https?://media.giphy.com/media/(\w+)/giphy.(?:gif|mp4)', item['url'])[0]
+        elif GIPHY_REGEX.match(item['url']):
+            gif_id = GIPHY_REGEX.findall(item['url'])[0]
             result['type'] = 'video'
             result['url'] = f'https://i.giphy.com/media/{gif_id}/giphy.mp4'
 
@@ -56,13 +70,13 @@ class Post(object):
             result['type'] = 'video'
 
         # imgur single image post
-        elif re.match(r'^https?://(m\.)?imgur.com/[^/]+$', item['url']):
+        elif IMGUR_REGEX.match(item['url']):
             url = item['url'] + '.png'
             result['type'] = 'photo'
             result['url'] = url
 
         # imgur single image post with reddit tag
-        elif re.match(r'^https?://imgur.com/r/[^/]+/[^/]+$', item['url']):
+        elif IMGUR2_REGEX.match(item['url']):
             url = re.sub(r'^https?://imgur.com/r/[^/]+/([^/]+)$',
                          r'https://imgur.com/\g<1>.png',
                          item['url'])
@@ -70,13 +84,13 @@ class Post(object):
             result['url'] = url
 
         # reddit hosted video
-        elif re.match(r'^https?://v\.redd\.it/[^/]+$', item['url']):
+        elif REDDIT_REGEX.match(item['url']):
             url = item['url'] + '/DASH_600_K'
             result['type'] = 'video'
             result['url'] = url
 
         # text post from reddit
-        elif re.match(r'^https?://(www.)?reddit.com/.*$', item['url']):
+        elif REDDIT2_REGEX.match(item['url']):
             result['type'] = 'text'
             result['text'] = item['selftext']
 
