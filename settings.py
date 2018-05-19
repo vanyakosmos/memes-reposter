@@ -60,10 +60,10 @@ HOST = os.getenv('HOST', '0.0.0.0')
 # database
 MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/test')
 REDIS_URL = os.getenv("REDIS_URL")
-CLEAR_AGE = eval(os.getenv("CLEAR_AGE", '2 * 24 * 60 * 60'))
-CLEAR_INTERVAL = eval(os.getenv("CLEAR_INTERVAL", '2 * 24 * 60 * 60'))
+CLEAR_AGE = int(os.getenv("CLEAR_AGE", '172800'))
+CLEAR_INTERVAL = int(os.getenv("CLEAR_INTERVAL", '172800'))
 
 
 # misc
-ADMINS = eval(os.getenv('ADMINS', '[]'))
+ADMINS = [int(a) for a in os.getenv('ADMINS', '').split(',') if a]
 FETCH_LIMIT = int(os.getenv('FETCH_LIMIT', '3')) if DEBUG else 100
