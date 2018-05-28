@@ -1,13 +1,24 @@
-from html import unescape
+import logging
 import re
+from html import unescape
+
+import requests
 
 
-GIPHY_REGEX = re.compile(r'^https?://media\.giphy\.com/media/(\w+)/giphy\.(?:gif|mp4)$')
+logger = logging.getLogger(__name__)
+
+GIPHY_REGEX = re.compile(r'^https?://(?:media|i)\.giphy\.com/media/(\w+)/giphy\.(?:gif|mp4)$')
 GFYCAT_REGEX = re.compile(r'^https?://(?:\w+\.)?gfycat.com/(?:\w+/)*(\w+)(?:\.mp4)?$')
-IMGUR_REGEX = re.compile(r'^https?://(m\.)?imgur.com/[^/]+$')
-IMGUR2_REGEX = re.compile(r'^https?://imgur.com/r/[^/]+/[^/]+$')
-REDDIT_REGEX = re.compile(r'^https?://v\.redd\.it/[^/]+$')
-REDDIT2_REGEX = re.compile(r'^https?://(www.)?reddit.com/.*$')
+IMGUR_GIF_REGEX = re.compile(r'^(.+)\.gifv?$')
+REDDIT_REGEX = re.compile(r'^https?://(www.)?reddit.com/.*$')
+
+
+def get_gfycat_url(gif_url):
+    api_url = GFYCAT_REGEX.sub(r'https://api.gfycat.com/v1/gfycats/\g<1>', gif_url)
+    res = requests.get(api_url)
+    item = res.json()
+    url = item['gfyItem']['mp4Url']
+    return url
 
 
 class Post(object):
@@ -39,58 +50,40 @@ class Post(object):
         return any([file.endswith(ext) for ext in exts])
 
     def _get_meta(self, item: dict) -> dict:
-        item['url'] = re.sub(r'\?.*$', '', item['url'])
+        item['url'] = re.sub(r'\?.*$', '', item['url'])  # get rid of querystring
         result = {
             'type': 'link',
             'url': item['url'],
             'text': '',
         }
+        domain = item['domain']
 
-        # regular image
-        if self._has_ext(item['url'], '.png', '.jpg'):
+        # === IMAGES ===
+        if self._has_ext(item['url'], '.png', '.jpg', '.jpeg'):
             result['type'] = 'photo'
             result['url'] = item['url']
-        # gficat
-        elif item['domain'] == 'gfycat.com':
-            url = GFYCAT_REGEX.sub(r'https://giant.gfycat.com/\g<1>.mp4', item['url'])
-            result['type'] = 'video'
-            result['url'] = url
-        # giphy video. must be on because of custom giphy player
-        elif GIPHY_REGEX.match(item['url']):
-            gif_id = GIPHY_REGEX.findall(item['url'])[0]
-            result['type'] = 'video'
-            result['url'] = f'https://i.giphy.com/media/{gif_id}/giphy.mp4'
-
-        # video with explicit extension
-        elif self._has_ext(item['url'], '.gif', '.gifv'):
-            if self._has_ext(item['url'], '.gifv') and re.match(r'(i.)?imgur.com', item['domain']):
-                result['url'] = re.sub(r'^(.+)\.gifv?$', '\g<1>.mp4', item['url'])
-            else:
-                result['url'] = item['url']
-            result['type'] = 'video'
-
         # imgur single image post
-        elif IMGUR_REGEX.match(item['url']):
-            url = item['url'] + '.png'
+        elif domain in ('imgur.com', 'm.imgur.com'):
+            result['url'] = item['url'] + '.png'
             result['type'] = 'photo'
-            result['url'] = url
 
-        # imgur single image post with reddit tag
-        elif IMGUR2_REGEX.match(item['url']):
-            url = re.sub(r'^https?://imgur.com/r/[^/]+/([^/]+)$',
-                         r'https://imgur.com/\g<1>.png',
-                         item['url'])
-            result['type'] = 'photo'
-            result['url'] = url
-
-        # reddit hosted video
-        elif REDDIT_REGEX.match(item['url']):
-            url = item['url'] + '/DASH_600_K'
+        # === VIDEOS ===
+        elif domain == 'gfycat.com':
+            result['url'] = get_gfycat_url(item['url'])
             result['type'] = 'video'
-            result['url'] = url
+        elif domain in ('media.giphy.com', 'i.giphy.com'):
+            gif_id = GIPHY_REGEX.findall(item['url'])[0]
+            result['url'] = f'https://i.giphy.com/media/{gif_id}/giphy.mp4'
+            result['type'] = 'video'
+        elif domain == 'i.imgur.com':
+            result['url'] = IMGUR_GIF_REGEX.sub('\g<1>.mp4', item['url'])
+            result['type'] = 'video'
+        elif domain == 'v.redd.it':
+            result['type'] = 'video'
+            result['url'] = item['url'] + '/DASH_600_K'
 
-        # text post from reddit
-        elif REDDIT2_REGEX.match(item['url']):
+        # === TEXTS ===
+        elif REDDIT_REGEX.match(item['url']):
             result['type'] = 'text'
             result['text'] = item['selftext']
 

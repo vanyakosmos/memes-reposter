@@ -16,7 +16,7 @@ class RedditPublisher(BasePublisher):
         self.timeout = 60  # seconds
 
     def publish(self, post: Post, *args, **kwargs):
-        self.logger.info('Posting: ' + str(post))
+        self.logger.debug(f'Posting: {post}')
 
         try:
             self.post_one(post)
@@ -26,6 +26,7 @@ class RedditPublisher(BasePublisher):
             self.store.save_post(post)
         except TelegramError as e:
             self.logger.warning(f'Telegram error: {e}')
+            self.logger.warning(f'\t\tin post: {post}')
         except Exception as e:
             self.logger.error(e)
 
