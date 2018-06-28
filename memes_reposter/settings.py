@@ -22,6 +22,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # 3rd parties
+    'solo.apps.SoloAppConfig',
+    'rest_framework',
     # own apps
     'apps.reddit.apps.RedditConfig',
     'apps.imgur.apps.ImgurConfig',

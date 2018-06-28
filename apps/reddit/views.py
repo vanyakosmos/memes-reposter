@@ -1,3 +1,10 @@
-from django.shortcuts import render
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
-# Create your views here.
+from . import tasks
+
+
+@api_view(['POST'])
+def publish_view(request):
+    stats = tasks.fetch_and_publish()
+    return Response(stats)
