@@ -7,7 +7,7 @@ from django.utils import timezone
 from memes_reposter.celery import app as celery_app
 from .fetcher import fetch
 from .filters import apply_filters
-from .models import Post, Subreddit
+from .models import Post, Subreddit, Channel
 from .publisher import publish_posts
 
 
@@ -25,12 +25,14 @@ def pack_posts(raw_posts, subreddit: Subreddit):
 @celery_app.task
 def fetch_and_publish():
     stats = {}
-    for subreddit in Subreddit.objects.filter(active=True):
-        raw_posts = fetch(subreddit.name, limit=10)
-        posts = pack_posts(raw_posts, subreddit)
-        posts = apply_filters(posts, subreddit)
-        publish_posts(posts, subreddit)
-        stats[subreddit.name] = len(posts)
+    for channel in Channel.objects.all():
+        for subreddit in Subreddit.objects.filter(active=True, channel=channel):
+            raw_posts = fetch(subreddit.name, limit=10)
+            posts = pack_posts(raw_posts, subreddit)
+            posts = apply_filters(posts, subreddit)
+            publish_posts(posts, subreddit)
+            key = f'{channel.name} > {subreddit.name}'
+            stats[key] = len(posts)
     return stats
 
 

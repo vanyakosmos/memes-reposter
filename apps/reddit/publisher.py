@@ -2,7 +2,7 @@ import html
 import logging
 from typing import List
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, MAX_CAPTION_LENGTH, ParseMode
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, MAX_CAPTION_LENGTH, ParseMode, TelegramError
 
 from memes_reposter.telegram_bot import bot
 from .models import Post, Subreddit
@@ -13,17 +13,23 @@ logger = logging.getLogger(__name__)
 
 def publish_posts(posts: List[Post], subreddit: Subreddit):
     for post in posts:
-        publish_post(post, subreddit)
-        logger.info('Post published: %s', repr(post))
+        published = publish_post(post, subreddit)
+        if published:
+            logger.info('Publishing: %s', repr(post))
         post.save()
 
 
 def publish_post(post: Post, subreddit: Subreddit):
     channel_id = subreddit.channel.name
-    if post.meta.type in ('text', 'link'):
-        publish_post_link(post, channel_id)
-    else:
-        publish_media_post(post, channel_id, subreddit)
+    try:
+        if post.meta.type in ('text', 'link'):
+            publish_post_link(post, channel_id)
+        else:
+            publish_media_post(post, channel_id, subreddit)
+        return True
+    except TelegramError as e:
+        logger.error('Error %s: %s for post %s', type(e), e, repr(post))
+        return False
 
 
 def publish_post_link(post: Post, channel_id: str):
