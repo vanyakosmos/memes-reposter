@@ -1,11 +1,10 @@
 import logging
-from functools import reduce
+from functools import reduce, wraps
 from typing import List
-from functools import wraps
 
 from django.db.models import Q
 
-from apps.reddit.models import Post, Subreddit, RedditConfig
+from apps.reddit.models import Post, Subreddit
 
 
 logger = logging.getLogger(__name__)
@@ -14,9 +13,12 @@ logger = logging.getLogger(__name__)
 def log_size(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
+        posts = args[0]
+        init_len = len(posts)
         result = func(*args, **kwargs)
-        logger.debug('Filter %s > %d', func.__name__, len(result))
+        logger.debug('Filter %s: %d > %d', func.__name__, init_len, len(result))
         return result
+
     return wrapper
 
 
@@ -25,7 +27,7 @@ def score_filter(posts: List[Post], subreddit: Subreddit):
     """Score pass."""
     return [
         post for post in posts
-        if post.score > subreddit.score_limit
+        if post.meta.score > subreddit.score_limit
     ]
 
 
@@ -60,10 +62,9 @@ def unique_filter(posts: List[Post], _: Subreddit):
 
 
 @log_size
-def keywords_filter(posts: List[Post], _: Subreddit):
+def keywords_filter(posts: List[Post], subreddit: Subreddit):
     """Filter out posts with forbidden words in title."""
-    config = RedditConfig.get_solo()
-    keywords = config.forbidden_keywords_set
+    keywords = subreddit.forbidden_keywords_set
     return [
         post for post in posts
         if not any(map(lambda k: k in keywords, post.title_terms))

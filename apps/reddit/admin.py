@@ -1,19 +1,18 @@
 from django.contrib import admin
-from solo.admin import SingletonModelAdmin
 
-from .models import Post, RedditConfig, Subreddit
+from .models import Channel, Post, Subreddit
 
 
 @admin.register(Subreddit)
 class SubredditAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('__str__', 'score_limit', 'pass_nsfw', 'show_title', 'active')
 
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('__str__', 'comments', 'subreddit', 'title', 'link')
 
 
-@admin.register(RedditConfig)
-class RedditConfigAdmin(SingletonModelAdmin):
-    pass
+@admin.register(Channel)
+class ChannelAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'name')

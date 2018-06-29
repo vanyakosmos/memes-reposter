@@ -1,5 +1,6 @@
 import logging
 import os
+
 import dj_database_url
 from dotenv import find_dotenv, load_dotenv
 
@@ -11,7 +12,6 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 DEBUG = os.environ.get('DEBUG', '0') in ('1', 'yes', 'y')
 THIS_HOST = os.environ.get('THIS_HOST', '*')
 ALLOWED_HOSTS = [THIS_HOST]
-
 
 # Application definition
 
@@ -60,13 +60,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'memes_reposter.wsgi.application'
 
-
 # Database
 DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///db.sqlite3')
 DATABASES = {
     'default': dj_database_url.parse(DATABASE_URL)
 }
-
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -84,14 +82,12 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
@@ -135,7 +131,7 @@ LOGGING = {
 }
 
 # telegram
-TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
+TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', None)
 TELEGRAM_TIMEOUT = 30  # seconds
 
 # celery

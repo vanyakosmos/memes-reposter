@@ -29,7 +29,7 @@ def fetch_and_publish():
         raw_posts = fetch(subreddit.name, limit=10)
         posts = pack_posts(raw_posts, subreddit)
         posts = apply_filters(posts, subreddit)
-        publish_posts(posts)
+        publish_posts(posts, subreddit)
         stats[subreddit.name] = len(posts)
     return stats
 
