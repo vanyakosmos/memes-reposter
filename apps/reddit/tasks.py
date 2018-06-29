@@ -23,14 +23,14 @@ def pack_posts(raw_posts, subreddit: Subreddit):
 
 
 @celery_app.task
-def fetch_and_publish():
+def fetch_and_publish(blank=False):
     stats = {}
     for channel in Channel.objects.all():
         for subreddit in Subreddit.objects.filter(active=True, channel=channel):
             raw_posts = fetch(subreddit.name, limit=10)
             posts = pack_posts(raw_posts, subreddit)
             posts = apply_filters(posts, subreddit)
-            publish_posts(posts, subreddit)
+            publish_posts(posts, subreddit, blank)
             key = f'{channel.name} > {subreddit.name}'
             stats[key] = len(posts)
     return stats

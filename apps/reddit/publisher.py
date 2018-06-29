@@ -11,11 +11,14 @@ from .models import Post, Subreddit
 logger = logging.getLogger(__name__)
 
 
-def publish_posts(posts: List[Post], subreddit: Subreddit):
+def publish_posts(posts: List[Post], subreddit: Subreddit, blank=False):
     for post in posts:
-        published = publish_post(post, subreddit)
-        if published:
-            logger.info('Publishing: %s', repr(post))
+        if blank:
+            logger.info('Blank publishing: %s', repr(post))
+        else:
+            published = publish_post(post, subreddit)
+            if published:
+                logger.info('Publishing: %s', repr(post))
         post.save()
 
 
