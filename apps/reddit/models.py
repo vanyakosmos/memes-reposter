@@ -2,21 +2,16 @@ import re
 from html import unescape
 from typing import List
 
-import requests
 from django.core import validators
 from django.core.exceptions import ValidationError
 from django.db import models
-from solo.models import SingletonModel
 from telegram import TelegramError
 
 from apps.core.fields import URLField
+from apps.reddit.utils import get_media
 from memes_reposter.telegram_bot import bot
 
 
-GIPHY_REGEX = re.compile(r'^https?://(?:media|i)\.giphy\.com/media/(\w+)/giphy\.(?:gif|mp4)$')
-GFYCAT_REGEX = re.compile(r'^https?://(?:\w+\.)?gfycat.com/(?:\w+/)*(\w+)(?:\.mp4)?$')
-IMGUR_GIF_REGEX = re.compile(r'^(.+)\.gifv?$')
-REDDIT_REGEX = re.compile(r'^https?://(www.)?reddit.com/.*$')
 TRASH_REGEX = re.compile(r'[^\w\s]')
 
 
@@ -130,18 +125,6 @@ class Post(models.Model):
     def comments_full(self):
         return f'https://reddit.com/r/{self.subreddit.name}/comments/{self.reddit_id}'
 
-    @staticmethod
-    def _has_ext(file: str, *exts):
-        return any([file.endswith(ext) for ext in exts])
-
-    @staticmethod
-    def _get_gfycat_url(gif_url):
-        api_url = GFYCAT_REGEX.sub(r'https://api.gfycat.com/v1/gfycats/\g<1>', gif_url)
-        res = requests.get(api_url)
-        item = res.json()
-        url = item['gfyItem']['mp4Url']
-        return url
-
     @classmethod
     def from_dict(cls, item: dict, subreddit: Subreddit):
         post = Post(
@@ -151,36 +134,9 @@ class Post(models.Model):
             reddit_id=item['id'],
             nsfw=item['over_18'],
         )
+        media = get_media(item)
         post.meta.score = int(item['score'])
-        post.meta.media_link = post.link
-        domain = item['domain']
-
-        # === IMAGES ===
-        if cls._has_ext(item['url'], '.png', '.jpg', '.jpeg'):
-            post.meta.type = 'photo'
-            post.meta.media_link = item['url']
-        # imgur single image post
-        elif domain in ('imgur.com', 'm.imgur.com'):
-            post.meta.media_link = item['url'] + '.png'
-            post.meta.type = 'photo'
-
-        # === VIDEOS ===
-        elif domain == 'gfycat.com':
-            post.meta.media_link = cls._get_gfycat_url(item['url'])
-            post.meta.type = 'video'
-        elif domain in ('media.giphy.com', 'i.giphy.com'):
-            gif_id = GIPHY_REGEX.findall(item['url'])[0]
-            post.meta.media_link = f'https://i.giphy.com/media/{gif_id}/giphy.mp4'
-            post.meta.type = 'video'
-        elif domain == 'i.imgur.com':
-            post.meta.media_link = IMGUR_GIF_REGEX.sub('\g<1>.mp4', item['url'])
-            post.meta.type = 'video'
-        elif domain == 'v.redd.it':
-            post.meta.type = 'video'
-            post.meta.media_link = item['url'] + '/DASH_600_K'
-
-        # === TEXTS ===
-        elif REDDIT_REGEX.match(item['url']):
-            post.meta.type = 'text'
-            post.meta.text = item['selftext']
+        post.meta.media_link = media['media']
+        post.meta.type = media['type']
+        post.meta.text = media['text']
         return post
