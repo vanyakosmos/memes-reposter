@@ -22,6 +22,12 @@ def publish_posts(posts: List[Post], subreddit: Subreddit, blank=False):
         post.save()
 
 
+def publish_blank(posts: List[Post]):
+    for post in posts:
+        logger.info('Blank publishing: %s', repr(post))
+        post.save()
+
+
 def publish_post(post: Post, subreddit: Subreddit):
     channel_id = subreddit.channel.name
     try:

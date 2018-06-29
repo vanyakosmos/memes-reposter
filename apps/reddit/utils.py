@@ -24,7 +24,7 @@ def get_gfycat_url(gif_url):
 
 def get_media(item: dict) -> dict:
     res = {
-        'media': item['link'],
+        'media': item['url'],
         'type': 'link',  # link | photo | video | text
         'text': '',
     }
