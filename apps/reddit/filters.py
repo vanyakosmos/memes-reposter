@@ -1,25 +1,14 @@
 import logging
-from functools import reduce, wraps
+from functools import reduce
 from typing import List
 
 from django.db.models import Q
 
-from apps.reddit.models import Post, Subreddit
+from apps.core.filters import log_size
+from .models import Post, Subreddit
 
 
 logger = logging.getLogger(__name__)
-
-
-def log_size(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        posts = args[0]
-        init_len = len(posts)
-        result = func(*args, **kwargs)
-        logger.info('Filter %s: %d > %d', func.__name__, init_len, len(result))
-        return result
-
-    return wrapper
 
 
 @log_size

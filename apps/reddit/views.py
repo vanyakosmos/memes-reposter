@@ -1,23 +1,30 @@
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 
+from apps.core.errors import ConfigError
 from . import tasks
 
 
-@api_view(['POST'])
-def publish_view(request):
-    stats = tasks.fetch_and_publish()
-    if stats:
-        return Response(stats)
-    else:
+def poster(posting_task):
+    try:
+        stats = posting_task()
+    except ConfigError as e:
         return Response({
-            'details': 'Site in maintenance mode. Try again later.'
+            'details': str(e),
         }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    return Response(stats)
 
 
 @api_view(['POST'])
+@permission_classes([IsAdminUser])
+def publish_view(request):
+    poster(tasks.fetch_and_publish)
+
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
 def blank_publish_view(request):
     """Save posts into db w/o publishing."""
-    stats = tasks.fetch_and_publish(blank=True, force=True)
-    return Response(stats)
+    poster(lambda: tasks.fetch_and_publish(force=True, blank=True))
