@@ -39,6 +39,23 @@ class ImgurConfig(SingletonModel):
         else:
             raise ValidationError("Bot is not admin.")
 
+    @staticmethod
+    def _tags_to_set(tags_string: str):
+        if tags_string:
+            return {
+                '_'.join(tag.strip().split())
+                for tag in tags_string.split(',')
+            }
+        return set()
+
+    @property
+    def bad_tags_set(self):
+        return self._tags_to_set(self.bad_tags)
+
+    @property
+    def good_tags_set(self):
+        return self._tags_to_set(self.good_tags)
+
     def clean(self):
         self._bot_has_access()
         self._bot_id_admin()
@@ -103,6 +120,12 @@ class Post(models.Model):
     @property
     def is_single(self):
         return not self.is_album or self.images_count == 1
+
+    @property
+    def tags_set(self):
+        if self.tags:
+            return set(self.tags.split(', '))
+        return set()
 
     @classmethod
     def from_dict(cls, item: dict):

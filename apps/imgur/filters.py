@@ -26,20 +26,33 @@ def unique_filter(posts: List[Post], _: ImgurConfig):
 
 
 @log_size
-def tags_filter(posts: List[Post], config: ImgurConfig):
-    # todo: finish
+def exclude_by_tags_filter(posts: List[Post], config: ImgurConfig):
+    if not config.exclude_mode:
+        return posts
+    result = []
+    for post in posts:
+        if len(config.bad_tags_set & post.tags_set) == 0:
+            result.append(post)
+    return result
+
+
+@log_size
+def include_by_tags_filter(posts: List[Post], config: ImgurConfig):
     if config.exclude_mode:
-        pass
-    else:
-        pass
-    return posts
+        return posts
+    result = []
+    for post in posts:
+        if len(config.good_tags_set & post.tags_set) != 0:
+            result.append(post)
+    return result
 
 
 def apply_filters(posts: List[Post], config: ImgurConfig) -> iter:
     filters = [
         score_filter,
         unique_filter,
-        tags_filter,
+        exclude_by_tags_filter,
+        include_by_tags_filter,
     ]
     posts = reduce(lambda ps, f: f(ps, config), filters, posts)
     return posts
