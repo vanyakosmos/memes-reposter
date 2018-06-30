@@ -8,11 +8,6 @@ services:
       - "27017:27017"
     volumes:
       - mongodata:/data/db
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "200k"
-        max-file: "10"
 
   bot:
     build: .

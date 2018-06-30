@@ -14,13 +14,12 @@ def fetch(subreddit: str, limit=20):
         "User-Agent": f"Mozilla/2000"
     }
     response = requests.request(method='GET', url=url, headers=headers)
-    json = response.json()
-
-    logger.debug(f'Fetched. Code: {response.status_code}')
-    data = []
+    logger.info(f'Fetched data from "{subreddit}". Code: {response.status_code}')
+    data = response.json()
+    posts = []
     if response.status_code == 200:
-        data = [p['data'] for p in json['data']['children']]
-    return data
+        posts = [p['data'] for p in data['data']['children']]
+    return posts
 
 
 def main():

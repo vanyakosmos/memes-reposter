@@ -15,4 +15,5 @@ class PostAdmin(admin.ModelAdmin):
 
 @admin.register(Channel)
 class ChannelAdmin(admin.ModelAdmin):
-    list_display = ('__str__', 'name')
+    list_display = ('__str__', 'username')
+    readonly_fields = ('chat_id',)

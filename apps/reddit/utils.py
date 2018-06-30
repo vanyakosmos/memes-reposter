@@ -1,7 +1,10 @@
+import logging
 import re
 
 import requests
 
+
+logger = logging.getLogger(__name__)
 
 GIPHY_REGEX = re.compile(r'^https?://(?:media|i)\.giphy\.com/media/(\w+)/giphy\.(?:gif|mp4)$')
 GFYCAT_REGEX = re.compile(r'^https?://(?:\w+\.)?gfycat.com/(?:\w+/)*(\w+)(?:\.mp4)?$')
@@ -34,25 +37,37 @@ def get_media(item: dict) -> dict:
     if has_ext(item['url'], '.png', '.jpg', '.jpeg'):
         res['type'] = 'photo'
         res['media'] = item['url']
+        logger.debug('%s ~ ' * 4, domain, res['type'], res['media'], item['url'])
+
     # imgur single image post
     elif domain in ('imgur.com', 'm.imgur.com') and not IMGUR_GIF_REGEX.match(item['url']):
         res['type'] = 'photo'
         res['media'] = item['url'] + '.png'
+        logger.debug('%s ~ ' * 4, domain, res['type'], res['media'], item['url'])
 
     # === VIDEOS ===
     elif domain == 'gfycat.com':
         res['type'] = 'video'
         res['media'] = get_gfycat_url(item['url'])
+        logger.debug('%s ~ ' * 4, domain, res['type'], res['media'], item['url'])
+
     elif domain in ('media.giphy.com', 'i.giphy.com'):
         res['type'] = 'video'
         gif_id = GIPHY_REGEX.findall(item['url'])[0]
         res['media'] = f'https://i.giphy.com/media/{gif_id}/giphy.mp4'
+        logger.debug('%s ~ ' * 4, domain, res['type'], res['media'], item['url'])
+
     elif domain in ('imgur.com', 'm.imgur.com', 'i.imgur.com'):
         res['type'] = 'video'
         res['media'] = IMGUR_GIF_REGEX.sub('\g<1>.mp4', item['url'])
+        logger.debug('%s ~ ' * 4, domain, res['type'], res['media'], item['url'])
+
     elif domain == 'v.redd.it':
-        res['type'] = 'video'
-        res['media'] = item['media']['reddit_video']['fallback_url']
+        media = item['media']
+        if media:
+            res['type'] = 'video'
+            res['media'] = item['media']['reddit_video']['fallback_url']
+        logger.debug('%s ~ ' * 4, domain, res['type'], res['media'], item['url'])
 
     # === TEXTS ===
     elif REDDIT_REGEX.match(item['url']):

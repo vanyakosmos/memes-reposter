@@ -11,14 +11,11 @@ from .models import Post, Subreddit
 logger = logging.getLogger(__name__)
 
 
-def publish_posts(posts: List[Post], subreddit: Subreddit, blank=False):
+def publish_posts(posts: List[Post], subreddit: Subreddit):
     for post in posts:
-        if blank:
-            logger.info('Blank publishing: %s', repr(post))
-        else:
-            published = publish_post(post, subreddit)
-            if published:
-                logger.info('Publishing: %s', repr(post))
+        published = publish_post(post, subreddit)
+        if published:
+            logger.info('Published: %s', repr(post))
         post.save()
 
 
@@ -29,12 +26,12 @@ def publish_blank(posts: List[Post]):
 
 
 def publish_post(post: Post, subreddit: Subreddit):
-    channel_id = subreddit.channel.name
+    chat_id = subreddit.channel.chat_id
     try:
         if post.meta.type in ('text', 'link'):
-            publish_post_link(post, channel_id)
+            publish_post_link(post, chat_id)
         else:
-            publish_media_post(post, channel_id, subreddit)
+            publish_media_post(post, chat_id, subreddit)
         return True
     except TelegramError as e:
         logger.error('Error %s: %s for post %s', type(e), e, repr(post))

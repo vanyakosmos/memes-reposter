@@ -27,14 +27,14 @@ def fetch_and_publish(blank=False):
     stats = {}
     for channel in Channel.objects.all():
         for subreddit in Subreddit.objects.filter(active=True, channel=channel):
-            raw_posts = fetch(subreddit.name, limit=10)
+            raw_posts = fetch(subreddit.name, limit=100)
             posts = pack_posts(raw_posts, subreddit)
             posts = apply_filters(posts, subreddit)
             if blank:
                 publish_blank(posts)
             else:
                 publish_posts(posts, subreddit)
-            key = f'{channel.name} > {subreddit.name}'
+            key = f'{channel.username} > {subreddit.name}'
             stats[key] = len(posts)
     return stats
 

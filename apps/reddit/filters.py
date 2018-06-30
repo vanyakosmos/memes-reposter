@@ -36,7 +36,7 @@ def nsfw_filter(posts: List[Post], subreddit: Subreddit):
     """NSFW pass."""
     return [
         post for post in posts
-        if subreddit.pass_nsfw or not post.nsfw
+        if subreddit.pass_nsfw or not post.meta.nsfw
     ]
 
 
