@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'solo.apps.SoloAppConfig',
     'rest_framework',
     # own apps
+    'apps.core.apps.CoreConfig',
     'apps.reddit.apps.RedditConfig',
     'apps.imgur.apps.ImgurConfig',
 ]
@@ -139,3 +140,6 @@ REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_TASK_SERIALIZER = 'json'
+
+# reddit
+REDDIT_FETCH_SIZE = int(os.getenv('REDDIT_FETCH_SIZE', '100'))

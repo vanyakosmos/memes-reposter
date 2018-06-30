@@ -74,4 +74,7 @@ def get_media(item: dict) -> dict:
         res['type'] = 'text'
         res['text'] = item['selftext']
 
+    else:
+        logger.debug('%s ~ ' * 4, domain, res['type'], res['media'], item['url'])
+
     return res

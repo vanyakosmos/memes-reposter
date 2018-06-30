@@ -1,9 +1,12 @@
 import logging
 from datetime import timedelta
+from typing import Optional
 
 from celery.schedules import crontab
+from django.conf import settings
 from django.utils import timezone
 
+from apps.core.models import SiteConfig
 from memes_reposter.celery import app as celery_app
 from .fetcher import fetch
 from .filters import apply_filters
@@ -23,11 +26,16 @@ def pack_posts(raw_posts, subreddit: Subreddit):
 
 
 @celery_app.task
-def fetch_and_publish(blank=False):
+def fetch_and_publish(force=False, blank=False) -> Optional[dict]:
+    config = SiteConfig.get_solo()
+    if config.maintenance and not force:
+        logger.info('Site in maintenance mode, skipping publishing.')
+        return
+
     stats = {}
     for channel in Channel.objects.all():
         for subreddit in Subreddit.objects.filter(active=True, channel=channel):
-            raw_posts = fetch(subreddit.name, limit=100)
+            raw_posts = fetch(subreddit.name, limit=settings.REDDIT_FETCH_SIZE)
             posts = pack_posts(raw_posts, subreddit)
             posts = apply_filters(posts, subreddit)
             if blank:
