@@ -48,7 +48,7 @@ def fetch_and_publish(force=False, blank=False) -> dict:
 
 @celery_app.task
 def delete_old_posts():
-    time = timezone.now() - timedelta(days=7)
+    time = timezone.now() - timedelta(days=3)
     posts = Post.objects.filter(created__lte=time)
     deleted, _ = posts.delete()
     logger.info(f'Deleted {deleted} post(s).')
@@ -61,5 +61,5 @@ def setup_periodic_tasks(sender, **_):
     fetch_crontab = crontab(hour='*', minute='30')
     sender.add_periodic_task(fetch_crontab, fetch_and_publish.s(), name='fetch and publish')
 
-    clean_crontab = crontab(hour='12', minute='0')
+    clean_crontab = crontab(hour='*/12', minute='0')
     sender.add_periodic_task(clean_crontab, delete_old_posts.s(), name='delete old posts')

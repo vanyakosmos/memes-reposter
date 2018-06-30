@@ -12,10 +12,11 @@ logger = logging.getLogger(__name__)
 
 
 def publish_posts(posts: List[Post], subreddit: Subreddit):
-    for post in posts:
+    size = len(posts)
+    for i, post in enumerate(posts):
         published = publish_post(post, subreddit)
         if published:
-            logger.info('Published: %s', repr(post))
+            logger.info('Published %3d/%d: %s', i + 1, size, repr(post))
         post.save()
 
 
