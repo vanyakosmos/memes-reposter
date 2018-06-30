@@ -143,3 +143,7 @@ CELERY_TASK_SERIALIZER = 'json'
 
 # reddit
 REDDIT_FETCH_SIZE = int(os.getenv('REDDIT_FETCH_SIZE', '100'))
+
+# imgur
+IMGUR_CLIENT_ID = os.getenv('IMGUR_CLIENT_ID')
+IMGUR_FETCH_LIMIT = int(os.getenv('IMGUR_FETCH_LIMIT', '100'))
