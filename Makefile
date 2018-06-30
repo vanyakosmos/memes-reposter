@@ -7,3 +7,9 @@ reset:
 mig:
 	./manage.py makemigrations
 	./manage.py migrate
+
+celery:
+	./run/celery.sh
+
+web:
+	./run/web.sh prod
