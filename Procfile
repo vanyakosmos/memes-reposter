@@ -1,2 +1,2 @@
 web: ./run/web.sh prod
-worker = ./run/celery.sh info
+worker: ./run/celery.sh info
