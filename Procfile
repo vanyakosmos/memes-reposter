@@ -1,1 +1,2 @@
-web: python index.py
+web: ./run/web.sh prod
+worker: ./run/celery.sh info
