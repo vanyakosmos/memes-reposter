@@ -101,6 +101,7 @@ class Post(models.Model):
     title = models.TextField()
     link = URLField(unique=True)
     reddit_id = models.CharField(max_length=200, unique=True)
+    created = models.DateTimeField(auto_now_add=True)
 
     def __init__(self, *args, **kwargs):
         self._post_meta = PostMeta()

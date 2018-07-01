@@ -78,6 +78,7 @@ class Post(models.Model):
     tags = models.TextField()
     images_links = models.TextField()
     images_count = models.IntegerField(default=1)
+    created = models.DateTimeField(auto_now_add=True)
 
     def __init__(self, *args, **kwargs):
         self._post_meta = None  # type: PostMeta
