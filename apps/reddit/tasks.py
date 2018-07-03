@@ -18,10 +18,12 @@ logger = logging.getLogger(__name__)
 
 
 def pack_posts(raw_posts, subreddit: Subreddit):
-    posts = [
-        Post.from_dict(raw_post, subreddit)
-        for raw_post in raw_posts
-    ]
+    posts = []
+    for raw_post in raw_posts:
+        try:
+            posts.append(Post.from_dict(raw_post, subreddit))
+        except Exception as e:
+            logger.error(e)
     return posts
 
 
