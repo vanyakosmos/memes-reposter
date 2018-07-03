@@ -1,6 +1,7 @@
 import html
 import logging
-from typing import List
+import re
+from typing import List, Optional
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, MAX_CAPTION_LENGTH, ParseMode, TelegramError
 
@@ -9,6 +10,7 @@ from .models import Post, Subreddit
 
 
 logger = logging.getLogger(__name__)
+REPOST_REGEX = re.compile(r'\(\s*(x-?|re)post .+\)')
 
 
 def publish_posts(posts: List[Post], subreddit: Subreddit):
@@ -39,10 +41,19 @@ def publish_post(post: Post, subreddit: Subreddit):
         return False
 
 
+def format_title(post: Post, escape=False) -> Optional[str]:
+    title = post.title
+    title = REPOST_REGEX.sub('', title).strip()
+    if escape:
+        title = html.escape(title)
+    if not title:
+        return
+    return title
+
+
 def publish_post_link(post: Post, channel_id: str):
-    title = html.escape(post.title)
-    title = f'{title}\n'
-    text = title + f'{post.link}'
+    title = format_title(post)
+    text = title + f'\n{post.link}'
 
     keyboard_markup = build_keyboard_markup(post, pass_original=False)
     bot.send_message(text=text,
@@ -52,19 +63,20 @@ def publish_post_link(post: Post, channel_id: str):
 
 
 def publish_media_post(post: Post, channel_id: str, subreddit: Subreddit):
+    title = format_title(post)
     keyboard_markup = build_keyboard_markup(post)
     common = {
         'chat_id': channel_id,
         'reply_markup': keyboard_markup,
     }
     # need title, post pic and text separately
-    if subreddit.show_title and len(post.title) > MAX_CAPTION_LENGTH:
+    if subreddit.show_title and title and len(title) > MAX_CAPTION_LENGTH:
         publish_media(post, chat_id=channel_id)
-        kwargs = dict(text=post.title, **common)
+        kwargs = dict(text=title, **common)
         bot.send_message(**kwargs)
     # need title, post pic with caption
     elif subreddit.show_title:
-        kwargs = dict(caption=post.title, **common)
+        kwargs = dict(caption=title, **common)
         publish_media(post, **kwargs)
     # post just pic
     else:
