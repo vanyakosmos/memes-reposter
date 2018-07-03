@@ -1,4 +1,5 @@
 import logging
+from time import sleep
 from typing import List
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, InputMediaVideo, TelegramError
@@ -14,6 +15,7 @@ def publish_posts(posts: List[Post], config: ImgurConfig):
     size = len(posts)
     for i, post in enumerate(posts):
         published = publish_post(post, config)
+        sleep(0.5)
         if published:
             logger.info('Published %3d/%d: %s', i + 1, size, repr(post))
         post.save()

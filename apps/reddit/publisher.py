@@ -1,6 +1,7 @@
 import html
 import logging
 import re
+from time import sleep
 from typing import List, Optional
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, MAX_CAPTION_LENGTH, ParseMode, TelegramError
@@ -17,6 +18,7 @@ def publish_posts(posts: List[Post], subreddit: Subreddit):
     size = len(posts)
     for i, post in enumerate(posts):
         published = publish_post(post, subreddit)
+        sleep(0.5)
         if published:
             logger.info('Published %3d/%d: %s', i + 1, size, repr(post))
         post.save()
