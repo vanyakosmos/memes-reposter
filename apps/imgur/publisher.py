@@ -2,6 +2,7 @@ import logging
 from time import sleep
 from typing import List
 
+from django.conf import settings
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, InputMediaVideo, TelegramError
 
 from memes_reposter.telegram_bot import bot
@@ -28,11 +29,12 @@ def publish_blank(posts: List[Post]):
 
 
 def publish_post(post: Post, config: ImgurConfig):
+    delete_on_fail = settings.IMGUR_DELETE_ON_FAIL
     try:
         if post.is_single:
             publish_single(post, config)
         else:
-            publish_album(post, config)
+            publish_album(post, config, delete_on_fail)
         return True
     except TelegramError as e:
         logger.error('Error %s: %s for post %s', type(e), e, repr(post))
