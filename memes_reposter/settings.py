@@ -149,3 +149,4 @@ REDDIT_FETCH_SIZE = int(os.getenv('REDDIT_FETCH_SIZE', '100'))
 # imgur
 IMGUR_CLIENT_ID = os.getenv('IMGUR_CLIENT_ID')
 IMGUR_FETCH_LIMIT = int(os.getenv('IMGUR_FETCH_LIMIT', '100'))
+IMGUR_DELETE_ON_FAIL = os.getenv('IMGUR_DELETE_ON_FAIL', '0') in ('1', 'y', 'yes', 'ok')
