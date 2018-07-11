@@ -27,9 +27,7 @@ def pack_posts(raw_posts):
 
 @celery_app.task
 def fetch_and_publish(force=False, blank=False) -> dict:
-    config = SiteConfig.get_solo()
-    if config.maintenance and not force:
-        raise ConfigError('Site in maintenance mode, skipping publishing.')
+    SiteConfig.get_solo().check_maintenance(force)
 
     imgur_config = ImgurConfig.get_solo()
     if not imgur_config.chat_id:
@@ -58,7 +56,9 @@ def delete_old_posts():
 @celery_app.on_after_finalize.connect
 def setup_periodic_tasks(sender, **_):
     logger.info('SCHEDULING IMGUR')
+    # publish
     fetch_crontab = crontab(hour='*', minute='*/30')
     sender.add_periodic_task(fetch_crontab, fetch_and_publish.s(), name='imgur: fetch and publish')
-    clean_crontab = crontab(hour='*/12', minute='0')
+    # clean up
+    clean_crontab = crontab(hour='*/12', minute='55')
     sender.add_periodic_task(clean_crontab, delete_old_posts.s(), name='imgur: delete old posts')

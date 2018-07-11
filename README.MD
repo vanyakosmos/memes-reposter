@@ -6,6 +6,10 @@ Service that steal memes from different sources and repost its to telegram.
 
 - [reddit ~ rad](https://t.me/pop_reddit)
 - [imgur ~ telemgur](https://t.me/telemgur)
+- rss feeds:
+	- [The Verge](https://t.me/verge_media)
+	- [WIRED](https://t.me/wired_media)
+	- [TechCrunch](https://t.me/techcrunch_media)
 
 
 ### How it works

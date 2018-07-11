@@ -1,0 +1,43 @@
+{% extends 'admin/change_list.html' %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <style>
+        .rss-actions > form {
+            display: inline-block;
+            margin: 10px;
+        }
+        .rss-actions button {
+            background-color: white;
+            color: black;
+            border: 2px solid rgb(55, 122, 175);
+            border-radius: 100px;
+            padding: 2px 10px;
+            font-size: 1.1rem;
+        }
+        .rss-actions button:hover {
+            cursor: pointer;
+            color: white;
+            background-color: rgb(55, 122, 175);
+        }
+    </style>
+{% endblock %}
+
+{% block object-tools %}
+    <div class="rss-actions">
+        <form action="{% url 'rss:refresh' %}?next={% url 'admin:rss_channel_changelist' %}" method="POST">
+            {% csrf_token %}
+            <button type="submit">refresh</button>
+        </form>
+        <form action="{% url 'rss:publish' %}?next={% url 'admin:rss_channel_changelist' %}" method="POST">
+            {% csrf_token %}
+            <button type="submit">publish</button>
+        </form>
+        <form action="{% url 'rss:clean' %}?next={% url 'admin:rss_channel_changelist' %}" method="POST">
+            {% csrf_token %}
+            <button type="submit">clean</button>
+        </form>
+    </div>
+    <br/>
+    {{ block.super }}
+{% endblock %}

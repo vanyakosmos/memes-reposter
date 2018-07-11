@@ -1,6 +1,8 @@
 from django.db import models
 from solo.models import SingletonModel
 
+from .errors import ConfigError
+
 
 class SiteConfig(SingletonModel):
     maintenance = models.BooleanField(default=False)
@@ -11,3 +13,7 @@ class SiteConfig(SingletonModel):
 
     def __str__(self):
         return "Site Configuration"
+
+    def check_maintenance(self, force=False):
+        if self.maintenance and not force:
+            raise ConfigError('Site in maintenance mode, skipping publishing.')
