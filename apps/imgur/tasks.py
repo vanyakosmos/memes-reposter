@@ -57,7 +57,7 @@ def delete_old_posts():
 def setup_periodic_tasks(sender, **_):
     logger.info('SCHEDULING IMGUR')
     # publish
-    fetch_crontab = crontab(hour='*', minute='*/30')
+    fetch_crontab = crontab(hour='*', minute='5/35')
     sender.add_periodic_task(fetch_crontab, fetch_and_publish.s(), name='imgur: fetch and publish')
     # clean up
     clean_crontab = crontab(hour='*/12', minute='55')

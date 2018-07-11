@@ -77,7 +77,7 @@ def delete_old_posts():
 def setup_periodic_tasks(sender, **_):
     logger.info('SCHEDULING REDDIT')
     # publish
-    fetch_crontab = crontab(hour='*', minute='5,35')
+    fetch_crontab = crontab(hour='*', minute='0,30')
     sender.add_periodic_task(fetch_crontab, fetch_and_publish.s(), name='reddit: fetch and publish')
     # clean up
     clean_crontab = crontab(hour='*/12', minute='55')
