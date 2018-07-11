@@ -1,16 +1,17 @@
 import logging
-import os
+from os.path import abspath, dirname, join
 
 import dj_database_url
+import easy_env
 from dotenv import find_dotenv, load_dotenv
 
 
 load_dotenv(find_dotenv())
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SECRET_KEY = os.environ.get('SECRET_KEY')
-DEBUG = os.environ.get('DEBUG', '0') in ('1', 'yes', 'y')
-THIS_HOST = os.environ.get('THIS_HOST', '*')
+BASE_DIR = dirname(dirname(abspath(__file__)))
+SECRET_KEY = easy_env.get('SECRET_KEY', raise_error=True)
+DEBUG = easy_env.get('DEBUG', default=False)
+THIS_HOST = easy_env.get('THIS_HOST', '*')
 ALLOWED_HOSTS = [THIS_HOST]
 
 # Application definition
@@ -30,6 +31,7 @@ INSTALLED_APPS = [
     'apps.core.apps.CoreConfig',
     'apps.reddit.apps.RedditConfig',
     'apps.imgur.apps.ImgurConfig',
+    'apps.rss.apps.RssConfig',
 ]
 
 MIDDLEWARE = [
@@ -64,7 +66,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'memes_reposter.wsgi.application'
 
 # Database
-DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///db.sqlite3')
+DATABASE_URL = easy_env.get('DATABASE_URL', 'sqlite:///db.sqlite3')
 DATABASES = {
     'default': dj_database_url.parse(DATABASE_URL)
 }
@@ -94,7 +96,7 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATIC_ROOT = join(BASE_DIR, 'static')
 
 # logging
 logging.addLevelName(logging.DEBUG, '🐛 ')
@@ -134,19 +136,22 @@ LOGGING = {
 }
 
 # telegram
-TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', None)
+TELEGRAM_BOT_TOKEN = easy_env.get('TELEGRAM_BOT_TOKEN', raise_error=True)
 TELEGRAM_TIMEOUT = 30  # seconds
 
 # celery
-REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+REDIS_URL = easy_env.get('REDIS_URL', 'redis://localhost:6379/0')
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_TASK_SERIALIZER = 'json'
 
 # reddit
-REDDIT_FETCH_SIZE = int(os.getenv('REDDIT_FETCH_SIZE', '100'))
+REDDIT_FETCH_SIZE = easy_env.get_int('REDDIT_FETCH_SIZE', default=100)
 
 # imgur
-IMGUR_CLIENT_ID = os.getenv('IMGUR_CLIENT_ID')
-IMGUR_FETCH_LIMIT = int(os.getenv('IMGUR_FETCH_LIMIT', '100'))
-IMGUR_DELETE_ON_FAIL = os.getenv('IMGUR_DELETE_ON_FAIL', '0') in ('1', 'y', 'yes', 'ok')
+IMGUR_CLIENT_ID = easy_env.get('IMGUR_CLIENT_ID')
+IMGUR_FETCH_LIMIT = easy_env.get_int('IMGUR_FETCH_LIMIT', default=100)
+IMGUR_DELETE_ON_FAIL = easy_env.get_bool('IMGUR_DELETE_ON_FAIL', default=True)
+
+# rss
+RSS_CLEAN_KEEP = easy_env.get_int('RSS_CLEAN_KEEP', default=30)
