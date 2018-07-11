@@ -12,7 +12,9 @@ from rest_framework.response import Response
 from rest_framework.schemas.generators import LinkNode, distribute_links
 
 from . import tasks
-from .models import Channel
+from .fetcher import fetch_posts
+from .models import Channel, Post, RssFeed
+from .publisher import post_exists
 
 
 VERB_MAP = {
@@ -72,6 +74,25 @@ def publish_view(request: Request):
     next_url = request.query_params.get('next', None)
     if next_url:
         return redirect(next_url)
+    return Response({
+        'published': stats,
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def publish_blank_view(request: Request):
+    stats = {}
+    for feed in RssFeed.objects.filter(active=True):
+        posts = fetch_posts(feed.link, feed.link_field)
+        for post in posts:
+            post.feed = feed
+        posts = [
+            p for p in posts
+            if not post_exists(feed.channel, p)
+        ]
+        Post.objects.bulk_create(posts)
+        stats[str(feed)] = len(posts)
     return Response({
         'published': stats,
     })
