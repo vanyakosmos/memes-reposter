@@ -1,4 +1,5 @@
 import logging
+import multiprocessing
 from os.path import abspath, dirname, join
 
 import dj_database_url
@@ -27,6 +28,7 @@ INSTALLED_APPS = [
     # 3rd parties
     'solo.apps.SoloAppConfig',
     'rest_framework',
+    'django_celery_beat',
     # own apps
     'apps.core.apps.CoreConfig',
     'apps.reddit.apps.RedditConfig',
@@ -108,7 +110,7 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '%(levelname)s   %(asctime)s  %(module)10s.%(funcName)-20s:%(lineno)-5d  ⏩  %(message)s'
+            'format': '%(levelname)s   %(asctime)s  %(name)10s:%(lineno)-5d  ⏩  %(message)s'
         },
         'simple': {
             'format': '%(levelname)s %(message)s'
@@ -142,8 +144,9 @@ TELEGRAM_TIMEOUT = 30  # seconds
 # celery
 REDIS_URL = easy_env.get('REDIS_URL', 'redis://localhost:6379/0')
 CELERY_BROKER_URL = REDIS_URL
-CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_TASK_SERIALIZER = 'json'
+CELERY_WORKER_CONCURRENCY = 1 if DEBUG else multiprocessing.cpu_count()
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # reddit
 REDDIT_FETCH_SIZE = easy_env.get_int('REDDIT_FETCH_SIZE', default=100)

@@ -1,13 +1,10 @@
 import logging
 from datetime import timedelta
 
-from celery import group
-from celery.result import allow_join_result
 from celery.schedules import crontab
 from django.conf import settings
 from django.utils import timezone
 
-from apps.core.errors import ConfigError
 from apps.core.models import SiteConfig
 from memes_reposter.celery import app as celery_app
 from .fetcher import fetch
@@ -29,9 +26,7 @@ def pack_posts(raw_posts, subreddit: Subreddit):
     return posts
 
 
-@celery_app.task
-def publish_sub(subreddit_id: int, blank: bool):
-    subreddit = Subreddit.objects.get(pk=subreddit_id)
+def publish_sub(subreddit: Subreddit, blank: bool):
     channel = subreddit.channel
     raw_posts = fetch(subreddit.name, limit=settings.REDDIT_FETCH_SIZE)
     posts = pack_posts(raw_posts, subreddit)
@@ -46,21 +41,15 @@ def publish_sub(subreddit_id: int, blank: bool):
 
 @celery_app.task
 def fetch_and_publish(force=False, blank=False) -> dict:
+    logger.info('Publishing reddit posts...')
     SiteConfig.get_solo().check_maintenance(force)
-
-    jobs = []
+    stats = {}
     for channel in Channel.objects.all():
         subs = channel.subreddit_set.filter(active=True)
         for subreddit in subs:
-            job_sig = publish_sub.s(subreddit.id, blank)
-            jobs.append(job_sig)
-    publishing_job = group(jobs)
-    job_res = publishing_job.apply_async()
-
-    with allow_join_result():
-        results = job_res.get()
-
-    stats = dict(results)
+            key, length = publish_sub(subreddit, blank)
+            stats[key] = length
+    logger.info('Done publishing reddit posts.')
     return stats
 
 
@@ -78,7 +67,7 @@ def setup_periodic_tasks(sender, **_):
     logger.info('SCHEDULING REDDIT')
     # publish
     fetch_crontab = crontab(hour='*', minute='0,30')
-    sender.add_periodic_task(fetch_crontab, fetch_and_publish.s(), name='reddit: fetch and publish')
+    sender.add_periodic_task(fetch_crontab, fetch_and_publish.s(), name='reddit.publishing')
     # clean up
     clean_crontab = crontab(hour='*/12', minute='55')
-    sender.add_periodic_task(clean_crontab, delete_old_posts.s(), name='reddit: delete old posts')
+    sender.add_periodic_task(clean_crontab, delete_old_posts.s(), name='reddit.clean_up')
