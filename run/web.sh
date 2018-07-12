@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
 
-if [ ${2:-1} -eq 1 ]
-then
-	python manage.py migrate
-	python manage.py collectstatic --noinput -v 0
-fi
-
 if [ ${1:-dev} == 'dev' ]
 then
 	echo "running dev server..."
