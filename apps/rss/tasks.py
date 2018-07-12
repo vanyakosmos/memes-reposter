@@ -3,9 +3,6 @@ import traceback
 from time import sleep
 from typing import List
 
-from celery import group
-# noinspection PyProtectedMember
-from celery.result import allow_join_result
 from celery.schedules import crontab
 from django.conf import settings
 
@@ -58,10 +55,8 @@ def refresh_channels_meta() -> list:
     return stats
 
 
-@celery_app.task
-def publish_feed(feed_id):
+def publish_feed(feed: RssFeed):
     counter = 0
-    feed = RssFeed.objects.get(pk=feed_id)
     try:
         posts = fetch_posts(feed.link, feed.link_field)
         published = publish_posts(feed, posts)
@@ -74,25 +69,13 @@ def publish_feed(feed_id):
 
 @celery_app.task
 def fetch_and_publish(force=False) -> dict:
-    logger.info('Publishing posts...')
+    logger.info('Publishing rss posts...')
     SiteConfig.get_solo().check_maintenance(force)
-
-    feeds = {
-        feed.id: str(feed)
-        for feed in RssFeed.objects.filter(active=True)
-    }
-    publishing_job = group([
-        publish_feed.s(feed_id)
-        for feed_id in feeds.keys()
-    ])
-    job_res = publishing_job.apply_async()
-
-    with allow_join_result():
-        results = job_res.get()
-    stats = {
-        feed_name: r
-        for r, feed_name in zip(results, feeds.values())
-    }
+    stats = {}
+    for feed in RssFeed.objects.filter(active=True):
+        count = publish_feed(feed)
+        stats[str(feed)] = count
+    logger.info('Done publishing rss posts.')
     return stats
 
 
@@ -117,9 +100,7 @@ def setup_periodic_tasks(sender, **_):
     logger.info('SCHEDULING RSS')
     # publish
     cron = crontab(hour='*', minute='10,40')
-    job = fetch_and_publish.s()
-    sender.add_periodic_task(cron, job, name='rss: fetch and publish')
+    sender.add_periodic_task(cron, fetch_and_publish.s(), name='rss.publishing')
     # clean up
     cron = crontab(hour='*/12', minute='55')
-    job = delete_old_posts_db.s()
-    sender.add_periodic_task(cron, job, name='rss: delete old posts')
+    sender.add_periodic_task(cron, delete_old_posts_db.s(), name='rss.clean_up')
