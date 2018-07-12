@@ -1,6 +1,7 @@
 import logging
 from datetime import timedelta
 
+from celery import group
 from celery.schedules import crontab
 from django.conf import settings
 from django.utils import timezone
@@ -26,7 +27,9 @@ def pack_posts(raw_posts, subreddit: Subreddit):
     return posts
 
 
-def publish_sub(subreddit: Subreddit, blank: bool):
+@celery_app.task
+def publish_sub(subreddit_id: int, blank: bool):
+    subreddit = Subreddit.objects.get(pk=subreddit_id)
     channel = subreddit.channel
     raw_posts = fetch(subreddit.name, limit=settings.REDDIT_FETCH_SIZE)
     posts = pack_posts(raw_posts, subreddit)
@@ -40,17 +43,24 @@ def publish_sub(subreddit: Subreddit, blank: bool):
 
 
 @celery_app.task
-def fetch_and_publish(force=False, blank=False) -> dict:
+def fetch_and_publish(force=False, blank=False, wait=False) -> dict:
     logger.info('Publishing reddit posts...')
     SiteConfig.get_solo().check_maintenance(force)
-    stats = {}
+
+    jobs = []
     for channel in Channel.objects.all():
         subs = channel.subreddit_set.filter(active=True)
         for subreddit in subs:
-            key, length = publish_sub(subreddit, blank)
-            stats[key] = length
-    logger.info('Done publishing reddit posts.')
-    return stats
+            job_sig = publish_sub.s(subreddit.id, blank)
+            jobs.append(job_sig)
+    publishing_job = group(jobs)
+    job_res = publishing_job.apply_async()
+
+    if wait:
+        results = job_res.get()
+        stats = dict(results)
+        logger.info('Done publishing reddit posts.')
+        return stats
 
 
 @celery_app.task

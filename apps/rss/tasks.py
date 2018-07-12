@@ -3,6 +3,7 @@ import traceback
 from time import sleep
 from typing import List
 
+from celery import group
 from celery.schedules import crontab
 from django.conf import settings
 
@@ -55,7 +56,9 @@ def refresh_channels_meta() -> list:
     return stats
 
 
-def publish_feed(feed: RssFeed):
+@celery_app.task
+def publish_feed(feed_id: int):
+    feed = RssFeed.objects.get(pk=feed_id)
     counter = 0
     try:
         posts = fetch_posts(feed.link, feed.link_field)
@@ -68,15 +71,28 @@ def publish_feed(feed: RssFeed):
 
 
 @celery_app.task
-def fetch_and_publish(force=False) -> dict:
+def fetch_and_publish(force=False, wait=False) -> dict:
     logger.info('Publishing rss posts...')
     SiteConfig.get_solo().check_maintenance(force)
-    stats = {}
-    for feed in RssFeed.objects.filter(active=True):
-        count = publish_feed(feed)
-        stats[str(feed)] = count
-    logger.info('Done publishing rss posts.')
-    return stats
+
+    feeds = {
+        feed.id: str(feed)
+        for feed in RssFeed.objects.filter(active=True)
+    }
+    publishing_job = group([
+        publish_feed.s(feed_id)
+        for feed_id in feeds.keys()
+    ])
+    job_res = publishing_job.apply_async()
+
+    if wait:
+        results = job_res.get()
+        stats = {
+            feed_name: r
+            for r, feed_name in zip(results, feeds.values())
+        }
+        logger.info('Done publishing rss posts.')
+        return stats
 
 
 @celery_app.task

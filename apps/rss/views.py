@@ -69,7 +69,7 @@ def refresh_view(request: Request):
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def publish_view(request: Request):
-    stats = tasks.fetch_and_publish()
+    stats = tasks.fetch_and_publish(wait=True)
 
     next_url = request.query_params.get('next', None)
     if next_url:
