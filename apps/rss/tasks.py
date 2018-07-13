@@ -7,7 +7,7 @@ from celery import group
 from celery.schedules import crontab
 from django.conf import settings
 
-from apps.core.models import SiteConfig
+from apps.core.models import SiteConfig, Stat
 from memes_reposter.celery import app as celery_app
 from memes_reposter.telegram_bot import bot
 from .fetcher import fetch_posts
@@ -59,40 +59,24 @@ def refresh_channels_meta() -> list:
 @celery_app.task
 def publish_feed(feed_id: int):
     feed = RssFeed.objects.get(pk=feed_id)
-    counter = 0
     try:
         posts = fetch_posts(feed.link, feed.link_field)
         published = publish_posts(feed, posts)
-        counter += published
+        Stat.objects.create(app=Stat.APP_RSS, note=str(feed), count=published)
     except Exception as e:
         logger.error(str(e))
         logger.error(traceback.format_exc())
-    return counter
 
 
 @celery_app.task
-def fetch_and_publish(force=False, wait=False) -> dict:
+def fetch_and_publish(force=False):
     logger.info('Publishing rss posts...')
     SiteConfig.get_solo().check_maintenance(force)
-
-    feeds = {
-        feed.id: str(feed)
-        for feed in RssFeed.objects.filter(active=True)
-    }
     publishing_job = group([
-        publish_feed.s(feed_id)
-        for feed_id in feeds.keys()
+        publish_feed.s(feed.id)
+        for feed in RssFeed.objects.filter(active=True)
     ])
-    job_res = publishing_job.apply_async()
-
-    if wait:
-        results = job_res.get()
-        stats = {
-            feed_name: r
-            for r, feed_name in zip(results, feeds.values())
-        }
-        logger.info('Done publishing rss posts.')
-        return stats
+    publishing_job.apply_async()
 
 
 @celery_app.task
@@ -107,6 +91,8 @@ def delete_old_posts_db():
         posts = Post.objects.filter(pk__in=posts_ids)
         deleted, _ = posts.delete()
         stats[str(feed)] = deleted
+        Stat.objects.create(app=Stat.APP_RSS, count=deleted,
+                            task=Stat.TASK_CLEAN_UP, note=str(feed))
         logger.info(f'Deleted {deleted} post(s) from feed {feed}.')
     return stats
 

@@ -8,11 +8,11 @@ from . import tasks
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def publish_view(request):
-    return poster(lambda: tasks.fetch_and_publish(wait=True))
+    return poster(tasks.fetch_and_publish)
 
 
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def blank_publish_view(request):
     """Save posts into db w/o publishing."""
-    return poster(lambda: tasks.fetch_and_publish(force=True, blank=True, wait=True))
+    return poster(lambda: tasks.fetch_and_publish(force=True, blank=True))

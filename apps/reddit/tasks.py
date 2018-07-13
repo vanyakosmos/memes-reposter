@@ -6,7 +6,7 @@ from celery.schedules import crontab
 from django.conf import settings
 from django.utils import timezone
 
-from apps.core.models import SiteConfig
+from apps.core.models import SiteConfig, Stat
 from memes_reposter.celery import app as celery_app
 from .fetcher import fetch
 from .filters import apply_filters
@@ -39,11 +39,11 @@ def publish_sub(subreddit_id: int, blank: bool):
     else:
         publish_posts(posts, subreddit)
     key = f'{channel.username} > {subreddit.name}'
-    return key, len(posts)
+    Stat.objects.create(app=Stat.APP_REDDIT, note=key, count=len(posts), blank=blank)
 
 
 @celery_app.task
-def fetch_and_publish(force=False, blank=False, wait=False) -> dict:
+def fetch_and_publish(force=False, blank=False):
     logger.info('Publishing reddit posts...')
     SiteConfig.get_solo().check_maintenance(force)
 
@@ -54,13 +54,7 @@ def fetch_and_publish(force=False, blank=False, wait=False) -> dict:
             job_sig = publish_sub.s(subreddit.id, blank)
             jobs.append(job_sig)
     publishing_job = group(jobs)
-    job_res = publishing_job.apply_async()
-
-    if wait:
-        results = job_res.get()
-        stats = dict(results)
-        logger.info('Done publishing reddit posts.')
-        return stats
+    publishing_job.apply_async()
 
 
 @celery_app.task
@@ -69,6 +63,8 @@ def delete_old_posts():
     posts = Post.objects.filter(created__lte=time)
     deleted, _ = posts.delete()
     logger.info(f'Deleted {deleted} post(s).')
+    Stat.objects.create(app=Stat.APP_REDDIT, count=deleted,
+                        task=Stat.TASK_CLEAN_UP)
     return deleted
 
 
