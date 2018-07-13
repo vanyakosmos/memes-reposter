@@ -11,6 +11,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.schemas.generators import LinkNode, distribute_links
 
+from apps.core.models import Stat
 from . import tasks
 from .fetcher import fetch_posts
 from .models import Channel, Post, RssFeed
@@ -69,14 +70,11 @@ def refresh_view(request: Request):
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def publish_view(request: Request):
-    stats = tasks.fetch_and_publish()
-
+    tasks.fetch_and_publish()
     next_url = request.query_params.get('next', None)
     if next_url:
         return redirect(next_url)
-    return Response({
-        'published': stats,
-    })
+    return Response()
 
 
 @api_view(['POST'])
@@ -92,7 +90,9 @@ def publish_blank_view(request: Request):
             if not post_exists(feed.channel, p)
         ]
         Post.objects.bulk_create(posts)
-        stats[str(feed)] = len(posts)
+        key, length = str(feed), len(posts)
+        stats[key] = length
+        Stat.objects.create(app=Stat.APP_RSS, note=key, count=length, blank=True)
     return Response({
         'published': stats,
     })

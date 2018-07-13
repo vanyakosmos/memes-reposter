@@ -1,11 +1,12 @@
 import logging
 from datetime import timedelta
 
+from celery import group
 from celery.schedules import crontab
 from django.conf import settings
 from django.utils import timezone
 
-from apps.core.models import SiteConfig
+from apps.core.models import SiteConfig, Stat
 from memes_reposter.celery import app as celery_app
 from .fetcher import fetch
 from .filters import apply_filters
@@ -26,7 +27,9 @@ def pack_posts(raw_posts, subreddit: Subreddit):
     return posts
 
 
-def publish_sub(subreddit: Subreddit, blank: bool):
+@celery_app.task
+def publish_sub(subreddit_id: int, blank: bool):
+    subreddit = Subreddit.objects.get(pk=subreddit_id)
     channel = subreddit.channel
     raw_posts = fetch(subreddit.name, limit=settings.REDDIT_FETCH_SIZE)
     posts = pack_posts(raw_posts, subreddit)
@@ -36,21 +39,22 @@ def publish_sub(subreddit: Subreddit, blank: bool):
     else:
         publish_posts(posts, subreddit)
     key = f'{channel.username} > {subreddit.name}'
-    return key, len(posts)
+    Stat.objects.create(app=Stat.APP_REDDIT, note=key, count=len(posts), blank=blank)
 
 
 @celery_app.task
-def fetch_and_publish(force=False, blank=False) -> dict:
+def fetch_and_publish(force=False, blank=False):
     logger.info('Publishing reddit posts...')
     SiteConfig.get_solo().check_maintenance(force)
-    stats = {}
+
+    jobs = []
     for channel in Channel.objects.all():
         subs = channel.subreddit_set.filter(active=True)
         for subreddit in subs:
-            key, length = publish_sub(subreddit, blank)
-            stats[key] = length
-    logger.info('Done publishing reddit posts.')
-    return stats
+            job_sig = publish_sub.s(subreddit.id, blank)
+            jobs.append(job_sig)
+    publishing_job = group(jobs)
+    publishing_job.apply_async()
 
 
 @celery_app.task
@@ -59,6 +63,8 @@ def delete_old_posts():
     posts = Post.objects.filter(created__lte=time)
     deleted, _ = posts.delete()
     logger.info(f'Deleted {deleted} post(s).')
+    Stat.objects.create(app=Stat.APP_REDDIT, count=deleted,
+                        task=Stat.TASK_CLEAN_UP)
     return deleted
 
 

@@ -3,10 +3,11 @@ import traceback
 from time import sleep
 from typing import List
 
+from celery import group
 from celery.schedules import crontab
 from django.conf import settings
 
-from apps.core.models import SiteConfig
+from apps.core.models import SiteConfig, Stat
 from memes_reposter.celery import app as celery_app
 from memes_reposter.telegram_bot import bot
 from .fetcher import fetch_posts
@@ -55,28 +56,27 @@ def refresh_channels_meta() -> list:
     return stats
 
 
-def publish_feed(feed: RssFeed):
-    counter = 0
+@celery_app.task
+def publish_feed(feed_id: int):
+    feed = RssFeed.objects.get(pk=feed_id)
     try:
         posts = fetch_posts(feed.link, feed.link_field)
         published = publish_posts(feed, posts)
-        counter += published
+        Stat.objects.create(app=Stat.APP_RSS, note=str(feed), count=published)
     except Exception as e:
         logger.error(str(e))
         logger.error(traceback.format_exc())
-    return counter
 
 
 @celery_app.task
-def fetch_and_publish(force=False) -> dict:
+def fetch_and_publish(force=False):
     logger.info('Publishing rss posts...')
     SiteConfig.get_solo().check_maintenance(force)
-    stats = {}
-    for feed in RssFeed.objects.filter(active=True):
-        count = publish_feed(feed)
-        stats[str(feed)] = count
-    logger.info('Done publishing rss posts.')
-    return stats
+    publishing_job = group([
+        publish_feed.s(feed.id)
+        for feed in RssFeed.objects.filter(active=True)
+    ])
+    publishing_job.apply_async()
 
 
 @celery_app.task
@@ -91,6 +91,8 @@ def delete_old_posts_db():
         posts = Post.objects.filter(pk__in=posts_ids)
         deleted, _ = posts.delete()
         stats[str(feed)] = deleted
+        Stat.objects.create(app=Stat.APP_RSS, count=deleted,
+                            task=Stat.TASK_CLEAN_UP, note=str(feed))
         logger.info(f'Deleted {deleted} post(s) from feed {feed}.')
     return stats
 
