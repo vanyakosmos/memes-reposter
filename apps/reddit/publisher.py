@@ -39,7 +39,7 @@ def publish_post(post: Post, subreddit: Subreddit):
             publish_media_post(post, chat_id, subreddit)
         return True
     except TelegramError as e:
-        logger.error('Error %s: %s for post %s', type(e), e, repr(post))
+        logger.exception('Error %s: %s for post %s', type(e), e, repr(post))
         return False
 
 

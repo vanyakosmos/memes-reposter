@@ -23,7 +23,7 @@ def pack_posts(raw_posts, subreddit: Subreddit):
         try:
             posts.append(Post.from_dict(raw_post, subreddit))
         except Exception as e:
-            logger.error(e)
+            logger.exception(e)
     return posts
 
 

@@ -1,5 +1,4 @@
 import logging
-import traceback
 from time import sleep
 from typing import List
 
@@ -32,8 +31,7 @@ def publish_posts(feed: RssFeed, posts: List[Post], ) -> int:
             else:
                 logger.debug('> 🔥 Skip %d/%d %s', i + 1, len(posts), repr(post.title))
         except Exception as e:
-            logger.error('Error %s for post: %s', e, repr(post))
-            logger.error(traceback.format_exc())
+            logger.exception('Error %s for post: %s', e, repr(post))
     logger.info(f"Done {counter}.")
     return counter
 
@@ -64,8 +62,7 @@ def publish_feed(feed_id: int):
         published = publish_posts(feed, posts)
         Stat.objects.create(app=Stat.APP_RSS, note=str(feed), count=published)
     except Exception as e:
-        logger.error(str(e))
-        logger.error(traceback.format_exc())
+        logger.exception(str(e))
 
 
 @celery_app.task
