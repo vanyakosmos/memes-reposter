@@ -1,11 +1,23 @@
 version: '2.0'
 
 services:
+  db:
+    image: postgres
+    hostname: db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+
   elastic:
     image: elasticsearch
     hostname: elastic
     ports:
       - 9200:9200
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
 
   kibana:
     image: kibana
@@ -15,3 +27,36 @@ services:
       - 5601:5601
     depends_on:
       - elastic
+
+  redis:
+    image: redis
+    hostname: redis
+    ports:
+      - 6379:6379
+    volumes:
+      - redisdata:/data
+
+  web:
+    build: .
+    command: ["./run/web.sh"]
+    volumes:
+      - .:/app
+    ports:
+      - 8000:8000
+    depends_on:
+      - db
+      - worker
+
+  worker:
+    build: .
+    command: ["./run/celery.sh"]
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  dbdata:
+  redisdata:
+  esdata:
