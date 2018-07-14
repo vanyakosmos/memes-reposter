@@ -6,7 +6,8 @@ from celery.schedules import crontab
 from django.conf import settings
 from django.utils import timezone
 
-from apps.core.models import SiteConfig, Stat
+from apps.core.models import SiteConfig
+from apps.core.stats import AppType, TaskType, add_stat
 from memes_reposter.celery import app as celery_app
 from .fetcher import fetch
 from .filters import apply_filters
@@ -39,7 +40,7 @@ def publish_sub(subreddit_id: int, blank: bool):
     else:
         publish_posts(posts, subreddit)
     key = f'{channel.username} > {subreddit.name}'
-    Stat.objects.create(app=Stat.APP_REDDIT, note=key, count=len(posts), blank=blank)
+    add_stat(AppType.REDDIT, note=key, count=len(posts), blank=blank)
 
 
 @celery_app.task
@@ -63,8 +64,7 @@ def delete_old_posts():
     posts = Post.objects.filter(created__lte=time)
     deleted, _ = posts.delete()
     logger.info(f'Deleted {deleted} post(s).')
-    Stat.objects.create(app=Stat.APP_REDDIT, count=deleted,
-                        task=Stat.TASK_CLEAN_UP)
+    add_stat(AppType.REDDIT, task=TaskType.CLEAN_UP, count=deleted)
     return deleted
 
 

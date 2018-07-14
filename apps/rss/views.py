@@ -11,7 +11,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.schemas.generators import LinkNode, distribute_links
 
-from apps.core.models import Stat
+from apps.core.stats import AppType, add_stat
 from . import tasks
 from .fetcher import fetch_posts
 from .models import Channel, Post, RssFeed
@@ -92,7 +92,7 @@ def publish_blank_view(request: Request):
         Post.objects.bulk_create(posts)
         key, length = str(feed), len(posts)
         stats[key] = length
-        Stat.objects.create(app=Stat.APP_RSS, note=key, count=length, blank=True)
+        add_stat(AppType.RSS, note=key, count=length, blank=True)
     return Response({
         'published': stats,
     })

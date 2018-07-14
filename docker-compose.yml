@@ -1,0 +1,17 @@
+version: '2.0'
+
+services:
+  elastic:
+    image: elasticsearch
+    hostname: elastic
+    ports:
+      - 9200:9200
+
+  kibana:
+    image: kibana
+    environment:
+      - ELASTICSEARCH_URL=http://elastic:9200
+    ports:
+      - 5601:5601
+    depends_on:
+      - elastic

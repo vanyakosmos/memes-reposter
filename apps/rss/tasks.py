@@ -6,7 +6,8 @@ from celery import group
 from celery.schedules import crontab
 from django.conf import settings
 
-from apps.core.models import SiteConfig, Stat
+from apps.core.models import SiteConfig
+from apps.core.stats import AppType, TaskType, add_stat
 from memes_reposter.celery import app as celery_app
 from memes_reposter.telegram_bot import bot
 from .fetcher import fetch_posts
@@ -17,7 +18,7 @@ from .publisher import publish_post
 logger = logging.getLogger(__name__)
 
 
-def publish_posts(feed: RssFeed, posts: List[Post], ) -> int:
+def publish_posts(feed: RssFeed, posts: List[Post]) -> int:
     logger.info(f"Publishing {len(posts)} post(s) from {repr(feed.link)}...")
     counter = 0
     for i, post in enumerate(posts):
@@ -60,7 +61,7 @@ def publish_feed(feed_id: int):
     try:
         posts = fetch_posts(feed.link, feed.link_field)
         published = publish_posts(feed, posts)
-        Stat.objects.create(app=Stat.APP_RSS, note=str(feed), count=published)
+        add_stat(AppType.RSS, note=str(feed), count=published)
     except Exception as e:
         logger.exception(str(e))
 
@@ -88,8 +89,7 @@ def delete_old_posts_db():
         posts = Post.objects.filter(pk__in=posts_ids)
         deleted, _ = posts.delete()
         stats[str(feed)] = deleted
-        Stat.objects.create(app=Stat.APP_RSS, count=deleted,
-                            task=Stat.TASK_CLEAN_UP, note=str(feed))
+        add_stat(AppType.RSS, task=TaskType.CLEAN_UP, note=str(feed), count=deleted)
         logger.info(f'Deleted {deleted} post(s) from feed {feed}.')
     return stats
 

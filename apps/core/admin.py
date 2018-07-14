@@ -1,7 +1,7 @@
 from django.contrib import admin
 from solo.admin import SingletonModelAdmin
 
-from .models import SiteConfig, Stat
+from .models import SiteConfig
 
 
 class CountListFilter(admin.SimpleListFilter):
@@ -24,10 +24,3 @@ class CountListFilter(admin.SimpleListFilter):
 @admin.register(SiteConfig)
 class SiteConfigAdmin(SingletonModelAdmin):
     pass
-
-
-@admin.register(Stat)
-class StatAdmin(admin.ModelAdmin):
-    list_display = ('created_at', 'app', 'task', 'count', 'note', 'blank')
-    readonly_fields = ('created_at', 'app', 'task', 'count', 'note', 'blank')
-    list_filter = ('app', 'task', 'blank', CountListFilter,)
