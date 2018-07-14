@@ -37,7 +37,7 @@ def publish_post(post: Post, config: ImgurConfig):
             publish_album(post, config, delete_on_fail)
         return True
     except TelegramError as e:
-        logger.exception('Error %s: %s for post %s', type(e), e, repr(post))
+        logger.error('Error %s: %s for post %s', type(e), e, repr(post))
         return False
 
 
@@ -81,7 +81,7 @@ def publish_single(post: Post, config: ImgurConfig):
         media = post.medias[0]
         send_media(config.chat_id, media)
     except TelegramError as e:
-        logger.exception('Error %s: %s for post %s', type(e), e, repr(post))
+        logger.error('Error %s: %s for post %s', type(e), e, repr(post))
         title_message.delete()
 
 
@@ -94,7 +94,7 @@ def publish_album(post: Post, config: ImgurConfig, delete_on_fail=True):
     try:
         bot.send_media_group(media=medias, chat_id=config.chat_id)
     except TelegramError as e:
-        logger.exception('Error %s: %s for post %s', type(e), e, repr(post))
+        logger.error('Error %s: %s for post %s', type(e), e, repr(post))
         if delete_on_fail:
             title_message.delete()
 
