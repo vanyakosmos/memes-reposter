@@ -16,3 +16,6 @@ python-telegram-bot==10.0.2
 python-dotenv==0.8.2
 easy_env==0.1.0
 feedparser==5.2.1
+
+elasticsearch==6.3.0
+elasticsearch_dsl==6.2.1

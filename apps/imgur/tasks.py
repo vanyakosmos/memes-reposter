@@ -6,7 +6,8 @@ from django.conf import settings
 from django.utils import timezone
 
 from apps.core.errors import ConfigError
-from apps.core.models import SiteConfig, Stat
+from apps.core.models import SiteConfig
+from apps.core.stats import AppType, TaskType, add_stat
 from memes_reposter.celery import app as celery_app
 from .fetcher import fetch, populate_albums
 from .filters import apply_filters
@@ -37,13 +38,11 @@ def fetch_and_publish(force=False, blank=False) -> dict:
     posts = pack_posts(raw_posts)
     posts = apply_filters(posts, imgur_config)
     populate_albums(posts, client_id, limit=10)
-    stat = Stat(app=Stat.APP_IMGUR, count=len(posts), blank=blank)
     if blank:
         publish_blank(posts)
-        stat.blank = True
     else:
         publish_posts(posts, imgur_config)
-    stat.save()
+    add_stat(AppType.IMGUR, count=len(posts), blank=blank)
     logger.info('Done publishing imgur posts.')
     return {'published': len(posts)}
 
@@ -54,7 +53,7 @@ def delete_old_posts():
     posts = Post.objects.filter(created__lte=time)
     deleted, _ = posts.delete()
     logger.info(f'Deleted {deleted} post(s).')
-    Stat.objects.create(app=Stat.APP_IMGUR, count=deleted, task=Stat.TASK_CLEAN_UP)
+    add_stat(AppType.IMGUR, task=TaskType.CLEAN_UP, count=deleted)
     return deleted
 
 
