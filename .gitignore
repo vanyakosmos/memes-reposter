@@ -109,3 +109,4 @@ playground.py
 /static
 *.db
 nohup.out
+celerybeat.pid

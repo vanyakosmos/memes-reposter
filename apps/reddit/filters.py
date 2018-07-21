@@ -60,6 +60,14 @@ def keywords_filter(posts: List[Post], subreddit: Subreddit):
     ]
 
 
+@log_size
+def links_filter(posts: List[Post], _: Subreddit):
+    return [
+        post for post in posts
+        if post.meta.type not in ('link', 'text')
+    ]
+
+
 def apply_filters(posts: List[Post], subreddit: Subreddit) -> iter:
     filters = [
         score_filter,
@@ -67,6 +75,7 @@ def apply_filters(posts: List[Post], subreddit: Subreddit) -> iter:
         inner_unique_filter,
         unique_filter,
         keywords_filter,
+        links_filter,
     ]
     posts = reduce(lambda ps, f: f(ps, subreddit), filters, posts)
     return posts
