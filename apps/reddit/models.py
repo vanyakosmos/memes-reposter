@@ -86,7 +86,7 @@ class PostMeta(object):
     def __init__(self):
         self.score = 0
         self.media_link = None  # type: str
-        self.type = 'link'
+        self.type = 'link'  # link | photo | video | text
         self.text = ''
         self.nsfw = False
 
