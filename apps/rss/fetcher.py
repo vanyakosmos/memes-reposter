@@ -24,9 +24,14 @@ def get_picture(post: dict) -> Optional[str]:
 
 def posts_iter(feed_link: str):
     feed = feedparser.parse(feed_link)
+    if feed.get('status', 500) != 200:
+        raise ServiceUnavailableException(f"Failed to fetch feed {feed_link}.")
     if feed['bozo'] != 0:
-        raise ServiceUnavailableException("Unable to fetch rss feed.")
-    return feed['entries'][::-1]
+        exc = str(feed.get('bozo_exception', 'none'))
+        msg = f"Feed {feed_link} is malformed: {exc}"
+        raise ServiceUnavailableException(msg)
+    entities = feed.get('entries', [])
+    return entities[::-1]
 
 
 def fetch_posts(feed_link: str, link_field: Optional[str] = None):
