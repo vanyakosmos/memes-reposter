@@ -3,7 +3,8 @@ from time import sleep
 from typing import List
 
 from django.conf import settings
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto, InputMediaVideo, TelegramError
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, \
+    InputMediaPhoto, InputMediaVideo, TelegramError
 
 from memes_reposter.telegram_bot import bot
 from .models import ImgurConfig, Media, Post
