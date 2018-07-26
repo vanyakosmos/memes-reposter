@@ -13,13 +13,19 @@ from memes_reposter.telegram_bot import bot
 class ImgurConfig(SingletonModel):
     score_limit = models.IntegerField(default=1000,
                                       validators=[validators.MinValueValidator(0)])
-    good_tags = models.TextField(blank=True,
-                                 help_text="List of good tags. Should be separated with comma.")
-    bad_tags = models.TextField(blank=True,
-                                help_text="List of bad tags. Should be separated with comma.")
-    exclude_mode = models.BooleanField(default=True,
-                                       help_text="If true then posts with bad tags will be filtered out. "
-                                                 "Otherwise only posts from with good tags will pass the filter.")
+    good_tags = models.TextField(
+        blank=True,
+        help_text="List of good tags. Should be separated with comma."
+    )
+    bad_tags = models.TextField(
+        blank=True,
+        help_text="List of bad tags. Should be separated with comma."
+    )
+    exclude_mode = models.BooleanField(
+        default=True,
+        help_text="If true then posts with bad tags will be filtered out. "
+                  "Otherwise only posts from with good tags will pass the filter."
+    )
     channel_username = models.CharField(max_length=200, null=True)
     chat_id = models.BigIntegerField(null=True, blank=True)
 

@@ -20,7 +20,11 @@ def fetch(client_id: str, limit=100):
     album_previews = 'false'
 
     url = f'https://api.imgur.com/3/gallery/{section}/{sort}'
-    querystring = {"showViral": f"{show_viral}", "mature": f"{show_mature}", "album_previews": f"{album_previews}"}
+    querystring = {
+        "showViral": f"{show_viral}",
+        "mature": f"{show_mature}",
+        "album_previews": f"{album_previews}"
+    }
     headers = {'authorization': f'Client-ID {client_id}'}
     response = requests.get(url, headers=headers, params=querystring)
     logger.info(f'Fetched imgur posts. Code: {response.status_code}')
