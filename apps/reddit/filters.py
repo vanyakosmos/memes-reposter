@@ -14,10 +14,14 @@ logger = logging.getLogger(__name__)
 @log_size
 def score_filter(posts: List[Post], subreddit: Subreddit):
     """Score pass."""
-    return [
-        post for post in posts
-        if post.meta.score > subreddit.score_limit
-    ]
+    new_posts = []
+    for post in posts:
+        if post.meta.score > subreddit.score_limit:
+            new_posts.append(post)
+        elif post.meta.score > subreddit.low_score_limit and subreddit.on_moderation:
+            post.status = Post.STATUS_PENDING
+            new_posts.append(post)
+    return new_posts
 
 
 @log_size
@@ -43,11 +47,34 @@ def inner_unique_filter(posts: List[Post], _: Subreddit):
 
 @log_size
 def unique_filter(posts: List[Post], _: Subreddit):
-    """Filter out published posts."""
-    return [
-        post for post in posts
-        if not Post.objects.filter(Q(reddit_id=post.reddit_id) | Q(link=post.link)).exists()
-    ]
+    """
+    Filter out published posts.
+    If found old post with same id:
+        if old post is pending and new post is accepted
+            make old post accepted and add it to list
+        if old post is rejected or already accepted
+            do nothing
+    if not found old post:
+        add new post to list
+
+    """
+    new_posts = []
+    for post in posts:
+        try:
+            old_post = Post.objects.filter(
+                Q(reddit_id=post.reddit_id) |
+                Q(link=post.link)
+            )
+        except Post.DoesNotExist:
+            old_post = None
+
+        if old_post:
+            if old_post.status == Post.STATUS_PENDING and post.status == Post.STATUS_ACCEPTED:
+                old_post.status = Post.STATUS_ACCEPTED
+                new_posts.append(old_post)
+        else:
+            new_posts.append(post)
+    return new_posts
 
 
 @log_size

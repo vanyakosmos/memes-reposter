@@ -4,7 +4,8 @@ import re
 from time import sleep
 from typing import List, Optional
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, MAX_CAPTION_LENGTH, ParseMode, TelegramError
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, \
+    MAX_CAPTION_LENGTH, ParseMode, TelegramError
 
 from memes_reposter.telegram_bot import bot
 from .models import Post, Subreddit
@@ -17,11 +18,13 @@ REPOST_REGEX = re.compile(r'\(\s*(x-?|re)post .+\)')
 def publish_posts(posts: List[Post], subreddit: Subreddit):
     size = len(posts)
     for i, post in enumerate(posts):
+        post.save()
+        if post.status != Post.STATUS_ACCEPTED:
+            continue
         published = publish_post(post, subreddit)
         sleep(0.5)
         if published:
             logger.info('Published %3d/%d: %s', i + 1, size, repr(post))
-        post.save()
 
 
 def publish_blank(posts: List[Post]):

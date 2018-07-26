@@ -59,7 +59,10 @@ class Channel(models.Model):
 class Subreddit(models.Model):
     name = models.CharField(max_length=200)
     channel = models.ForeignKey(Channel, on_delete=models.CASCADE)
-    score_limit = models.IntegerField(validators=[validators.MinValueValidator(0)], default=1000)
+    low_score_limit = models.IntegerField(
+        validators=[validators.MinValueValidator(0)], default=1000)
+    score_limit = models.IntegerField(
+        validators=[validators.MinValueValidator(0)], default=1000)
     pass_nsfw = models.BooleanField(default=False)
     show_title = models.BooleanField(default=True)
     active = models.BooleanField(default=True)
@@ -97,11 +100,21 @@ class PostMeta(object):
 
 
 class Post(models.Model):
+    STATUS_ACCEPTED = 'accepted'
+    STATUS_PENDING = 'pending'
+    STATUS_REJECTED = 'rejected'
+    STATUSES = (
+        (STATUS_ACCEPTED, STATUS_ACCEPTED),
+        (STATUS_PENDING, STATUS_PENDING),
+        (STATUS_REJECTED, STATUS_REJECTED),
+    )
+
     subreddit = models.ForeignKey(Subreddit, on_delete=models.CASCADE)
     title = models.TextField()
     link = URLField(unique=True)
     reddit_id = models.CharField(max_length=200, unique=True)
     created = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=200, choices=STATUSES, default=STATUS_ACCEPTED)
 
     def __init__(self, *args, **kwargs):
         self._post_meta = PostMeta()
