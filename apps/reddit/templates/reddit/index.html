@@ -1,0 +1,43 @@
+{% extends "core/base.html" %}
+{% load staticfiles %}
+
+{% block styles %}
+    <link rel="stylesheet" href="{% static 'reddit/style.css' %}">
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static "reddit/script.js" %}"></script>
+{% endblock %}
+
+{% block body %}
+    <div id="app" v-cloak class="container">
+        <div v-for="post in posts" class="post" :key="post.id">
+            <h3 class="title">[[ post.title ]]</h3>
+            <div class="body">
+                <img v-if="post.media_type === 'photo'"
+                     :src="post.media_link"
+                     style="max-width: 100%; height: auto">
+                <video v-if="post.media_type === 'video'"
+                       style="max-width: 100%" controls>
+                    <source :src="post.media_link" type='video/mp4'>
+                </video>
+            </div>
+            <div style="display: flex; justify-content: space-between">
+                <button @click="updatePost(post, false)"
+                        class="btn btn-danger btn-lg"
+                        style="width: 49%; display: flex"
+                >
+                    reject
+                </button>
+                <button @click="updatePost(post, true)"
+                        class="btn btn-primary btn-lg"
+                        style="width: 49%; display: flex"
+                >
+                    accept
+                </button>
+            </div>
+            <hr/>
+        </div>
+        <div v-if="posts.length === 0">no post, everything checked!</div>
+    </div>
+{% endblock %}

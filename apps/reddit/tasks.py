@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from apps.core.models import SiteConfig
 from apps.core.stats import AppType, TaskType, add_stat
+from apps.core.utils import notify_admins
 from memes_reposter.celery import app as celery_app
 from .fetcher import fetch
 from .filters import apply_filters
@@ -22,7 +23,8 @@ def pack_posts(raw_posts, subreddit: Subreddit):
     posts = []
     for raw_post in raw_posts:
         try:
-            posts.append(Post.from_dict(raw_post, subreddit))
+            post = Post.from_dict(raw_post, subreddit)
+            posts.append(post)
         except Exception as e:
             logger.exception(e)
     return posts
@@ -38,7 +40,7 @@ def publish_sub(subreddit_id: int, blank: bool):
     if blank:
         publish_blank(posts)
     else:
-        publish_posts(posts, subreddit)
+        publish_posts(posts)
     key = f'{channel.username} > {subreddit.name}'
     add_stat(AppType.REDDIT, note=key, count=len(posts), blank=blank)
 
@@ -56,6 +58,11 @@ def fetch_and_publish(force=False, blank=False):
             jobs.append(job_sig)
     publishing_job = group(jobs)
     publishing_job.apply_async()
+    # yep, with delay, but whatever
+    pending = Post.objects.filter(status=Post.STATUS_PENDING).count()
+    if pending > 0:
+        s = 'post is' if pending == 1 else 'posts are'
+        notify_admins(f"{pending} {s} on moderation.")
 
 
 @celery_app.task

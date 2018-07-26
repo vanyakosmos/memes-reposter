@@ -16,9 +16,9 @@ def score_filter(posts: List[Post], subreddit: Subreddit):
     """Score pass."""
     new_posts = []
     for post in posts:
-        if post.meta.score > subreddit.score_limit:
+        if post.score > subreddit.score_limit:
             new_posts.append(post)
-        elif post.meta.score > subreddit.low_score_limit and subreddit.on_moderation:
+        elif post.score > subreddit.low_score_limit and subreddit.on_moderation:
             post.status = Post.STATUS_PENDING
             new_posts.append(post)
     return new_posts
@@ -29,7 +29,7 @@ def nsfw_filter(posts: List[Post], subreddit: Subreddit):
     """NSFW pass."""
     return [
         post for post in posts
-        if subreddit.pass_nsfw or not post.meta.nsfw
+        if subreddit.pass_nsfw or not post.nsfw
     ]
 
 
@@ -61,7 +61,7 @@ def unique_filter(posts: List[Post], _: Subreddit):
     new_posts = []
     for post in posts:
         try:
-            old_post = Post.objects.filter(
+            old_post = Post.objects.get(
                 Q(reddit_id=post.reddit_id) |
                 Q(link=post.link)
             )
@@ -71,6 +71,7 @@ def unique_filter(posts: List[Post], _: Subreddit):
         if old_post:
             if old_post.status == Post.STATUS_PENDING and post.status == Post.STATUS_ACCEPTED:
                 old_post.status = Post.STATUS_ACCEPTED
+                old_post.score = post.score
                 new_posts.append(old_post)
         else:
             new_posts.append(post)
@@ -91,7 +92,7 @@ def keywords_filter(posts: List[Post], subreddit: Subreddit):
 def links_filter(posts: List[Post], _: Subreddit):
     return [
         post for post in posts
-        if post.meta.type not in ('link', 'text')
+        if not post.is_not_media()
     ]
 
 

@@ -85,20 +85,6 @@ def format_field_pairs(obj, fields: List[str]):
     ])
 
 
-class PostMeta(object):
-    def __init__(self):
-        self.score = 0
-        self.media_link = None  # type: str
-        self.type = 'link'  # link | photo | video | text
-        self.text = ''
-        self.nsfw = False
-
-    def __repr__(self):
-        fields = ['score', 'media_link', 'type']
-        pairs = format_field_pairs(self, fields)
-        return f'PostMeta({pairs})'
-
-
 class Post(models.Model):
     STATUS_ACCEPTED = 'accepted'
     STATUS_PENDING = 'pending'
@@ -109,6 +95,17 @@ class Post(models.Model):
         (STATUS_REJECTED, STATUS_REJECTED),
     )
 
+    MEDIA_LINK = 'link'
+    MEDIA_TEXT = 'text'
+    MEDIA_PHOTO = 'photo'
+    MEDIA_VIDEO = 'video'
+    MEDIA_TYPES = (
+        (MEDIA_LINK, MEDIA_LINK),
+        (MEDIA_TEXT, MEDIA_TEXT),
+        (MEDIA_PHOTO, MEDIA_PHOTO),
+        (MEDIA_VIDEO, MEDIA_VIDEO),
+    )
+
     subreddit = models.ForeignKey(Subreddit, on_delete=models.CASCADE)
     title = models.TextField()
     link = URLField(unique=True)
@@ -116,17 +113,24 @@ class Post(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=200, choices=STATUSES, default=STATUS_ACCEPTED)
 
+    score = models.IntegerField(null=True)
+    media_link = URLField(blank=True, null=True)
+    media_type = models.CharField(max_length=200, choices=MEDIA_TYPES, default=MEDIA_LINK)
+    text = models.TextField(null=True, blank=True)
+    nsfw = models.BooleanField(default=False)
+
     def __init__(self, *args, **kwargs):
-        self._post_meta = PostMeta()
+        # self._post_meta = PostMeta()
         super().__init__(*args, **kwargs)
 
     def __str__(self):
         return f'{self.reddit_id} : {self.title}'
 
     def __repr__(self):
-        fields = ['reddit_id', 'subreddit', 'title', 'link']
+        fields = ['reddit_id', 'subreddit', 'title',
+                  'media_link', 'media_type', 'score']
         pairs = format_field_pairs(self, fields)
-        return f'Post({pairs}, meta={repr(self.meta)})'
+        return f'Post({pairs})'
 
     @property
     def title_terms(self):
@@ -134,9 +138,8 @@ class Post(models.Model):
         title = TRASH_REGEX.sub('', title)
         return title.split()
 
-    @property
-    def meta(self):
-        return self._post_meta
+    def is_not_media(self):
+        return self.media_type in (self.MEDIA_LINK, self.MEDIA_TEXT)
 
     @property
     def comments(self):
@@ -146,18 +149,20 @@ class Post(models.Model):
     def comments_full(self):
         return f'https://reddit.com/r/{self.subreddit.name}/comments/{self.reddit_id}'
 
+    def populate_media(self, item: dict):
+        self.title = unescape(item['title'])
+        self.link = item['url']
+        self.reddit_id = item['id']
+
+        media = get_media(item)
+        self.score = int(item['score'])
+        self.media_link = media['media']
+        self.media_type = media['type']
+        self.text = media['text']
+        self.nsfw = item['over_18']
+
     @classmethod
     def from_dict(cls, item: dict, subreddit: Subreddit):
-        post = Post(
-            subreddit=subreddit,
-            title=unescape(item['title']),
-            link=re.sub(r'\?.*$', '', item['url']),
-            reddit_id=item['id'],
-        )
-        media = get_media(item)
-        post.meta.score = int(item['score'])
-        post.meta.media_link = media['media']
-        post.meta.type = media['type']
-        post.meta.text = media['text']
-        post.meta.nsfw = item['over_18']
+        post = Post(subreddit=subreddit)
+        post.populate_media(item)
         return post
