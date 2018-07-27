@@ -26,6 +26,8 @@ def publish_posts(posts: List[Post]):
         sleep(0.5)
         if published:
             logger.info('Published %3d/%d: %s', i + 1, size, repr(post))
+        else:
+            logger.info('Error %3d/%d: %s', i + 1, size, repr(post))
 
 
 def publish_blank(posts: List[Post]):
