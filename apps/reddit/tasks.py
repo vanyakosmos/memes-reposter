@@ -1,5 +1,6 @@
 import logging
 from datetime import timedelta
+from typing import Optional
 
 from celery import group
 from celery.schedules import crontab
@@ -13,7 +14,7 @@ from memes_reposter.celery import app as celery_app
 from .fetcher import fetch
 from .filters import apply_filters
 from .models import Channel, Post, Subreddit
-from .publisher import publish_blank, publish_posts
+from .publisher import publish_blank, publish_posts, publish_post
 
 
 logger = logging.getLogger(__name__)
@@ -63,6 +64,23 @@ def fetch_and_publish(force=False, blank=False):
     if pending > 0:
         s = 'post is' if pending == 1 else 'posts are'
         notify_admins(f"{pending} {s} on moderation.")
+
+
+@celery_app.task
+def publish_post_task(post_id, accepted: bool, post_title: bool):
+    try:
+        post = Post.objects.get(id=post_id)
+    except Post.DoesNotExist:
+        return
+    if post.status != Post.STATUS_ALMOST:
+        return
+    if accepted:
+        post.status = Post.STATUS_ACCEPTED
+        post.save()
+        publish_post(post, post_title)
+    else:
+        post.status = Post.STATUS_REJECTED
+        post.save()
 
 
 @celery_app.task

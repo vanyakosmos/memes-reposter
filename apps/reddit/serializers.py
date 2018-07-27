@@ -17,3 +17,4 @@ class PostSerializer(serializers.ModelSerializer):
 
 class PostUpdateSerializer(serializers.Serializer):
     accepted = serializers.BooleanField(default=False)
+    title = serializers.CharField(allow_null=True)

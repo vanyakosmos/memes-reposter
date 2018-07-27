@@ -88,10 +88,12 @@ def format_field_pairs(obj, fields: List[str]):
 class Post(models.Model):
     STATUS_ACCEPTED = 'accepted'
     STATUS_PENDING = 'pending'
+    STATUS_ALMOST = 'almost'
     STATUS_REJECTED = 'rejected'
     STATUSES = (
         (STATUS_ACCEPTED, STATUS_ACCEPTED),
         (STATUS_PENDING, STATUS_PENDING),
+        (STATUS_ALMOST, STATUS_ALMOST),
         (STATUS_REJECTED, STATUS_REJECTED),
     )
 

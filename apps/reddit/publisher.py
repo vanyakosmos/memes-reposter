@@ -36,13 +36,13 @@ def publish_blank(posts: List[Post]):
         post.save()
 
 
-def publish_post(post: Post):
+def publish_post(post: Post, post_title=None):
     chat_id = post.subreddit.channel.chat_id
     try:
         if post.is_not_media():
             publish_post_link(post, chat_id)
         else:
-            publish_media_post(post, chat_id)
+            publish_media_post(post, chat_id, post_title)
         return True
     except TelegramError as e:
         logger.error('Error %s: %s for post %s', type(e), e, repr(post))
@@ -70,7 +70,7 @@ def publish_post_link(post: Post, channel_id: str):
                      parse_mode=ParseMode.HTML)
 
 
-def publish_media_post(post: Post, channel_id: str):
+def publish_media_post(post: Post, channel_id: str, post_title=None):
     title = format_title(post)
     keyboard_markup = build_keyboard_markup(post)
     common = {
@@ -78,13 +78,14 @@ def publish_media_post(post: Post, channel_id: str):
         'reply_markup': keyboard_markup,
     }
     subreddit = post.subreddit
+    show_title = subreddit.show_title if post_title is None else post_title
     # need title, post pic and text separately
-    if subreddit.show_title and title and len(title) > MAX_CAPTION_LENGTH:
+    if show_title and title and len(title) > MAX_CAPTION_LENGTH:
         publish_media(post, chat_id=channel_id)
         kwargs = dict(text=title, **common)
         bot.send_message(**kwargs)
     # need title, post pic with caption
-    elif subreddit.show_title:
+    elif show_title:
         kwargs = dict(caption=title, **common)
         publish_media(post, **kwargs)
     # post just pic

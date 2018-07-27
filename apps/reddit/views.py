@@ -8,7 +8,6 @@ from rest_framework.response import Response
 from apps.core.views import poster
 from . import tasks
 from .models import Post
-from .publisher import publish_post
 from .serializers import PostSerializer, PostUpdateSerializer
 
 
@@ -44,20 +43,18 @@ class PendingPostListView(PostViewMixin, generics.ListAPIView):
 
 
 class PostView(PostViewMixin, generics.UpdateAPIView):
-    queryset = PostUpdateSerializer
+    serializer_class = PostUpdateSerializer
 
     def update(self, request: Request, *args, **kwargs):
         post = self.get_object()
-        s = self.get_serializer(request.data)  # type: PostUpdateSerializer
+        s = self.get_serializer(data=request.data)  # type: PostUpdateSerializer
         s.is_valid(raise_exception=True)
-        accepted = s.get('accepted')
-        if accepted:
-            post.status = Post.STATUS_ACCEPTED
-            post.save()
-            publish_post(post)
-        else:
-            post.status = Post.STATUS_REJECTED
-            post.save()
+        accepted = s.validated_data.get('accepted')
+        title = s.validated_data.get('title')
+        post.status = Post.STATUS_ALMOST
+        post.title = title or post.title
+        post.save()
+        tasks.publish_post_task.delay(post.id, accepted, bool(title))
         return Response({
             'accepted': accepted,
         })

@@ -12,31 +12,41 @@
 {% block body %}
     <div id="app" v-cloak class="container">
         <div v-for="post in posts" class="post" :key="post.id">
-            <h3 class="title">[[ post.title ]]</h3>
-            <div class="body">
+            <div class="post-body">
                 <img v-if="post.media_type === 'photo'"
                      :src="post.media_link"
-                     style="max-width: 100%; height: auto">
-                <video v-if="post.media_type === 'video'"
-                       style="max-width: 100%" controls>
+                     class="post-media">
+                <video v-if="post.media_type === 'video'" controls
+                       class="post-media">
                     <source :src="post.media_link" type='video/mp4'>
                 </video>
             </div>
-            <div style="display: flex; justify-content: space-between">
-                <button @click="updatePost(post, false)"
-                        class="btn btn-danger btn-lg"
-                        style="width: 49%; display: flex"
-                >
-                    reject
-                </button>
-                <button @click="updatePost(post, true)"
-                        class="btn btn-primary btn-lg"
-                        style="width: 49%; display: flex"
-                >
-                    accept
-                </button>
+            <h3 class="post-title">
+                <input type="text" class="form-control" v-model="post.title">
+            </h3>
+            <div class="post-controls row">
+                <div class="col-lg-4">
+                    <button @click="updatePost(post, false)"
+                            class="btn btn-danger btn-lg"
+                    >
+                        reject
+                    </button>
+                </div>
+                <div class="col-lg-4">
+                    <button @click="updatePost(post, true, post.title)"
+                            class="btn btn-primary btn-lg"
+                    >
+                        accept
+                    </button>
+                </div>
+                <div class="col-lg-4">
+                    <button @click="updatePost(post, true)"
+                            class="btn btn-info btn-lg"
+                    >
+                        accept w/o title
+                    </button>
+                </div>
             </div>
-            <hr/>
         </div>
         <div v-if="posts.length === 0">no post, everything checked!</div>
     </div>

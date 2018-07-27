@@ -8,16 +8,19 @@ const app = new Vue({
     },
     methods: {
         fetchPosts() {
-            this.$http.get('/reddit/posts/?limit=5')
+            this.$http.get('/reddit/posts/?limit=1')
                 .then((response) => {
                     console.log(response.data);
                     this.posts = response.data.results;
                 });
         },
-        updatePost(post, accepted) {
+        updatePost(post, accepted, title=null) {
             console.log(post.title, accepted);
             this.$http.put('/reddit/posts/' + post.id + '/',
-                {accepted: accepted})
+                {
+                    accepted: accepted,
+                    title: title,
+                })
                 .then((response) => {
                     console.log(response.data);
                     this.fetchPosts()
