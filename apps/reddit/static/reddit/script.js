@@ -5,12 +5,14 @@ const app = new Vue({
     el: '#app',
     data: {
         posts: [],
+        count: 0,
     },
     methods: {
         fetchPosts() {
             this.$http.get('/reddit/posts/?limit=1')
                 .then((response) => {
                     console.log(response.data);
+                    this.count = response.data.count;
                     this.posts = response.data.results;
                 });
         },

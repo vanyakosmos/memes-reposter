@@ -11,6 +11,16 @@
 
 {% block body %}
     <div id="app" v-cloak class="container">
+        <h3 class="count" style="text-align: center">
+            posts left: [[ count ]]
+        </h3>
+        <div v-if="count === 0">
+            <button class="btn btn-lg btn-block btn-success"
+                    style="margin: 20px 0"
+                    @click="fetchPosts()">
+                refresh
+            </button>
+        </div>
         <div v-for="post in posts" class="post" :key="post.id">
             <div class="post-body">
                 <img v-if="post.media_type === 'photo'"
@@ -48,6 +58,5 @@
                 </div>
             </div>
         </div>
-        <div v-if="posts.length === 0">no post, everything checked!</div>
     </div>
 {% endblock %}
