@@ -12,7 +12,7 @@ load_dotenv(find_dotenv())
 BASE_DIR = dirname(dirname(abspath(__file__)))
 SECRET_KEY = easy_env.get('SECRET_KEY', raise_error=True)
 DEBUG = easy_env.get('DEBUG', default=False)
-THIS_HOST = easy_env.get('THIS_HOST', '*')
+THIS_HOST = easy_env.get('THIS_HOST', '0.0.0.0:8000')
 ALLOWED_HOSTS = [THIS_HOST]
 
 # Application definition

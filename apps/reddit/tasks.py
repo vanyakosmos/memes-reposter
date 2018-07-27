@@ -6,6 +6,7 @@ from celery import group
 from celery.schedules import crontab
 from django.conf import settings
 from django.utils import timezone
+from rest_framework.reverse import reverse_lazy
 
 from apps.core.models import SiteConfig
 from apps.core.stats import AppType, TaskType, add_stat
@@ -63,7 +64,8 @@ def fetch_and_publish(force=False, blank=False):
     pending = Post.objects.filter(status=Post.STATUS_PENDING).count()
     if pending > 0:
         s = 'post is' if pending == 1 else 'posts are'
-        notify_admins(f"{pending} {s} on moderation.")
+        url = '/'.join([settings.THIS_HOST, reverse_lazy('reddit:index')])
+        notify_admins(f"{pending} {s} on moderation.\n{url}")
 
 
 @celery_app.task
