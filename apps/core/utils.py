@@ -1,17 +1,25 @@
 import logging
+from collections import defaultdict
+from typing import Dict, List
 
 from django.conf import settings
-from telegram import TelegramError
+from telegram import Message, TelegramError
 
 from memes_reposter.telegram_bot import bot
 
 
 logger = logging.getLogger(__name__)
+messages = defaultdict(lambda: [])  # type: Dict[str, List[Message]]
 
 
-def notify_admins(message: str):
+def notify_admins(message: str, type='pending', clean=True):
+    if clean:
+        for message in messages[type]:
+            message.delete()
+        messages[type] = []
     for admin in settings.ADMINS:
         try:
-            bot.send_message(admin, message)
+            msg = bot.send_message(admin, message)
+            messages[type].append(msg)
         except TelegramError as e:
             logger.warning(e)
