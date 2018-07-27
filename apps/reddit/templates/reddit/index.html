@@ -34,6 +34,9 @@
             <h3 class="post-title">
                 <input type="text" class="form-control" v-model="post.title">
             </h3>
+            <div>
+                <a :href="post.comments_url" target="_blank" >comments</a>
+            </div>
             <div class="post-controls row">
                 <div class="col-lg-4">
                     <button @click="updatePost(post, false)"
