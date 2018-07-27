@@ -8,10 +8,10 @@ const app = new Vue({
     },
     methods: {
         fetchPosts() {
-            this.$http.get('/reddit/posts/')
+            this.$http.get('/reddit/posts/?limit=5')
                 .then((response) => {
                     console.log(response.data);
-                    this.posts = response.data;
+                    this.posts = response.data.results;
                 });
         },
         updatePost(post, accepted) {

@@ -13,3 +13,7 @@ class PostSerializer(serializers.ModelSerializer):
         model = Post
         fields = ('id', 'subreddit', 'title', 'media_link', 'media_type', 'status',
                   'created', 'reddit_id', 'media_type')
+
+
+class PostUpdateSerializer(serializers.Serializer):
+    accepted = serializers.BooleanField(default=False)

@@ -9,7 +9,7 @@ from apps.core.views import poster
 from . import tasks
 from .models import Post
 from .publisher import publish_post
-from .serializers import PostSerializer
+from .serializers import PostSerializer, PostUpdateSerializer
 
 
 @api_view(['POST'])
@@ -31,19 +31,26 @@ def index(request: Request):
     return render(request, 'reddit/index.html')
 
 
-class PendingPostListView(generics.ListAPIView):
+class PostViewMixin(generics.GenericAPIView):
+    def get_queryset(self):
+        qs = Post.objects.filter(status=Post.STATUS_PENDING,
+                                 subreddit__on_moderation=True)
+        qs = qs.order_by('-created')
+        return qs
+
+
+class PendingPostListView(PostViewMixin, generics.ListAPIView):
     serializer_class = PostSerializer
-    queryset = Post.objects.filter(status=Post.STATUS_PENDING,
-                                   subreddit__on_moderation=True)
 
 
-class PostView(generics.UpdateAPIView):
-    queryset = Post.objects.filter(status=Post.STATUS_PENDING,
-                                   subreddit__on_moderation=True)
+class PostView(PostViewMixin, generics.UpdateAPIView):
+    queryset = PostUpdateSerializer
 
     def update(self, request: Request, *args, **kwargs):
         post = self.get_object()
-        accepted = request.data.get('accepted', False)
+        s = self.get_serializer(request.data)  # type: PostUpdateSerializer
+        s.is_valid(raise_exception=True)
+        accepted = s.get('accepted')
         if accepted:
             post.status = Post.STATUS_ACCEPTED
             post.save()

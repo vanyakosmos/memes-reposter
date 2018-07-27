@@ -137,6 +137,12 @@ LOGGING = {
     },
 }
 
+# rest
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 10
+}
+
 # telegram
 TELEGRAM_BOT_TOKEN = easy_env.get('TELEGRAM_BOT_TOKEN', raise_error=True)
 TELEGRAM_TIMEOUT = 30  # seconds
