@@ -1,5 +1,5 @@
 div.container {
-    padding: 50px 15px;
+    padding-top: 20px;
 }
 
 .post {
@@ -46,5 +46,4 @@ div.container {
 
 .post-body {
     margin: auto;
-    padding: 10px;
 }

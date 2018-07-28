@@ -13,6 +13,8 @@ class SubredditAdmin(admin.ModelAdmin):
 class PostAdmin(admin.ModelAdmin):
     list_display = ('__str__', 'status', 'comments', 'subreddit', 'title',
                     'media_link', 'media_type', 'score', 'nsfw')
+    readonly_fields = ('subreddit', 'title', 'link', 'reddit_id', 'created', 'text',
+                       'media_link', 'media_type', 'score', 'nsfw')
 
 
 @admin.register(Channel)
