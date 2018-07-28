@@ -46,11 +46,16 @@ class PostView(PostViewMixin, generics.UpdateAPIView):
     serializer_class = PostUpdateSerializer
 
     def update(self, request: Request, *args, **kwargs):
-        post = self.get_object()
         s = self.get_serializer(data=request.data)  # type: PostUpdateSerializer
         s.is_valid(raise_exception=True)
         accepted = s.validated_data.get('accepted')
         title = s.validated_data.get('title')
+
+        post = self.get_object()
+        if post.status == Post.STATUS_ACCEPTED:
+            return Response({
+                'accepted': True,
+            })
         post.status = Post.STATUS_ALMOST
         post.title = title or post.title
         post.save()
