@@ -31,6 +31,8 @@ def index(request: Request):
 
 
 class PostViewMixin(generics.GenericAPIView):
+    permission_classes = (IsAdminUser,)
+
     def get_queryset(self):
         qs = Post.objects.filter(status=Post.STATUS_PENDING,
                                  subreddit__on_moderation=True)

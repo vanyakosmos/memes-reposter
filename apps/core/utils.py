@@ -12,14 +12,14 @@ logger = logging.getLogger(__name__)
 messages = defaultdict(lambda: [])  # type: Dict[str, List[Message]]
 
 
-def notify_admins(message: str, type='pending', clean=True):
+def notify_admins(text: str, type='pending', clean=True):
     if clean:
         for message in messages[type]:
             message.delete()
         messages[type] = []
     for admin in settings.ADMINS:
         try:
-            msg = bot.send_message(admin, message)
+            msg = bot.send_message(admin, text)
             messages[type].append(msg)
         except TelegramError as e:
             logger.warning(e)

@@ -1,11 +1,11 @@
 import logging
 from datetime import timedelta
 
-from celery import group
+from celery import chord
 from celery.schedules import crontab
 from django.conf import settings
+from django.urls import reverse
 from django.utils import timezone
-from rest_framework.reverse import reverse_lazy
 
 from apps.core.models import SiteConfig
 from apps.core.stats import AppType, TaskType, add_stat
@@ -57,13 +57,16 @@ def fetch_and_publish(force=False, blank=False):
         for subreddit in subs:
             job_sig = publish_sub.s(subreddit.id, blank)
             jobs.append(job_sig)
-    publishing_job = group(jobs)
+    publishing_job = chord(jobs, notify_admins_task.si())
     publishing_job.apply_async()
-    # yep, with delay, but whatever
+
+
+@celery_app.task
+def notify_admins_task():
     pending = Post.objects.filter(status=Post.STATUS_PENDING).count()
     if pending > 0:
         s = 'post is' if pending == 1 else 'posts are'
-        url = '/'.join([settings.THIS_HOST, reverse_lazy('reddit:index')])
+        url = '/'.join([settings.THIS_HOST, reverse('reddit:index')[1:]])
         notify_admins(f"{pending} {s} on moderation.\n{url}")
 
 
