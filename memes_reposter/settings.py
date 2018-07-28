@@ -158,7 +158,7 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # core
 ELASTIC_URL = easy_env.get_str('ELASTIC_URL')
-ADMINS = easy_env.get_list('ADMINS', [], item_factory=int)
+TG_ADMINS = easy_env.get_list('ADMINS', [], item_factory=int)
 
 # reddit
 REDDIT_FETCH_SIZE = easy_env.get_int('REDDIT_FETCH_SIZE', default=100)

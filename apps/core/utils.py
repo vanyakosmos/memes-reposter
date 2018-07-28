@@ -17,7 +17,7 @@ def notify_admins(text: str, type='pending', clean=True):
         for message in messages[type]:
             message.delete()
         messages[type] = []
-    for admin in settings.ADMINS:
+    for admin in settings.TG_ADMINS:
         try:
             msg = bot.send_message(admin, text)
             messages[type].append(msg)
