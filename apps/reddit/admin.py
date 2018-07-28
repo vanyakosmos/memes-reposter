@@ -15,6 +15,10 @@ class PostAdmin(admin.ModelAdmin):
                     'media_link', 'media_type', 'score', 'nsfw')
     readonly_fields = ('subreddit', 'title', 'link', 'reddit_id', 'created', 'text',
                        'media_link', 'media_type', 'score', 'nsfw')
+    actions = ('make_pending',)
+
+    def make_pending(self, request, qs):
+        return qs.update(status=Post.STATUS_PENDING)
 
 
 @admin.register(Channel)

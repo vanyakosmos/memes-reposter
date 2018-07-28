@@ -26,7 +26,7 @@
                 <img v-if="post.media_type === 'photo'"
                      :src="post.media_link"
                      class="post-media">
-                <video v-if="post.media_type === 'video'" controls
+                <video v-if="post.media_type === 'video'" controls autoplay
                        class="post-media">
                     <source :src="post.media_link" type='video/mp4'>
                 </video>

@@ -8,15 +8,28 @@ const app = new Vue({
         count: 0,
     },
     methods: {
+        preload(posts) {
+            posts.forEach(p => {
+                if (p.media_type === 'photo') {
+                    const img = new Image();
+                    img.src = p.media_link;
+                }
+            });
+        },
+
         fetchPosts() {
-            this.$http.get('/reddit/posts/?limit=1')
+            const show = 1;
+            const load = 3;
+            this.$http.get(`/reddit/posts/?limit=${load}`)
                 .then((response) => {
                     console.log(response.data);
                     this.count = response.data.count;
-                    this.posts = response.data.results;
+                    const posts = response.data.results;
+                    this.posts = posts.slice(0, show);
+                    this.preload(posts.slice(show))
                 });
         },
-        updatePost(post, accepted, title=null) {
+        updatePost(post, accepted, title = null) {
             console.log(post.title, accepted);
             this.$http.put('/reddit/posts/' + post.id + '/',
                 {

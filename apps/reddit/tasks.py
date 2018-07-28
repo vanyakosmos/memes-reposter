@@ -1,6 +1,5 @@
 import logging
 from datetime import timedelta
-from typing import Optional
 
 from celery import group
 from celery.schedules import crontab
@@ -15,7 +14,7 @@ from memes_reposter.celery import app as celery_app
 from .fetcher import fetch
 from .filters import apply_filters
 from .models import Channel, Post, Subreddit
-from .publisher import publish_blank, publish_posts, publish_post
+from .publisher import publish_blank, publish_post, publish_posts
 
 
 logger = logging.getLogger(__name__)
