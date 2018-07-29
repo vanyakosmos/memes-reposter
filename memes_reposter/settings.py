@@ -12,8 +12,8 @@ load_dotenv(find_dotenv())
 BASE_DIR = dirname(dirname(abspath(__file__)))
 SECRET_KEY = easy_env.get('SECRET_KEY', raise_error=True)
 DEBUG = easy_env.get('DEBUG', default=False)
-THIS_HOST = easy_env.get('THIS_HOST', '*')
-ALLOWED_HOSTS = [THIS_HOST]
+THIS_HOST = easy_env.get('THIS_HOST', '0.0.0.0:8000')
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -137,6 +137,12 @@ LOGGING = {
     },
 }
 
+# rest
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 10
+}
+
 # telegram
 TELEGRAM_BOT_TOKEN = easy_env.get('TELEGRAM_BOT_TOKEN', raise_error=True)
 TELEGRAM_TIMEOUT = 30  # seconds
@@ -144,6 +150,7 @@ TELEGRAM_TIMEOUT = 30  # seconds
 # celery
 REDIS_URL = easy_env.get('REDIS_URL', 'redis://localhost:6379/0')
 CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_WORKER_CONCURRENCY = easy_env.get_int('CELERY_WORKER_CONCURRENCY',
                                              default=multiprocessing.cpu_count())
@@ -151,6 +158,7 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # core
 ELASTIC_URL = easy_env.get_str('ELASTIC_URL')
+TG_ADMINS = easy_env.get_list('ADMINS', [], item_factory=int)
 
 # reddit
 REDDIT_FETCH_SIZE = easy_env.get_int('REDDIT_FETCH_SIZE', default=100)

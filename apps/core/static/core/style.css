@@ -1,0 +1,13 @@
+[v-cloak] {
+    display: none;
+}
+
+
+hr {
+  border: 0;
+  clear:both;
+  display:block;
+  width: 100%;
+  background-color: #1d1d1d;
+  height: 5px;
+}

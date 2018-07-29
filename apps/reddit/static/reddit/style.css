@@ -1,0 +1,49 @@
+div.container {
+    padding-top: 20px;
+}
+
+.post {
+    margin: 0 auto 50px auto;
+    padding: 10px;
+    border: #1d1d1d 5px solid;
+    width: 60%;
+}
+
+@media (max-width: 768px) {
+    .post {
+        width: 80%;
+    }
+}
+
+@media (max-width: 576px) {
+    .post {
+        width: 100%;
+    }
+}
+
+.post-title {
+    padding: 10px 0;
+}
+
+.post-media {
+    max-width: 100%;
+    max-height: 400px;
+    margin: 0 auto;
+    display: block;
+}
+
+.post-controls {
+    padding: 10px;
+}
+
+.post-controls > div {
+    padding: 3px;
+}
+
+.post-controls > div > button {
+    width: 100%;
+}
+
+.post-body {
+    margin: auto;
+}

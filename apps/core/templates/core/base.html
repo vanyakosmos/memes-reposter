@@ -1,0 +1,35 @@
+{% load staticfiles %}
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>{% block title %}reposter{% endblock %}</title>
+    <link rel="shortcut icon" type="image/png" href="{% static 'favicon.ico' %}"/>
+    <link rel="stylesheet"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'core/style.css' %}">
+
+    {% block styles %}{% endblock %}
+</head>
+<body>
+
+{% block body %}{% endblock %}
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
+{% if DEBUG %}
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+{% else %}
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+{% endif %}
+<script src="https://cdn.jsdelivr.net/npm/vue-resource@1.5.1"></script>
+
+<script src="{% static "core/script.js" %}"></script>
+{% block scripts %}{% endblock %}
+
+</body>
+</html>

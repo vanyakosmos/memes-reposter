@@ -1,5 +1,4 @@
 import logging
-from pprint import pprint
 
 import requests
 
@@ -20,12 +19,3 @@ def fetch(subreddit: str, limit=20):
     if response.status_code == 200:
         posts = [p['data'] for p in data['data']['children']]
     return posts
-
-
-def main():
-    res = fetch('funny')
-    pprint(res)
-
-
-if __name__ == '__main__':
-    main()

@@ -1,18 +1,20 @@
 import logging
 from datetime import timedelta
 
-from celery import group
+from celery import chord
 from celery.schedules import crontab
 from django.conf import settings
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.core.models import SiteConfig
 from apps.core.stats import AppType, TaskType, add_stat
+from apps.core.utils import notify_admins
 from memes_reposter.celery import app as celery_app
 from .fetcher import fetch
 from .filters import apply_filters
 from .models import Channel, Post, Subreddit
-from .publisher import publish_blank, publish_posts
+from .publisher import publish_blank, publish_post, publish_posts
 
 
 logger = logging.getLogger(__name__)
@@ -22,7 +24,8 @@ def pack_posts(raw_posts, subreddit: Subreddit):
     posts = []
     for raw_post in raw_posts:
         try:
-            posts.append(Post.from_dict(raw_post, subreddit))
+            post = Post.from_dict(raw_post, subreddit)
+            posts.append(post)
         except Exception as e:
             logger.exception(e)
     return posts
@@ -38,7 +41,7 @@ def publish_sub(subreddit_id: int, blank: bool):
     if blank:
         publish_blank(posts)
     else:
-        publish_posts(posts, subreddit)
+        publish_posts(posts)
     key = f'{channel.username} > {subreddit.name}'
     add_stat(AppType.REDDIT, note=key, count=len(posts), blank=blank)
 
@@ -54,8 +57,34 @@ def fetch_and_publish(force=False, blank=False):
         for subreddit in subs:
             job_sig = publish_sub.s(subreddit.id, blank)
             jobs.append(job_sig)
-    publishing_job = group(jobs)
+    publishing_job = chord(jobs, notify_admins_task.si())
     publishing_job.apply_async()
+
+
+@celery_app.task
+def notify_admins_task():
+    pending = Post.objects.filter(status=Post.STATUS_PENDING).count()
+    if pending > 0:
+        s = 'post is' if pending == 1 else 'posts are'
+        url = '/'.join([settings.THIS_HOST, reverse('reddit:index')[1:]])
+        notify_admins(f"{pending} {s} on moderation.\n{url}")
+
+
+@celery_app.task
+def publish_post_task(post_id, accepted: bool, post_title: bool):
+    try:
+        post = Post.objects.get(id=post_id)
+    except Post.DoesNotExist:
+        return
+    if post.status != Post.STATUS_ALMOST:
+        return
+    if accepted:
+        post.status = Post.STATUS_ACCEPTED
+        post.save()
+        publish_post(post, post_title)
+    else:
+        post.status = Post.STATUS_REJECTED
+        post.save()
 
 
 @celery_app.task
