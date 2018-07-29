@@ -1,10 +1,7 @@
 import logging
-import os
-from pprint import pprint
 from typing import List
 
 import requests
-from dotenv import find_dotenv, load_dotenv
 
 from apps.imgur.models import Post
 
@@ -54,14 +51,3 @@ def populate_albums(posts: List[Post], client_id: str, limit=10):
             if images is None:
                 continue
             post.medias = images[:limit]
-
-
-def main():
-    load_dotenv(find_dotenv())
-    a = fetch_album(os.getenv('IMGUR_CLIENT_ID'), '7FBFWIP')
-    a = a[:4]
-    pprint(a)
-
-
-if __name__ == '__main__':
-    main()
