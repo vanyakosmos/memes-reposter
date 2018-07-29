@@ -3,7 +3,7 @@ from typing import Optional
 
 import feedparser
 
-from .errors import ServiceUnavailableException
+from apps.core.errors import ServiceUnavailableException
 from .models import Post
 
 
