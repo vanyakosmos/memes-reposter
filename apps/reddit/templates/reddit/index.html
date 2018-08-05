@@ -32,6 +32,9 @@
                 </video>
             </div>
             <h3 class="post-title">
+                <textarea @keyup="autoGrow($event)" type="text" class="form-control"
+                          v-model="post.title" style="min-height: 60px; max-height: 150px">
+                </textarea>
             </h3>
             <div>
                 <a :href="post.comments_url" target="_blank" >comments</a>

@@ -29,6 +29,7 @@ const app = new Vue({
                     this.preload(posts.slice(show))
                 });
         },
+
         updatePost(post, accepted, title = null) {
             console.log(post.title, accepted);
             this.$http.put('/reddit/posts/' + post.id + '/',
@@ -41,6 +42,11 @@ const app = new Vue({
                     this.fetchPosts()
                 });
         },
+
+        autoGrow(event) {
+            event.target.style.height = "5px";
+            event.target.style.height = (event.target.scrollHeight) + "px";
+        }
     },
     mounted: function () {
         this.fetchPosts();
