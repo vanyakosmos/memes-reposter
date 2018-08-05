@@ -16,6 +16,7 @@ class PostAdmin(admin.ModelAdmin):
     readonly_fields = ('subreddit', 'title', 'link', 'reddit_id', 'created', 'text',
                        'media_link', 'media_type', 'score', 'nsfw')
     actions = ('make_pending',)
+    list_filter = ('status',)
 
     def make_pending(self, request, qs):
         return qs.update(status=Post.STATUS_PENDING)

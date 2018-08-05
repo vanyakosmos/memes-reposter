@@ -23,9 +23,11 @@
         </div>
         <div v-for="post in posts" class="post" :key="post.id">
             <div class="post-body">
-                <img v-if="post.media_type === 'photo'"
+                <a :href="post.media_link" target="_blank">
+                    <img v-if="post.media_type === 'photo'"
                      :src="post.media_link"
                      class="post-media">
+                </a>
                 <video v-if="post.media_type === 'video'" controls autoplay loop
                        class="post-media">
                     <source :src="post.media_link" type='video/mp4'>
@@ -37,7 +39,7 @@
                 </textarea>
             </h3>
             <div>
-                <a :href="post.comments_url" target="_blank" >comments</a>
+                <a :href="post.comments_url" target="_blank">comments</a>
             </div>
             <div class="post-controls row">
                 <div class="col-lg-6">
