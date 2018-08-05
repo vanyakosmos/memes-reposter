@@ -26,13 +26,12 @@
                 <img v-if="post.media_type === 'photo'"
                      :src="post.media_link"
                      class="post-media">
-                <video v-if="post.media_type === 'video'" controls autoplay
+                <video v-if="post.media_type === 'video'" controls autoplay loop
                        class="post-media">
                     <source :src="post.media_link" type='video/mp4'>
                 </video>
             </div>
             <h3 class="post-title">
-                <input type="text" class="form-control" v-model="post.title">
             </h3>
             <div>
                 <a :href="post.comments_url" target="_blank" >comments</a>

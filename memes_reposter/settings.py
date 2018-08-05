@@ -155,6 +155,7 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_WORKER_CONCURRENCY = easy_env.get_int('CELERY_WORKER_CONCURRENCY',
                                              default=multiprocessing.cpu_count())
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+CELERY_REDIS_MAX_CONNECTIONS = 20
 
 # core
 ELASTIC_URL = easy_env.get_str('ELASTIC_URL')
