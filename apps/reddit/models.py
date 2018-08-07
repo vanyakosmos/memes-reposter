@@ -120,6 +120,7 @@ class Post(models.Model):
     media_type = models.CharField(max_length=200, choices=MEDIA_TYPES, default=MEDIA_LINK)
     text = models.TextField(null=True, blank=True)
     nsfw = models.BooleanField(default=False)
+    comments = URLField(blank=True, null=True)
 
     def __init__(self, *args, **kwargs):
         # self._post_meta = PostMeta()
@@ -144,17 +145,19 @@ class Post(models.Model):
         return self.media_type in (self.MEDIA_LINK, self.MEDIA_TEXT)
 
     @property
-    def comments(self):
+    def comments_short(self):
         return f'https://redd.it/{self.reddit_id}'
 
     @property
     def comments_full(self):
-        return f'https://reddit.com/r/{self.subreddit.name}/comments/{self.reddit_id}'
+        auto_link = f'https://reddit.com/r/{self.subreddit.name}/comments/{self.reddit_id}'
+        return self.comments or auto_link
 
     def populate_media(self, item: dict):
         self.title = unescape(item['title'])
         self.link = item['url']
         self.reddit_id = item['id']
+        self.comments = 'https://reddit.com' + item['permalink']
 
         media = get_media(item)
         self.score = int(item['score'])

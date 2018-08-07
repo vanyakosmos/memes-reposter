@@ -26,7 +26,8 @@ const app = new Vue({
                     this.count = response.data.count;
                     const posts = response.data.results;
                     this.posts = posts.slice(0, show);
-                    this.preload(posts.slice(show))
+                    this.preload(posts.slice(show));
+                    this.autoGrowTitleField();
                 });
         },
 
@@ -43,9 +44,13 @@ const app = new Vue({
                 });
         },
 
-        autoGrow(event) {
-            event.target.style.height = "5px";
-            event.target.style.height = (event.target.scrollHeight) + "px";
+        autoGrowTitleField() {
+            setTimeout(() => {
+                this.$refs['titleField'].forEach(target => {
+                    target.style.height = "5px";
+                    target.style.height = (target.scrollHeight + 38) + "px";
+                });
+            }, 100)
         }
     },
     mounted: function () {

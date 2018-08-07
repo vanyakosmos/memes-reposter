@@ -34,11 +34,14 @@
                 </video>
             </div>
             <h3 class="post-title">
-                <textarea @keyup="autoGrow($event)" type="text" class="form-control"
-                          v-model="post.title" style="min-height: 60px; max-height: 150px">
+                <textarea @keyup="autoGrowTitleField()" type="text" class="form-control"
+                          v-model="post.title" ref="titleField"
+                          style="min-height: 38px; max-height: 150px; height: 38px">
                 </textarea>
             </h3>
             <div>
+                <span>len: [[ post.title.length ]]/200</span>
+                <span>sub: [[ post.sub ]]</span>
                 <a :href="post.comments_url" target="_blank">comments</a>
             </div>
             <div class="post-controls row">
