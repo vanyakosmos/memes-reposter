@@ -5,15 +5,18 @@ const app = new Vue({
     el: '#app',
     data: {
         posts: [],
-        count: 0,
-        mode: 1,  // 0 - one-by-one, 1 - multi
+        capacity: 0,
+        length: 10,
     },
     methods: {
-        chooseMode(mode) {
-            console.log('change from', this.mode, 'to', mode);
-            this.mode = mode;
-            window.localStorage.setItem("mode", mode);
-            this.fetchPosts();
+        lengthChanged(e) {
+            console.log(e);
+            console.log(e.target.valueAsNumber);
+            let num = e.target.valueAsNumber;
+            if (num >= 0 && num <= 20) {
+                this.length = num;
+                window.localStorage.setItem("length", num);
+            }
         },
 
         nextPosts() {
@@ -44,22 +47,24 @@ const app = new Vue({
         },
 
         fetchPosts() {
-            let show = 5;
-            let load = 5;
-            if (this.mode === 0) {
+            let show = this.length;
+            let load = this.length;
+            if (this.length === 0) {
                 show = 1;
                 load = 3;
             }
             this.$http.get(`/reddit/posts/?limit=${load}`)
                 .then((response) => {
                     console.log(response.data);
-                    this.count = response.data.count;
+                    this.capacity = response.data.count;
                     const posts = response.data.results.map(p => {
                         p.processed = false;
                         return p;
                     });
                     this.posts = posts.slice(0, show);
-                    this.preload(posts.slice(show));
+                    if (this.length === 0) {
+                        this.preload(posts.slice(show));
+                    }
                     this.autoGrowTitleField();
                 });
         },
@@ -82,6 +87,9 @@ const app = new Vue({
 
         autoGrowTitleField() {
             setTimeout(() => {
+                if (!this.$refs['titleField']) {
+                    return;
+                }
                 this.$refs['titleField'].forEach(target => {
                     target.style.height = "5px";
                     target.style.height = (target.scrollHeight + 38) + "px";
@@ -90,10 +98,9 @@ const app = new Vue({
         }
     },
     mounted: function () {
-        // todo: load mode from storage
-        let mode = window.localStorage.getItem("mode");
-        this.mode = mode === null ? 1 : parseInt(mode, 10);
-        console.log(mode, this.mode);
+        let length = window.localStorage.getItem("length");
+        this.length = length === null ? 10 : parseInt(length, 10);
+        console.log('start', length, this.length);
         this.fetchPosts();
     }
 });
