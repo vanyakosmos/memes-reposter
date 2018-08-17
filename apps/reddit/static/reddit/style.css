@@ -1,22 +1,26 @@
-div.container {
+.container {
     padding-top: 20px;
-}
-
-.post {
-    margin: 0 auto 50px auto;
-    padding: 10px;
-    border: #1d1d1d 5px solid;
     width: 60%;
 }
 
+.post {
+    margin: 0 auto 20px auto;
+    padding: 10px;
+    border: #1d1d1d 5px solid;
+}
+
+.post.processed {
+    opacity: 0.5;
+}
+
 @media (max-width: 768px) {
-    .post {
+    .container {
         width: 80%;
     }
 }
 
 @media (max-width: 576px) {
-    .post {
+    .container {
         width: 100%;
     }
 }

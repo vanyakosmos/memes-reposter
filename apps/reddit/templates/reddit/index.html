@@ -10,8 +10,38 @@
 {% endblock %}
 
 {% block body %}
-    <div id="app" v-cloak class="container">
-        <h3 class="count" style="text-align: center">
+    <div id="app" v-cloak >
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <a class="navbar-brand" href="#">Reposter</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse"
+                    data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="{% url "admin:index" %}">Home <span
+                                class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown"
+                           role="button"
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            View Mode
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <a class="dropdown-item" href="#" @click="chooseMode(0)">One-by-One</a>
+                            <a class="dropdown-item" href="#" @click="chooseMode(1)">Multi</a>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <div class="container">
+            <h3 class="count" style="text-align: center">
             posts left: [[ count ]]
         </h3>
         <div v-if="count === 0">
@@ -21,12 +51,12 @@
                 refresh
             </button>
         </div>
-        <div v-for="post in posts" class="post" :key="post.id">
+        <div v-for="(post, index) in posts" class="post" :key="index" :class="{processed: post.processed}">
             <div class="post-body">
                 <a :href="post.media_link" target="_blank">
                     <img v-if="post.media_type === 'photo'"
-                     :src="post.media_link"
-                     class="post-media">
+                         :src="post.media_link"
+                         class="post-media">
                 </a>
                 <video v-if="post.media_type === 'video'" controls autoplay loop
                        class="post-media">
@@ -46,8 +76,9 @@
             </div>
             <div class="post-controls row">
                 <div class="col-lg-6">
-                    <button @click="updatePost(post, true, post.title)"
+                    <button @click.prevent="updatePost(post, true, post.title)"
                             class="btn btn-primary btn-lg"
+                            :disabled="post.processed === true"
                     >
                         accept
                     </button>
@@ -55,18 +86,26 @@
                 <div class="col-lg-6">
                     <button @click="updatePost(post, true)"
                             class="btn btn-info btn-lg"
+                            :disabled="post.processed === true"
                     >
                         accept w/o title
                     </button>
                 </div>
-                <div class="col-lg-12">
+                <div class="col-lg-12" v-if="mode === 0">
                     <button @click="updatePost(post, false)"
                             class="btn btn-danger btn-lg"
+                            :disabled="post.processed === true"
                     >
                         reject
                     </button>
                 </div>
             </div>
+        </div>
+        <div v-if="mode === 1 && posts.length" style="margin-bottom: 20px">
+            <button @click="nextPosts" class="btn btn-danger btn-lg btn-block">
+                next posts
+            </button>
+        </div>
         </div>
     </div>
 {% endblock %}

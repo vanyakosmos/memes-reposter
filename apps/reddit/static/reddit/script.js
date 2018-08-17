@@ -6,8 +6,34 @@ const app = new Vue({
     data: {
         posts: [],
         count: 0,
+        mode: 1,  // 0 - one-by-one, 1 - multi
     },
     methods: {
+        chooseMode(mode) {
+            console.log('change from', this.mode, 'to', mode);
+            this.mode = mode;
+            window.localStorage.setItem("mode", mode);
+            this.fetchPosts();
+        },
+
+        nextPosts() {
+            window.scroll({
+                top: 0,
+                left: 0,
+                behavior: 'smooth'
+            });
+            let promises = this.posts.filter(p => !p.processed).map(p => {
+                console.log(p.title);
+                return this.updatePost(p, false);
+            });
+
+            Promise.all(promises).then((r) => {
+                console.log('promises');
+                console.log(r);
+                this.fetchPosts();
+            })
+        },
+
         preload(posts) {
             posts.forEach(p => {
                 if (p.media_type === 'photo') {
@@ -18,13 +44,20 @@ const app = new Vue({
         },
 
         fetchPosts() {
-            const show = 1;
-            const load = 3;
+            let show = 5;
+            let load = 5;
+            if (this.mode === 0) {
+                show = 1;
+                load = 3;
+            }
             this.$http.get(`/reddit/posts/?limit=${load}`)
                 .then((response) => {
                     console.log(response.data);
                     this.count = response.data.count;
-                    const posts = response.data.results;
+                    const posts = response.data.results.map(p => {
+                        p.processed = false;
+                        return p;
+                    });
                     this.posts = posts.slice(0, show);
                     this.preload(posts.slice(show));
                     this.autoGrowTitleField();
@@ -32,15 +65,18 @@ const app = new Vue({
         },
 
         updatePost(post, accepted, title = null) {
-            console.log(post.title, accepted);
-            this.$http.put('/reddit/posts/' + post.id + '/',
+            post.processed = true;
+            return this.$http.put('/reddit/posts/' + post.id + '/',
                 {
                     accepted: accepted,
                     title: title,
                 })
                 .then((response) => {
                     console.log(response.data);
-                    this.fetchPosts()
+                    if (this.mode === 0) {
+                        this.fetchPosts();
+                    }
+                    return response.data;
                 });
         },
 
@@ -54,6 +90,10 @@ const app = new Vue({
         }
     },
     mounted: function () {
+        // todo: load mode from storage
+        let mode = window.localStorage.getItem("mode");
+        this.mode = mode === null ? 1 : parseInt(mode, 10);
+        console.log(mode, this.mode);
         this.fetchPosts();
     }
 });
