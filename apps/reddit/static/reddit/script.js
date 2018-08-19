@@ -5,7 +5,7 @@ const app = new Vue({
     el: '#app',
     data: {
         posts: [],
-        capacity: 0,
+        capacity: '...',
         length: 10,
     },
     methods: {
@@ -23,8 +23,8 @@ const app = new Vue({
             window.scroll({
                 top: 0,
                 left: 0,
-                behavior: 'smooth'
             });
+            this.capacity = '...';
             let promises = this.posts.filter(p => !p.processed).map(p => {
                 console.log(p.title);
                 return this.updatePost(p, false);
@@ -53,6 +53,7 @@ const app = new Vue({
                 show = 1;
                 load = 3;
             }
+            this.capacity = '...';
             this.$http.get(`/reddit/posts/?limit=${load}`)
                 .then((response) => {
                     console.log(response.data);
