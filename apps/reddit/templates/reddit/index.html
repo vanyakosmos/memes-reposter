@@ -53,7 +53,7 @@
                              :src="post.media_link"
                              class="post-media">
                     </a>
-                    <video v-if="post.media_type === 'video'" controls autoplay loop
+                    <video v-if="post.media_type === 'video'" controls loop :autoplay="length === 0"
                            class="post-media">
                         <source :src="post.media_link" type='video/mp4'>
                     </video>

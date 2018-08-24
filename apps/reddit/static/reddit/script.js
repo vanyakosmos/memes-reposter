@@ -10,8 +10,6 @@ const app = new Vue({
     },
     methods: {
         lengthChanged(e) {
-            console.log(e);
-            console.log(e.target.valueAsNumber);
             let num = e.target.valueAsNumber;
             if (num >= 0 && num <= 20) {
                 this.length = num;
@@ -25,7 +23,9 @@ const app = new Vue({
                 left: 0,
             });
             this.capacity = '...';
-            let promises = this.posts.filter(p => !p.processed).map(p => {
+            let posts = this.posts;
+            this.posts = [];
+            let promises = posts.filter(p => !p.processed).map(p => {
                 console.log(p.title);
                 return this.updatePost(p, false);
             });
