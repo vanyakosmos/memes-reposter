@@ -6,19 +6,19 @@ const app = new Vue({
     data: {
         posts: [],
         postsCount: '...',
+        initialized: false,
     },
     methods: {
         fetchPosts() {
             this.postsCount = '...';
-            this.$http.get(`/reddit/posts/?limit=20`)
+            this.$http.get(`/reddit/posts/?limit=5`)
                 .then((response) => {
-                    console.log(response.data);
+                    this.initialized = true;
                     this.postsCount = response.data.count;
-                    let posts = response.data.results.map(p => {
+                    this.posts = response.data.results.map(p => {
                         p.processed = false;
                         return p;
                     });
-                    this.posts = this.posts.concat(posts);
                     this.autoGrowTitleField();
                 });
         },
@@ -37,7 +37,6 @@ const app = new Vue({
                     p.processed = true;
                     return p.id;
                 });
-            console.log(rejectedPosts);
 
             this.$http.post('/reddit/posts/reject/', {
                 posts: rejectedPosts,
@@ -53,7 +52,6 @@ const app = new Vue({
                     title: title,
                 })
                 .then((response) => {
-                    console.log(response.data);
                     if (this.mode === 0) {
                         this.fetchPosts();
                     }
@@ -75,5 +73,25 @@ const app = new Vue({
     },
     mounted: function () {
         this.fetchPosts();
+
+        let update = null;
+        window.addEventListener('scroll', function () {
+            // auto video play
+            clearTimeout(update);
+            update = setTimeout(() => {
+                let postsElements = document.querySelectorAll('.post');
+                postsElements.forEach(p => {
+                    let video = p.querySelector('video');
+                    if (!video) {
+                        return;
+                    }
+                    if (p.offsetTop - p.clientHeight / 2 < window.scrollY && p.offsetTop > window.scrollY) {
+                        video.play();
+                    } else {
+                        video.pause();
+                    }
+                })
+            }, 200)
+        })
     }
 });

@@ -41,7 +41,7 @@
                              :src="post.media_link"
                              class="post-media">
                     </a>
-                    <video v-if="post.media_type === 'video'" controls loop :autoplay="length === 0"
+                    <video v-if="post.media_type === 'video'" controls loop :autoplay="false"
                            class="post-media">
                         <source :src="post.media_link" type='video/mp4'>
                     </video>
@@ -85,7 +85,7 @@
                     next posts
                 </button>
             </div>
-            <h1 v-if="posts.length === 0">
+            <h1 v-if="initialized && posts.length === 0">
                 good job, now back to work
             </h1>
         </div>
