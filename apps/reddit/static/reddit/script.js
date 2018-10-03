@@ -11,7 +11,7 @@ const app = new Vue({
     methods: {
         fetchPosts() {
             this.postsCount = '...';
-            this.$http.get(`/reddit/posts/?limit=5`)
+            this.$http.get(`/reddit/posts/?limit=20`)
                 .then((response) => {
                     this.initialized = true;
                     this.postsCount = response.data.count;
@@ -24,6 +24,7 @@ const app = new Vue({
         },
 
         nextPosts() {
+            this.initialized = false;
             window.scroll({
                 top: 0,
                 left: 0,
@@ -47,16 +48,11 @@ const app = new Vue({
 
         updatePost(post, title = null) {
             post.processed = true;
-            return this.$http.put('/reddit/posts/' + post.id + '/',
-                {
-                    title: title,
-                })
-                .then((response) => {
-                    if (this.mode === 0) {
-                        this.fetchPosts();
-                    }
-                    return response.data;
-                });
+            return this.$http.put('/reddit/posts/' + post.id + '/', {
+                title: title,
+            }).then((response) => {
+                return response.data;
+            });
         },
 
         autoGrowTitleField() {
@@ -69,28 +65,33 @@ const app = new Vue({
                     target.style.height = (target.scrollHeight + 38) + "px";
                 });
             }, 100)
+        },
+
+        autoPlayVideo() {
+            let postsElements = document.querySelectorAll('.post');
+            postsElements.forEach(p => {
+                let video = p.querySelector('video');
+                if (!video) {
+                    return;
+                }
+                if (window.scrollY > p.offsetTop - p.clientHeight && window.scrollY < p.offsetTop) {
+                    video.play();
+                } else {
+                    video.pause();
+                }
+            })
         }
     },
     mounted: function () {
         this.fetchPosts();
 
         let update = null;
+        this.autoPlayVideo();
         window.addEventListener('scroll', function () {
             // auto video play
             clearTimeout(update);
             update = setTimeout(() => {
-                let postsElements = document.querySelectorAll('.post');
-                postsElements.forEach(p => {
-                    let video = p.querySelector('video');
-                    if (!video) {
-                        return;
-                    }
-                    if (p.offsetTop - p.clientHeight / 2 < window.scrollY && p.offsetTop > window.scrollY) {
-                        video.play();
-                    } else {
-                        video.pause();
-                    }
-                })
+                this.autoPlayVideo();
             }, 200)
         })
     }
