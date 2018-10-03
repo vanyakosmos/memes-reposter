@@ -11,23 +11,6 @@ services:
     volumes:
       - dbdata:/var/lib/postgresql/data
 
-  elastic:
-    image: elasticsearch
-    hostname: elastic
-    ports:
-      - 9200:9200
-    volumes:
-      - esdata:/usr/share/elasticsearch/data
-
-  kibana:
-    image: kibana
-    environment:
-      - ELASTICSEARCH_URL=http://elastic:9200
-    ports:
-      - 5601:5601
-    depends_on:
-      - elastic
-
   redis:
     image: redis
     hostname: redis
@@ -41,6 +24,7 @@ services:
     command: ["./run/web.sh"]
     volumes:
       - .:/app
+    stop_signal: SIGINT
     ports:
       - 8000:8000
     depends_on:

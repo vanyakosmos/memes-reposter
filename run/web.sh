@@ -3,7 +3,7 @@
 if [ ${1:-dev} == 'dev' ]
 then
 	echo "running dev server..."
-	exec python manage.py runserver
+	exec python manage.py runserver 0.0.0.0:8000
 else
 	echo "running production server..."
 	exec gunicorn memes_reposter.wsgi -c server.py

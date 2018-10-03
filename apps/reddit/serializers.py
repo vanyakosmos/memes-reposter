@@ -26,3 +26,7 @@ class PostSerializer(serializers.ModelSerializer):
 class PostUpdateSerializer(serializers.Serializer):
     accepted = serializers.BooleanField(default=False)
     title = serializers.CharField(allow_null=True)
+
+
+class RejectSerializer(serializers.Serializer):
+    posts = serializers.ListField(child=serializers.IntegerField())

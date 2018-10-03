@@ -5,16 +5,22 @@ const app = new Vue({
     el: '#app',
     data: {
         posts: [],
-        capacity: '...',
-        length: 10,
+        postsCount: '...',
     },
     methods: {
-        lengthChanged(e) {
-            let num = e.target.valueAsNumber;
-            if (num >= 0 && num <= 20) {
-                this.length = num;
-                window.localStorage.setItem("length", num);
-            }
+        fetchPosts() {
+            this.postsCount = '...';
+            this.$http.get(`/reddit/posts/?limit=20`)
+                .then((response) => {
+                    console.log(response.data);
+                    this.postsCount = response.data.count;
+                    let posts = response.data.results.map(p => {
+                        p.processed = false;
+                        return p;
+                    });
+                    this.posts = this.posts.concat(posts);
+                    this.autoGrowTitleField();
+                });
         },
 
         nextPosts() {
@@ -22,59 +28,28 @@ const app = new Vue({
                 top: 0,
                 left: 0,
             });
-            this.capacity = '...';
+            this.postsCount = '...';
             let posts = this.posts;
             this.posts = [];
-            let promises = posts.filter(p => !p.processed).map(p => {
-                console.log(p.title);
-                return this.updatePost(p, false);
-            });
-
-            Promise.all(promises).then((r) => {
-                console.log('promises');
-                console.log(r);
-                this.fetchPosts();
-            })
-        },
-
-        preload(posts) {
-            posts.forEach(p => {
-                if (p.media_type === 'photo') {
-                    const img = new Image();
-                    img.src = p.media_link;
-                }
-            });
-        },
-
-        fetchPosts() {
-            let show = this.length;
-            let load = this.length;
-            if (this.length === 0) {
-                show = 1;
-                load = 3;
-            }
-            this.capacity = '...';
-            this.$http.get(`/reddit/posts/?limit=${load}`)
-                .then((response) => {
-                    console.log(response.data);
-                    this.capacity = response.data.count;
-                    const posts = response.data.results.map(p => {
-                        p.processed = false;
-                        return p;
-                    });
-                    this.posts = posts.slice(0, show);
-                    if (this.length === 0) {
-                        this.preload(posts.slice(show));
-                    }
-                    this.autoGrowTitleField();
+            let rejectedPosts = posts
+                .filter(p => !p.processed)
+                .map(p => {
+                    p.processed = true;
+                    return p.id;
                 });
+            console.log(rejectedPosts);
+
+            this.$http.post('/reddit/posts/reject/', {
+                posts: rejectedPosts,
+            }).then(() => {
+                return this.fetchPosts();
+            });
         },
 
-        updatePost(post, accepted, title = null) {
+        updatePost(post, title = null) {
             post.processed = true;
             return this.$http.put('/reddit/posts/' + post.id + '/',
                 {
-                    accepted: accepted,
                     title: title,
                 })
                 .then((response) => {
@@ -99,9 +74,6 @@ const app = new Vue({
         }
     },
     mounted: function () {
-        let length = window.localStorage.getItem("length");
-        this.length = length === null ? 10 : parseInt(length, 10);
-        console.log('start', length, this.length);
         this.fetchPosts();
     }
 });

@@ -71,20 +71,16 @@ def notify_admins_task():
 
 
 @celery_app.task
-def publish_post_task(post_id, accepted: bool, post_title: bool):
+def publish_post_task(post_id, post_title: bool):
     try:
         post = Post.objects.get(id=post_id)
     except Post.DoesNotExist:
         return
     if post.status != Post.STATUS_ALMOST:
         return
-    if accepted:
-        post.status = Post.STATUS_ACCEPTED
-        post.save()
-        publish_post(post, post_title)
-    else:
-        post.status = Post.STATUS_REJECTED
-        post.save()
+    post.status = Post.STATUS_ACCEPTED
+    post.save()
+    publish_post(post, post_title)
 
 
 @celery_app.task

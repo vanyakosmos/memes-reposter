@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from apps.core.views import poster
 from . import tasks
 from .models import Post
-from .serializers import PostSerializer, PostUpdateSerializer
+from .serializers import PostSerializer, PostUpdateSerializer, RejectSerializer
 
 
 @api_view(['POST'])
@@ -50,7 +50,6 @@ class PostView(PostViewMixin, generics.UpdateAPIView):
     def update(self, request: Request, *args, **kwargs):
         s = self.get_serializer(data=request.data)  # type: PostUpdateSerializer
         s.is_valid(raise_exception=True)
-        accepted = s.validated_data.get('accepted')
         title = s.validated_data.get('title')
 
         post = self.get_object()
@@ -61,7 +60,20 @@ class PostView(PostViewMixin, generics.UpdateAPIView):
         post.status = Post.STATUS_ALMOST
         post.title = title or post.title
         post.save()
-        tasks.publish_post_task.delay(post.id, accepted, bool(title))
+        tasks.publish_post_task.delay(post.id, bool(title))
         return Response({
-            'accepted': accepted,
+            'accepted': True,
         })
+
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def reject_view(request: Request):
+    s = RejectSerializer(data=request.data)
+    s.is_valid(raise_exception=True)
+    posts_ids = s.validated_data['posts']
+    posts = Post.objects.filter(pk__in=s.validated_data['posts'])
+    posts.update(status=Post.STATUS_REJECTED)
+    return Response({
+        'rejected': posts_ids,
+    })

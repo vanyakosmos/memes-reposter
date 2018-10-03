@@ -5,8 +5,6 @@
 
 .post {
     margin: 0 auto 20px auto;
-    padding: 10px;
-    border: #1d1d1d 5px solid;
 }
 
 .post.processed {
