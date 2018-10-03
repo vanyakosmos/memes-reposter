@@ -33,8 +33,9 @@
         </nav>
 
         <div class="container">
-            <div v-for="(post, index) in posts" class="post card card-body" :key="index"
+            <div v-for="(post, index) in posts" class="post card card-body" :key="post.id"
                  :class="{processed: post.processed}">
+                <div :class="{overlay: post.processed}"></div>
                 <div class="post-body">
                     <a :href="post.media_link" target="_blank">
                         <img v-if="post.media_type === 'photo'"
@@ -49,6 +50,7 @@
                 <h3 class="post-title">
                 <textarea @keyup="autoGrowTitleField()" type="text" class="form-control"
                           v-model="post.title" ref="titleField"
+                          :readonly="post.processed"
                           style="min-height: 38px; max-height: 150px; height: 38px">
                 </textarea>
                 </h3>
@@ -80,14 +82,16 @@
                     </div>
                 </div>
             </div>
-            <div v-if="posts.length > 0" style="margin-bottom: 20px">
-                <button @click="nextPosts" class="btn btn-danger btn-lg btn-block">
-                    next posts
+            <div v-if="finished && posts.length !== 0" style="margin-bottom: 20px">
+                <button @click="finish" class="btn btn-danger btn-lg btn-block">
+                    finish
                 </button>
             </div>
-            <h1 v-if="initialized && posts.length === 0">
-                good job, now back to work
-            </h1>
+            <div v-if="finished && posts.length === 0"
+                 style="text-align: center; background: white; border-radius: 3px"
+                 class="card card-body">
+                <h3 style="margin: 0">good job, now back to work</h3>
+            </div>
         </div>
     </div>
 {% endblock %}

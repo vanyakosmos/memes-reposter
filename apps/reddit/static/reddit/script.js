@@ -7,31 +7,30 @@ const app = new Vue({
         posts: [],
         postsCount: '...',
         initialized: false,
+        limit: 5,
+        offset: 3,
+        finished: false,
     },
     methods: {
-        fetchPosts() {
-            this.postsCount = '...';
-            this.$http.get(`/reddit/posts/?limit=20`)
+        fetchPosts(offset = 0) {
+            this.initialized = false;
+            return this.$http.get(`/reddit/posts/?limit=${this.limit}&offset=${offset}`)
                 .then((response) => {
                     this.initialized = true;
                     this.postsCount = response.data.count;
-                    this.posts = response.data.results.map(p => {
+                    let posts = response.data.results.map(p => {
                         p.processed = false;
                         return p;
                     });
+                    if (posts.length !== 0) {
+                        this.posts = this.posts.concat(posts);
+                    }
+                    this.finished = this.postsCount === posts.length || posts.length === 0;
                     this.autoGrowTitleField();
                 });
         },
 
-        nextPosts() {
-            this.initialized = false;
-            window.scroll({
-                top: 0,
-                left: 0,
-            });
-            this.postsCount = '...';
-            let posts = this.posts;
-            this.posts = [];
+        async rejectPosts(posts) {
             let rejectedPosts = posts
                 .filter(p => !p.processed)
                 .map(p => {
@@ -39,11 +38,33 @@ const app = new Vue({
                     return p.id;
                 });
 
-            this.$http.post('/reddit/posts/reject/', {
+            if (rejectedPosts.length === 0) {
+                return;
+            }
+
+            return this.$http.post('/reddit/posts/reject/', {
                 posts: rejectedPosts,
-            }).then(() => {
-                return this.fetchPosts();
-            });
+            })
+        },
+
+        finish() {
+            this.rejectPosts(this.posts)
+                .then(() => {
+                    this.posts = [];
+                    return this.fetchPosts();
+                })
+        },
+
+        rejectOldAndFetchNewPosts(offset = 0) {
+            if (this.finished) {
+                return;
+            }
+            let firstPosts = this.posts.slice(0, this.posts.length - offset);
+
+            return this.rejectPosts(firstPosts)
+                .then(() => {
+                    return this.fetchPosts(offset);
+                });
         },
 
         updatePost(post, title = null) {
@@ -68,30 +89,46 @@ const app = new Vue({
         },
 
         autoPlayVideo() {
-            let postsElements = document.querySelectorAll('.post');
+            let postsElements = document.querySelectorAll('.post:not(.processed)');
             postsElements.forEach(p => {
                 let video = p.querySelector('video');
                 if (!video) {
                     return;
                 }
-                if (window.scrollY > p.offsetTop - p.clientHeight && window.scrollY < p.offsetTop) {
+                let bot = p.offsetTop - video.clientHeight;
+                let top = p.offsetTop;
+
+                if (window.scrollY > bot && window.scrollY < top) {
                     video.play();
                 } else {
                     video.pause();
                 }
             })
+        },
+
+        autoLoadNewPosts() {
+            let cards = document.querySelectorAll('div.post');
+            let lastCard = cards[cards.length - 1];
+            if (lastCard && this.initialized && lastCard.offsetTop - 500 < window.scrollY) {
+                this.rejectOldAndFetchNewPosts(this.offset);
+            }
         }
+
     },
     mounted: function () {
-        this.fetchPosts();
+        this.fetchPosts()
+            .then(() => {
+                this.autoPlayVideo();
+            });
 
         let update = null;
-        this.autoPlayVideo();
-        window.addEventListener('scroll', function () {
-            // auto video play
+        window.addEventListener('scroll', () => {
             clearTimeout(update);
             update = setTimeout(() => {
+                // play video in screen
                 this.autoPlayVideo();
+                // load new posts
+                this.autoLoadNewPosts();
             }, 200)
         })
     }
