@@ -1,8 +1,13 @@
 {% extends "core/base.html" %}
 {% load staticfiles %}
 
+{% block favicon %}
+        <link rel="shortcut icon" type="image/png" href="{% static 'reddit/icon.ico' %}"/>
+    {% endblock %}
+
 {% block styles %}
     <link rel="stylesheet" href="{% static 'reddit/style.css' %}">
+    <link rel="manifest" href="{% static 'reddit/manifest.webmanifest' %}">
 {% endblock %}
 
 {% block scripts %}
@@ -12,7 +17,9 @@
 {% block body %}
     <div id="app" v-cloak>
         <nav class="navbar navbar-expand-sm navbar-dark bg-dark sticky-top">
-            <a class="navbar-brand" href="#">Reposter</a>
+            <a class="navbar-brand" onclick="window.location.reload()" href="#">
+                Reposter
+            </a>
             <button class="navbar-toggler" type="button" data-toggle="collapse"
                     data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
                     aria-expanded="false" aria-label="Toggle navigation">
@@ -32,7 +39,7 @@
             </div>
         </nav>
 
-        <div class="container">
+        <div class="container" style="max-width: 620px;">
             <div v-for="(post, index) in posts" class="post card card-body" :key="post.id"
                  :class="{processed: post.processed}">
                 <div :class="{overlay: post.processed}"></div>

@@ -7,14 +7,15 @@ const app = new Vue({
         posts: [],
         postsCount: '...',
         initialized: false,
+        keep: 20,
         limit: 5,
         offset: 3,
         finished: false,
     },
     methods: {
-        fetchPosts(offset = 0) {
+        fetchPosts() {
             this.initialized = false;
-            return this.$http.get(`/reddit/posts/?limit=${this.limit}&offset=${offset}`)
+            return this.$http.get(`/reddit/posts/?limit=${this.limit}`)
                 .then((response) => {
                     this.initialized = true;
                     this.postsCount = response.data.count;
@@ -23,7 +24,15 @@ const app = new Vue({
                         return p;
                     });
                     if (posts.length !== 0) {
-                        this.posts = this.posts.concat(posts);
+                        // remove already present
+                        let ids = this.posts.map(p => p.id);
+                        for (let p of posts) {
+                            if (ids.indexOf(p.id) === -1) {
+                                this.posts.push(p);
+                            }
+                        }
+                        // leave only top `keep` newest
+                        // this.posts = this.posts.slice(-this.keep);
                     }
                     this.finished = this.postsCount === posts.length || posts.length === 0;
                     this.autoGrowTitleField();
@@ -37,11 +46,9 @@ const app = new Vue({
                     p.processed = true;
                     return p.id;
                 });
-
             if (rejectedPosts.length === 0) {
                 return;
             }
-
             return this.$http.post('/reddit/posts/reject/', {
                 posts: rejectedPosts,
             })
@@ -55,15 +62,15 @@ const app = new Vue({
                 })
         },
 
-        rejectOldAndFetchNewPosts(offset = 0) {
+        rejectOldAndFetchNewPosts() {
             if (this.finished) {
                 return;
             }
-            let firstPosts = this.posts.slice(0, this.posts.length - offset);
+            let firstPosts = this.posts.slice(0, this.posts.length - this.offset);
 
             return this.rejectPosts(firstPosts)
                 .then(() => {
-                    return this.fetchPosts(offset);
+                    return this.fetchPosts();
                 });
         },
 
@@ -95,22 +102,23 @@ const app = new Vue({
                 if (!video) {
                     return;
                 }
-                let bot = p.offsetTop - video.clientHeight;
-                let top = p.offsetTop;
+                let bot = p.offsetTop + video.offsetTop;
+                let mid = window.scrollY + window.innerHeight / 2;
+                let top = bot + video.clientHeight;
 
-                if (window.scrollY > bot && window.scrollY < top) {
+                if (mid > bot && mid < top) {
                     video.play();
                 } else {
                     video.pause();
                 }
-            })
+            });
         },
 
         autoLoadNewPosts() {
             let cards = document.querySelectorAll('div.post');
             let lastCard = cards[cards.length - 1];
             if (lastCard && this.initialized && lastCard.offsetTop - 500 < window.scrollY) {
-                this.rejectOldAndFetchNewPosts(this.offset);
+                this.rejectOldAndFetchNewPosts();
             }
         }
 

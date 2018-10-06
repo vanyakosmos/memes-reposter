@@ -1,0 +1,17 @@
+{
+  "name": "Reddit Reposter",
+  "theme_color": "#FF9C41",
+  "lang": "en-US",
+  "short_name": "reposter",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fff",
+  "description": "Moderation page for reddit reposter",
+  "icons": [
+    {
+      "src": "icon.ico",
+      "sizes": "48x48 96x96 128x128 256x256"
+    }
+  ],
+  "prefer_related_applications": false
+}
