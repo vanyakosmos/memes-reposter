@@ -102,9 +102,14 @@ const app = new Vue({
                 if (!video) {
                     return;
                 }
+                let h = window.innerHeight;
+                let mid = window.scrollY + h / 2;
+
                 let bot = p.offsetTop + video.offsetTop;
-                let mid = window.scrollY + window.innerHeight / 2;
                 let top = bot + video.clientHeight;
+                let videoMid = (bot + top) / 2;
+                bot = videoMid - h / 3;
+                top = videoMid + h / 3;
 
                 if (mid > bot && mid < top) {
                     video.play();
@@ -117,7 +122,7 @@ const app = new Vue({
         autoLoadNewPosts() {
             let cards = document.querySelectorAll('div.post');
             let lastCard = cards[cards.length - 1];
-            if (lastCard && this.initialized && lastCard.offsetTop - 500 < window.scrollY) {
+            if (lastCard && this.initialized && lastCard.offsetTop - window.innerHeight < window.scrollY) {
                 this.rejectOldAndFetchNewPosts();
             }
         }
@@ -137,7 +142,7 @@ const app = new Vue({
                 this.autoPlayVideo();
                 // load new posts
                 this.autoLoadNewPosts();
-            }, 200)
+            }, 100)
         })
     }
 });
