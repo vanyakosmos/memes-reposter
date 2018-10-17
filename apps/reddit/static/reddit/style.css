@@ -69,3 +69,13 @@ body {
 .post-body {
     margin: auto;
 }
+
+
+.navbar-nav.misc {
+    display: flex;
+    flex-direction: row;
+}
+
+.navbar-nav.misc > *:not(:last-child) {
+    margin-right: 10px;
+}

@@ -2,8 +2,8 @@
 {% load staticfiles %}
 
 {% block favicon %}
-        <link rel="shortcut icon" type="image/png" href="{% static 'reddit/icon.ico' %}"/>
-    {% endblock %}
+    <link rel="shortcut icon" type="image/png" href="{% static 'reddit/icon.ico' %}"/>
+{% endblock %}
 
 {% block styles %}
     <link rel="stylesheet" href="{% static 'reddit/style.css' %}">
@@ -16,26 +16,18 @@
 
 {% block body %}
     <div id="app" v-cloak>
-        <nav class="navbar navbar-expand-sm navbar-dark bg-dark sticky-top">
+        <nav class="navbar navbar-dark bg-dark sticky-top" style="display: flex; justify-content: space-between">
             <a class="navbar-brand" onclick="window.location.reload()" href="#">
                 Reposter
             </a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse"
-                    data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
-                    aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
 
-            <div class="collapse navbar-collapse justify-content-between"
-                 id="navbarSupportedContent">
-                <div class="navbar-nav">
-                    <a class="nav-item nav-link" href="{% url "admin:index" %}">
-                        admin
-                    </a>
-                    <a class="nav-item nav-link">
-                        posts left: [[ postsCount ]]
-                    </a>
-                </div>
+            <div class="navbar-nav misc">
+                <a class="nav-item nav-link" href="{% url "admin:index" %}">
+                    admin
+                </a>
+                <a class="nav-item nav-link">
+                    posts: [[ postsCount ]]
+                </a>
             </div>
         </nav>
 
