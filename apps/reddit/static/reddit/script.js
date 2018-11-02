@@ -7,9 +7,9 @@ const app = new Vue({
         posts: [],
         postsCount: '...',
         initialized: false,
-        keep: 20,
+        keep: 15,
         limit: 5,
-        offset: 3,
+        keepVisible: 3,  // should be less them `limit`
         finished: false,
     },
     methods: {
@@ -28,11 +28,29 @@ const app = new Vue({
                         let ids = this.posts.map(p => p.id);
                         for (let p of posts) {
                             if (ids.indexOf(p.id) === -1) {
+                                // p.height = null;
                                 this.posts.push(p);
                             }
                         }
+
                         // leave only top `keep` newest
-                        // this.posts = this.posts.slice(-this.keep);
+                        const offload = Math.max(0, this.posts.length - this.keep);
+                        this.posts.slice(0, offload).forEach(p => {
+                            const postEl = document.getElementById(`post-${p.id}`);
+                            if (postEl) {
+                                postEl.style.height = `${postEl.clientHeight}px`;
+                                postEl.style.position = 'relative';
+                                postEl.innerHTML = '';
+
+                                const info = document.createElement('a');
+                                info.href = p.comments_url;
+                                info.innerText = 'comments';
+                                info.target = '_blank';
+                                info.classList.add('info-box');
+                                postEl.appendChild(info);
+                            }
+                            console.log(p.id, postEl);
+                        });
                     }
                     this.finished = this.postsCount === posts.length || posts.length === 0;
                     this.autoGrowTitleField();
@@ -66,7 +84,7 @@ const app = new Vue({
             if (this.finished) {
                 return;
             }
-            let firstPosts = this.posts.slice(0, this.posts.length - this.offset);
+            let firstPosts = this.posts.slice(0, this.posts.length - this.keepVisible);
 
             return this.rejectPosts(firstPosts)
                 .then(() => {
