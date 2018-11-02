@@ -158,7 +158,6 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 CELERY_REDIS_MAX_CONNECTIONS = 20
 
 # core
-ELASTIC_URL = easy_env.get_str('ELASTIC_URL')
 TG_ADMINS = easy_env.get_list('ADMINS', [], item_factory=int)
 
 # reddit

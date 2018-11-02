@@ -20,7 +20,6 @@ python-telegram-bot = "*"
 python-dotenv = "*"
 easy-env = "*"
 feedparser = "*"
-elasticsearch-dsl = "*"
 
 [dev-packages]
 

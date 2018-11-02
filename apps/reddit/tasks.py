@@ -8,7 +8,6 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.core.models import SiteConfig
-from apps.core.stats import AppType, TaskType, add_stat
 from apps.core.utils import notify_admins
 from memes_reposter.celery import app as celery_app
 from .fetcher import fetch
@@ -42,8 +41,6 @@ def publish_sub(subreddit_id: int, blank: bool):
         publish_blank(posts)
     else:
         publish_posts(posts)
-    key = f'{channel.username} > {subreddit.name}'
-    add_stat(AppType.REDDIT, note=key, count=len(posts), blank=blank)
 
 
 @celery_app.task
@@ -89,7 +86,6 @@ def delete_old_posts():
     posts = Post.objects.filter(created__lte=time)
     deleted, _ = posts.delete()
     logger.info(f'Deleted {deleted} post(s).')
-    add_stat(AppType.REDDIT, task=TaskType.CLEAN_UP, count=deleted)
     return deleted
 
 
