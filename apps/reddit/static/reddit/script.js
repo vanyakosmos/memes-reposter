@@ -38,18 +38,17 @@ const app = new Vue({
                         this.posts.slice(0, offload).forEach(p => {
                             const postEl = document.getElementById(`post-${p.id}`);
                             if (postEl) {
-                                postEl.style.height = `${postEl.clientHeight}px`;
+                                postEl.style.height = `${postEl.offsetHeight}px`;
                                 postEl.style.position = 'relative';
                                 postEl.innerHTML = '';
 
                                 const info = document.createElement('a');
                                 info.href = p.comments_url;
-                                info.innerText = 'comments';
+                                info.innerText = p.title;
                                 info.target = '_blank';
                                 info.classList.add('info-box');
                                 postEl.appendChild(info);
                             }
-                            console.log(p.id, postEl);
                         });
                     }
                     this.finished = this.postsCount === posts.length || posts.length === 0;
