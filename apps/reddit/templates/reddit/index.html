@@ -37,11 +37,8 @@
           v-for="(post, index) in posts" :key="post.id"
           class="post card card-body" :class="{processed: post.processed}"
           :id="`post-${post.id}`"
-{#          :style="{height: post.height}"#}
       >
-{#        <div :class="{overlay: post.processed}"></div>#}
         <div class="post-body">
-{#          <span style="color: white">height: '[[ post.height ]]'</span>#}
           <a :href="post.media_link" target="_blank">
             <img
                 v-if="post.media_type === 'photo'"
@@ -97,9 +94,11 @@
           finish
         </button>
       </div>
-      <div v-if="finished && posts.length === 0"
-           style="text-align: center; background: white; border-radius: 3px"
-           class="card card-body">
+      <div
+          v-if="finished && posts.length === 0"
+          style="text-align: center; background: white; border-radius: 3px"
+          class="end-card card card-body"
+      >
         <h3 style="margin: 0">good job, now back to work</h3>
       </div>
     </div>

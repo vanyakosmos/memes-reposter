@@ -9,7 +9,7 @@
   "icons": [
     {
       "src": "icon.ico",
-      "sizes": "48x48 96x96 128x128 256x256"
+      "sizes": "48x48 64x64 128x128 256x256"
     }
   ],
   "prefer_related_applications": false

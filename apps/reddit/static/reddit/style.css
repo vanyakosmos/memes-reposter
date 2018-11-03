@@ -89,3 +89,8 @@ body {
 .navbar-nav.misc > *:not(:last-child) {
   margin-right: 10px;
 }
+
+.end-card {
+  background-color: #252629 !important;
+  color: #c7c7c7;
+}
