@@ -4,7 +4,7 @@
   "short_name": "reposter",
   "start_url": "/reddit",
   "display": "standalone",
-  "background_color": "#fff",
+  "background_color": "#171719",
   "description": "Moderation page for reddit reposter",
   "icons": [
     {
