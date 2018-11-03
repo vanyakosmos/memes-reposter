@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "bc0eb583427a46cab01de1de20af25b1b4e1c016ffc665f4885c2c2c3c368eb5"
+            "sha256": "00f72696a5f440ea3a7cc43ab83c5c770beb30c1918113de6b425014e544d90f"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -152,11 +152,11 @@
         },
         "django-celery-beat": {
             "hashes": [
-                "sha256:b25bc19a589e2851361408708a2aac43524608dd35b85d34a295f90f873a75e5",
-                "sha256:f3be14a02280d9977757acfcc8464d0bb5a24c3ed5fbd88b60ca63bb24fce632"
+                "sha256:1f770a936f070fd6b2ceac123ef4951fbe9e941e39b52ae9eea5ac0efe57d51d",
+                "sha256:d40e2c48aeed7043fff6064f53bc157f6a1f55b45d984eb2b52bf1b88ae96026"
             ],
             "index": "pypi",
-            "version": "==1.2.0"
+            "version": "==1.1.1"
         },
         "django-solo": {
             "hashes": [
@@ -164,13 +164,6 @@
             ],
             "index": "pypi",
             "version": "==1.1.3"
-        },
-        "django-timezone-field": {
-            "hashes": [
-                "sha256:7d7a37cfeacec5b1e81cd2f0aa334d46ebaa369cd516028579ed343cbc676c38",
-                "sha256:d9fdab77c443b78c362ffaeb50fe7d7b54692c89aaae8ca1cae67848139b82ac"
-            ],
-            "version": "==3.0"
         },
         "djangorestframework": {
             "hashes": [
@@ -284,19 +277,6 @@
                 "sha256:a988718abfad80b6b157acce7bf130a30876d27603738ac39f140993246b25b3"
             ],
             "version": "==2.19"
-        },
-        "python-crontab": {
-            "hashes": [
-                "sha256:d28583dc5b2f37f707ad37221f390933cc24ee4f350a641fdc3cf84ba22a9dec"
-            ],
-            "version": "==2.3.5"
-        },
-        "python-dateutil": {
-            "hashes": [
-                "sha256:063df5763652e21de43de7d9e00ccf239f953a832941e37be541614732cdfc93",
-                "sha256:88f9287c0174266bb0d8cedd395cfba9c58e87e5ad86b2ce58859bc11be3cf02"
-            ],
-            "version": "==2.7.5"
         },
         "python-dotenv": {
             "hashes": [
