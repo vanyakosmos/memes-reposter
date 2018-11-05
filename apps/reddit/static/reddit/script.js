@@ -26,10 +26,11 @@ const app = new Vue({
           if (posts.length !== 0) {
             // remove already present
             let ids = this.posts.map(p => p.id);
+            let lim = this.limit - this.keepVisible;
             for (let p of posts) {
-              if (ids.indexOf(p.id) === -1) {
-                // p.height = null;
+              if (ids.indexOf(p.id) === -1 && lim > 0) {
                 this.posts.push(p);
+                lim--;
               }
             }
             // leave only last `limit` posts
@@ -133,7 +134,6 @@ const app = new Vue({
         this.rejectOldAndFetchNewPosts();
       }
     }
-
   },
 
   updated: function () {
