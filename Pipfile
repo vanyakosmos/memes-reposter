@@ -14,12 +14,13 @@ gunicorn = "*"
 whitenoise = "*"
 "psycopg2-binary" = "*"
 celery = "*"
-redis = "*"
+redis = "==2.10.6"
 requests = "*"
 python-telegram-bot = "*"
 python-dotenv = "*"
 easy-env = "*"
 feedparser = "*"
+youtube-dl = "*"
 
 [dev-packages]
 

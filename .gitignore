@@ -110,3 +110,4 @@ playground.py
 *.db
 nohup.out
 celerybeat.pid
+videos

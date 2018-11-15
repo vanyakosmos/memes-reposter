@@ -1,6 +1,11 @@
 import logging
-from datetime import timedelta
+import os
+from datetime import datetime, timedelta
+from glob import glob
+from typing import List
 
+import pytz
+import youtube_dl
 from celery import chord
 from celery.schedules import crontab
 from django.conf import settings
@@ -30,13 +35,35 @@ def pack_posts(raw_posts, subreddit: Subreddit):
     return posts
 
 
+def load_videos(posts: List[Post]):
+    options = {
+        'outtmpl': os.path.join(settings.VIDEOS_ROOT, '%(id)s.%(ext)s'),
+    }
+    with youtube_dl.YoutubeDL(options) as ydl:
+        links = []
+        for post in posts:
+            if post.media_type == 'video' and 'v.redd.it' in post.media_link:
+                link = post.comments_full
+                info = ydl.extract_info(link, download=False)
+                video_id = info['id']
+                ext = info['ext']
+                post.media_link = f'{settings.THIS_HOST}/videos/{video_id}.{ext}'
+                post.file_path = os.path.join(settings.VIDEOS_ROOT, f'{video_id}.{ext}')
+                links.append(post.comments_full)
+
+        ydl.download(links)
+
+
 @celery_app.task
 def publish_sub(subreddit_id: int, blank: bool):
     subreddit = Subreddit.objects.get(pk=subreddit_id)
-    channel = subreddit.channel
     raw_posts = fetch(subreddit.name, limit=settings.REDDIT_FETCH_SIZE)
     posts = pack_posts(raw_posts, subreddit)
     posts = apply_filters(posts, subreddit)
+    try:
+        load_videos(posts)
+    except Exception as e:
+        logger.error(e)
     if blank:
         publish_blank(posts)
     else:
@@ -86,6 +113,13 @@ def delete_old_posts():
     posts = Post.objects.filter(created__lte=time)
     deleted, _ = posts.delete()
     logger.info(f'Deleted {deleted} post(s).')
+    # delete files
+    for file_path in glob(os.path.join('videos', '*')):
+        t = os.stat(file_path).st_ctime
+        t = datetime.utcfromtimestamp(t).replace(tzinfo=pytz.utc)
+        if t < time:
+            os.remove(file_path)
+            logger.info(f'Deleted {file_path}.')
     return deleted
 
 

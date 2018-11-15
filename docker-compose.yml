@@ -21,6 +21,7 @@ services:
 
   web:
     build: .
+    image: memes-reposter-web
     command: ["./run/web.sh"]
     volumes:
       - .:/app
@@ -33,6 +34,7 @@ services:
 
   worker:
     build: .
+    image: memes-reposter-web
     command: ["./run/celery.sh"]
     volumes:
       - .:/app

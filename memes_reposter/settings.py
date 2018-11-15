@@ -1,5 +1,6 @@
 import logging
 import multiprocessing
+import os
 from os.path import abspath, dirname, join
 
 import dj_database_url
@@ -12,7 +13,7 @@ load_dotenv(find_dotenv())
 BASE_DIR = dirname(dirname(abspath(__file__)))
 SECRET_KEY = easy_env.get('SECRET_KEY', raise_error=True)
 DEBUG = easy_env.get('DEBUG', default=False)
-THIS_HOST = easy_env.get('THIS_HOST', '0.0.0.0:8000')
+THIS_HOST = easy_env.get('THIS_HOST', 'http://0.0.0.0:8000')
 ALLOWED_HOSTS = ['*']
 
 # Application definition
@@ -99,6 +100,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = join(BASE_DIR, 'static')
+VIDEOS_ROOT = join(BASE_DIR, 'videos')
+os.makedirs(VIDEOS_ROOT, exist_ok=True)
 
 # logging
 logging.addLevelName(logging.DEBUG, '🐛 ')
