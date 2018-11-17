@@ -42,15 +42,22 @@ def load_videos(posts: List[Post]):
     with youtube_dl.YoutubeDL(options) as ydl:
         links = []
         for post in posts:
-            if post.media_type == 'video' and 'v.redd.it' in post.media_link:
+            correct_link = ('v.redd.it' in post.media_link) or (
+                        settings.THIS_HOST in post.media_link)
+            if post.media_type == 'video' and correct_link:
                 link = post.comments_full
                 info = ydl.extract_info(link, download=False)
                 video_id = info['id']
                 ext = info['ext']
-                post.media_link = f'{settings.THIS_HOST}/videos/{video_id}.{ext}'
-                post.file_path = os.path.join(settings.VIDEOS_ROOT, f'{video_id}.{ext}')
-                links.append(post.comments_full)
 
+                if info['acodec'] == 'none':
+                    continue
+
+                file_path = os.path.join(settings.VIDEOS_ROOT, f'{video_id}.{ext}')
+                post.media_link = f'{settings.THIS_HOST}/videos/{video_id}.{ext}'
+                post.file_path = file_path
+                if not os.path.exists(file_path):
+                    links.append(post.comments_full)
         ydl.download(links)
 
 
@@ -60,10 +67,7 @@ def publish_sub(subreddit_id: int, blank: bool):
     raw_posts = fetch(subreddit.name, limit=settings.REDDIT_FETCH_SIZE)
     posts = pack_posts(raw_posts, subreddit)
     posts = apply_filters(posts, subreddit)
-    try:
-        load_videos(posts)
-    except Exception as e:
-        logger.error(e)
+    load_videos(posts)
     if blank:
         publish_blank(posts)
     else:
@@ -104,6 +108,7 @@ def publish_post_task(post_id, post_title: bool):
         return
     post.status = Post.STATUS_ACCEPTED
     post.save()
+    load_videos([post])
     publish_post(post, post_title)
 
 

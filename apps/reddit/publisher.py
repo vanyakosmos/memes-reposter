@@ -98,10 +98,9 @@ def publish_media(post: Post, **kwargs):
     if post.media_type == Post.MEDIA_PHOTO:
         bot.send_photo(photo=post.media_link, **kwargs)
     elif post.media_type == Post.MEDIA_VIDEO:
-        try:
+        if hasattr(post, 'file_path'):
             bot.send_video(video=open(post.file_path, 'rb'), **kwargs)
-        except Exception as e:
-            logger.error(e)
+        else:
             bot.send_video(video=post.media_link, **kwargs)
 
 
