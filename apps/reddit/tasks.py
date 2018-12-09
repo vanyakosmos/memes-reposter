@@ -38,6 +38,7 @@ def pack_posts(raw_posts, subreddit: Subreddit):
 def load_videos(posts: List[Post]):
     options = {
         'outtmpl': os.path.join(settings.VIDEOS_ROOT, '%(id)s.%(ext)s'),
+        'format': 'bestvideo[height<=480]+bestaudio/best[height<=480]',
     }
     with youtube_dl.YoutubeDL(options) as ydl:
         links = []
