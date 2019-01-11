@@ -104,6 +104,7 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+# custom
 *.sqlite3
 playground.py
 /static
@@ -111,3 +112,4 @@ playground.py
 nohup.out
 celerybeat.pid
 videos
+docker-compose.override.yml

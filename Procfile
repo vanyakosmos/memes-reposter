@@ -1,2 +1,2 @@
-release: ./run/release.sh
-web: ./run/cheat.sh
+release: ./scripts/release.sh
+web: ./scripts/run_on_heroku.sh

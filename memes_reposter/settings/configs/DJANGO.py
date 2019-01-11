@@ -10,7 +10,7 @@ import easy_env
 # load_dotenv(find_dotenv())
 
 BASE_DIR = str(Path(__file__).parents[3])
-SECRET_KEY = easy_env.get('SECRET_KEY', raise_error=True)
+SECRET_KEY = easy_env.get('SECRET_KEY')
 DEBUG = easy_env.get('DEBUG', default=False)
 THIS_HOST = easy_env.get('THIS_HOST', 'http://0.0.0.0:8000')
 ALLOWED_HOSTS = ['*']

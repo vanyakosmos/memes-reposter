@@ -52,14 +52,3 @@ def delete_old_posts():
     deleted, _ = posts.delete()
     logger.info(f'Deleted {deleted} post(s).')
     return deleted
-
-
-@celery_app.on_after_finalize.connect
-def setup_periodic_tasks(sender, **_):
-    logger.info('SCHEDULING IMGUR')
-    # publish
-    cron = crontab(hour='*', minute='5,35')
-    sender.add_periodic_task(cron, fetch_and_publish.s(), name='imgur.publishing')
-    # clean up
-    cron = crontab(hour='*/12', minute='55')
-    sender.add_periodic_task(cron, delete_old_posts.s(), name='imgur.clean_up')

@@ -3,7 +3,6 @@ from time import sleep
 from typing import List
 
 from celery import group
-from celery.schedules import crontab
 from django.conf import settings
 
 from apps.core.models import SiteConfig
@@ -88,14 +87,3 @@ def delete_old_posts_db():
         stats[str(feed)] = deleted
         logger.info(f'Deleted {deleted} post(s) from feed {feed}.')
     return stats
-
-
-@celery_app.on_after_finalize.connect
-def setup_periodic_tasks(sender, **_):
-    logger.info('SCHEDULING RSS')
-    # publish
-    cron = crontab(hour='*', minute='10,40')
-    sender.add_periodic_task(cron, fetch_and_publish.s(), name='rss.publishing')
-    # clean up
-    cron = crontab(hour='*/12', minute='55')
-    sender.add_periodic_task(cron, delete_old_posts_db.s(), name='rss.clean_up')

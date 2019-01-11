@@ -127,14 +127,3 @@ def delete_old_posts():
             os.remove(file_path)
             logger.info(f'Deleted {file_path}.')
     return deleted
-
-
-@celery_app.on_after_finalize.connect
-def setup_periodic_tasks(sender, **_):
-    logger.info('SCHEDULING REDDIT')
-    # publish
-    fetch_crontab = crontab(hour='*', minute='0,30')
-    sender.add_periodic_task(fetch_crontab, fetch_and_publish.s(), name='reddit.publishing')
-    # clean up
-    clean_crontab = crontab(hour='*/12', minute='55')
-    sender.add_periodic_task(clean_crontab, delete_old_posts.s(), name='reddit.clean_up')
