@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from apps.core.errors import ConfigError
 from apps.core.models import SiteConfig
-from memes_reposter.celery import app as celery_app
+from memes_reposter import celery_app
 from .fetcher import fetch, populate_albums
 from .filters import apply_filters
 from .models import ImgurConfig, Post

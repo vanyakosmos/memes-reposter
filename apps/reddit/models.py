@@ -9,7 +9,7 @@ from telegram import TelegramError
 
 from apps.core.fields import URLField
 from apps.reddit.utils import get_media
-from memes_reposter.telegram_bot import bot
+from memes_reposter import tg_bot
 
 
 TRASH_REGEX = re.compile(r'[^\w\s]')
@@ -29,14 +29,14 @@ class Channel(models.Model):
 
     def _bot_has_access(self):
         try:
-            bot.get_chat(chat_id=self.username)
+            tg_bot.get_chat(chat_id=self.username)
         except TelegramError:
             raise ValidationError("Bot doesn't have access to this channel.")
 
     def _bot_id_admin(self):
-        admins = bot.get_chat_administrators(chat_id=self.username)
+        admins = tg_bot.get_chat_administrators(chat_id=self.username)
         for admin in admins:
-            if admin.user.username == bot.username:
+            if admin.user.username == tg_bot.username:
                 if not admin.can_post_messages:
                     raise ValidationError("Bot can't post messages.")
                 break
@@ -51,7 +51,7 @@ class Channel(models.Model):
             setattr(self, '_username', self.username)
 
     def save(self, *args, **kwargs):
-        chat = bot.get_chat(chat_id=self.username)
+        chat = tg_bot.get_chat(chat_id=self.username)
         self.chat_id = chat.id
         return super().save(*args, **kwargs)
 
@@ -60,9 +60,11 @@ class Subreddit(models.Model):
     name = models.CharField(max_length=200)
     channel = models.ForeignKey(Channel, on_delete=models.CASCADE)
     low_score_limit = models.IntegerField(
-        validators=[validators.MinValueValidator(0)], default=1000)
+        validators=[validators.MinValueValidator(0)], default=1000
+    )
     score_limit = models.IntegerField(
-        validators=[validators.MinValueValidator(0)], default=1000)
+        validators=[validators.MinValueValidator(0)], default=1000
+    )
     pass_nsfw = models.BooleanField(default=False)
     show_title = models.BooleanField(default=True)
     active = models.BooleanField(default=True)
@@ -79,10 +81,7 @@ class Subreddit(models.Model):
 
 
 def format_field_pairs(obj, fields: List[str]):
-    return ', '.join([
-        f'{field}="{getattr(obj, field, None)}"'
-        for field in fields
-    ])
+    return ', '.join([f'{field}="{getattr(obj, field, None)}"' for field in fields])
 
 
 class Post(models.Model):
@@ -117,7 +116,9 @@ class Post(models.Model):
 
     score = models.IntegerField(null=True)
     media_link = URLField(blank=True, null=True)
-    media_type = models.CharField(max_length=200, choices=MEDIA_TYPES, default=MEDIA_LINK)
+    media_type = models.CharField(
+        max_length=200, choices=MEDIA_TYPES, default=MEDIA_LINK
+    )
     text = models.TextField(null=True, blank=True)
     nsfw = models.BooleanField(default=False)
     comments = URLField(blank=True, null=True)
@@ -130,8 +131,14 @@ class Post(models.Model):
         return f'{self.reddit_id} : {self.title}'
 
     def __repr__(self):
-        fields = ['reddit_id', 'subreddit', 'title',
-                  'media_link', 'media_type', 'score']
+        fields = [
+            'reddit_id',
+            'subreddit',
+            'title',
+            'media_link',
+            'media_type',
+            'score',
+        ]
         pairs = format_field_pairs(self, fields)
         return f'Post({pairs})'
 
@@ -150,7 +157,9 @@ class Post(models.Model):
 
     @property
     def comments_full(self):
-        auto_link = f'https://reddit.com/r/{self.subreddit.name}/comments/{self.reddit_id}'
+        auto_link = (
+            f'https://reddit.com/r/{self.subreddit.name}/comments/{self.reddit_id}'
+        )
         return self.comments or auto_link
 
     def populate_media(self, item: dict):

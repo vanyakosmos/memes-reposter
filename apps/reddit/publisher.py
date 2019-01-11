@@ -4,10 +4,15 @@ import re
 from time import sleep
 from typing import List, Optional
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, \
-    MAX_CAPTION_LENGTH, ParseMode, TelegramError
+from telegram import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    MAX_CAPTION_LENGTH,
+    ParseMode,
+    TelegramError,
+)
 
-from memes_reposter.telegram_bot import bot
+from memes_reposter import tg_bot
 from .models import Post
 
 
@@ -64,26 +69,25 @@ def publish_post_link(post: Post, channel_id: str):
     text = title + f'\n{post.link}'
 
     keyboard_markup = build_keyboard_markup(post, pass_original=False)
-    bot.send_message(text=text,
-                     chat_id=channel_id,
-                     reply_markup=keyboard_markup,
-                     parse_mode=ParseMode.HTML)
+    tg_bot.send_message(
+        text=text,
+        chat_id=channel_id,
+        reply_markup=keyboard_markup,
+        parse_mode=ParseMode.HTML,
+    )
 
 
 def publish_media_post(post: Post, channel_id: str, post_title=None):
     title = format_title(post)
     keyboard_markup = build_keyboard_markup(post)
-    common = {
-        'chat_id': channel_id,
-        'reply_markup': keyboard_markup,
-    }
+    common = {'chat_id': channel_id, 'reply_markup': keyboard_markup}
     subreddit = post.subreddit
     show_title = subreddit.show_title if post_title is None else post_title
     # need title, post pic and text separately
     if show_title and title and len(title) > MAX_CAPTION_LENGTH:
         publish_media(post, chat_id=channel_id)
         kwargs = dict(text=title, **common)
-        bot.send_message(**kwargs)
+        tg_bot.send_message(**kwargs)
     # need title, post pic with caption
     elif show_title:
         kwargs = dict(caption=title, **common)
@@ -96,12 +100,12 @@ def publish_media_post(post: Post, channel_id: str, post_title=None):
 
 def publish_media(post: Post, **kwargs):
     if post.media_type == Post.MEDIA_PHOTO:
-        bot.send_photo(photo=post.media_link, **kwargs)
+        tg_bot.send_photo(photo=post.media_link, **kwargs)
     elif post.media_type == Post.MEDIA_VIDEO:
         if hasattr(post, 'file_path'):
-            bot.send_video(video=open(post.file_path, 'rb'), **kwargs)
+            tg_bot.send_video(video=open(post.file_path, 'rb'), **kwargs)
         else:
-            bot.send_video(video=post.media_link, **kwargs)
+            tg_bot.send_video(video=post.media_link, **kwargs)
 
 
 def build_keyboard_markup(post: Post, pass_original=True):
@@ -110,6 +114,4 @@ def build_keyboard_markup(post: Post, pass_original=True):
         keyboard.append(InlineKeyboardButton('original', url=post.media_link))
     keyboard.append(InlineKeyboardButton('comments', url=post.comments_full))
 
-    return InlineKeyboardMarkup([
-        keyboard,
-    ])
+    return InlineKeyboardMarkup([keyboard])

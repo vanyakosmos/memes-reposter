@@ -7,7 +7,7 @@ from django.db import models
 from solo.models import SingletonModel
 from telegram import TelegramError
 
-from memes_reposter.telegram_bot import bot
+from memes_reposter import tg_bot
 
 
 class ImgurConfig(SingletonModel):
@@ -31,14 +31,14 @@ class ImgurConfig(SingletonModel):
 
     def _bot_has_access(self):
         try:
-            bot.get_chat(chat_id=self.channel_username)
+            tg_bot.get_chat(chat_id=self.channel_username)
         except TelegramError:
             raise ValidationError("Bot doesn't have access to this channel.")
 
     def _bot_id_admin(self):
-        admins = bot.get_chat_administrators(chat_id=self.channel_username)
+        admins = tg_bot.get_chat_administrators(chat_id=self.channel_username)
         for admin in admins:
-            if admin.user.username == bot.username:
+            if admin.user.username == tg_bot.username:
                 if not admin.can_post_messages:
                     raise ValidationError("Bot can't post messages.")
                 break
@@ -68,7 +68,7 @@ class ImgurConfig(SingletonModel):
 
     def save(self, *args, **kwargs):
         if self.channel_username:
-            chat = bot.get_chat(chat_id=self.channel_username)
+            chat = tg_bot.get_chat(chat_id=self.channel_username)
             self.chat_id = chat.id
         return super().save(*args, **kwargs)
 

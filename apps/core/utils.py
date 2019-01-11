@@ -5,7 +5,7 @@ from typing import Dict, List
 from django.conf import settings
 from telegram import Message, TelegramError
 
-from memes_reposter.telegram_bot import bot
+from memes_reposter import tg_bot
 
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ def notify_admins(text: str, type='pending', clean=True):
         messages[type] = []
     for admin in settings.TG_ADMINS:
         try:
-            msg = bot.send_message(admin, text)
+            msg = tg_bot.send_message(admin, text)
             messages[type].append(msg)
         except TelegramError as e:
             logger.warning(e)

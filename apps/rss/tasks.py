@@ -7,8 +7,7 @@ from celery.schedules import crontab
 from django.conf import settings
 
 from apps.core.models import SiteConfig
-from memes_reposter.celery import app as celery_app
-from memes_reposter.telegram_bot import bot
+from memes_reposter import celery_app, tg_bot
 from .fetcher import fetch_posts
 from .models import Channel, Post, RssFeed
 from .publisher import publish_post
@@ -23,7 +22,7 @@ def publish_posts(feed: RssFeed, posts: List[Post]) -> int:
     for i, post in enumerate(posts):
         try:
             post.feed = feed
-            published = publish_post(bot, feed.channel, post)
+            published = publish_post(tg_bot, feed.channel, post)
             if published:
                 logger.info('> Published %d/%d %s', i + 1, len(posts), repr(post.title))
                 counter += 1
@@ -41,7 +40,7 @@ def refresh_channels_meta() -> list:
     channels = Channel.objects.all()
     stats = []
     for channel in channels:
-        chat = bot.get_chat(chat_id=channel.chat_id)
+        chat = tg_bot.get_chat(chat_id=channel.chat_id)
 
         refreshed = any(map(lambda a: a[0] != a[1], zip(
             [channel.identifier, channel.username, channel.title],
@@ -49,7 +48,7 @@ def refresh_channels_meta() -> list:
         if refreshed:
             stats.append(channel.title)
 
-        channel.save(bot=bot)
+        channel.save(bot=tg_bot)
     logger.info('Done.')
     return stats
 

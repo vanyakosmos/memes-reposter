@@ -14,7 +14,7 @@ from django.utils import timezone
 
 from apps.core.models import SiteConfig
 from apps.core.utils import notify_admins
-from memes_reposter.celery import app as celery_app
+from memes_reposter import celery_app
 from .fetcher import fetch
 from .filters import apply_filters
 from .models import Channel, Post, Subreddit
@@ -44,7 +44,7 @@ def load_videos(posts: List[Post]):
         links = []
         for post in posts:
             correct_link = ('v.redd.it' in post.media_link) or (
-                        settings.THIS_HOST in post.media_link)
+                    settings.THIS_HOST in post.media_link)
             if post.media_type == 'video' and correct_link:
                 link = post.comments_full
                 info = ydl.extract_info(link, download=False)

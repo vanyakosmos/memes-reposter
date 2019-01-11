@@ -1,11 +1,10 @@
 import feedparser
 from django.core.exceptions import ValidationError
 from django.db import models
-from solo.models import SingletonModel
 from telegram import TelegramError
 
 from apps.core.fields import URLField
-from memes_reposter.telegram_bot import bot
+from memes_reposter import tg_bot
 
 
 class Channel(models.Model):
@@ -43,11 +42,11 @@ class Channel(models.Model):
             raise ValidationError("Identifier or username should be provided for channel.")
         # no access to channel
         try:
-            bot.get_chat(chat_id=self.chat_id)
-            admins = bot.get_chat_administrators(chat_id=self.chat_id)
+            tg_bot.get_chat(chat_id=self.chat_id)
+            admins = tg_bot.get_chat_administrators(chat_id=self.chat_id)
 
             for admin in admins:
-                if admin.user.username == bot.username:
+                if admin.user.username == tg_bot.username:
                     if not admin.can_post_messages:
                         raise ValidationError("Bot can't post messages.")
                     break
@@ -69,7 +68,7 @@ class Channel(models.Model):
     def save(self, refresh_meta=True, **kwargs):
         if refresh_meta:
             # bot = bot or get_bot()
-            chat = bot.get_chat(chat_id=self.chat_id)
+            chat = tg_bot.get_chat(chat_id=self.chat_id)
             self.identifier = chat.id
             self.username = chat.username
             self.title = chat.title
