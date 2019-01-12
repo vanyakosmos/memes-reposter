@@ -6,6 +6,7 @@ from typing import List
 
 import pytz
 import youtube_dl
+from celery import group
 from django.conf import settings
 from django.utils import timezone
 
@@ -27,25 +28,37 @@ def publish_posts_task(force=False, blank=False):
         return False
 
     logger.info(f'Publishing reddit posts (force={force}, blank={blank})...')
-    for subreddit in Subreddit.objects.all():
-        posts = fetch(subreddit.name, limit=settings.REDDIT_FETCH_SIZE)
-        posts = pack_posts(posts, subreddit)
-        posts = apply_filters(posts, subreddit)
-        load_videos(posts)
-
-        processed_channels = set()
-        for subscription in subreddit.subscriptions.all():
-            for channel in subscription.tg_channels.all():
-                if channel in processed_channels:
-                    continue
-                for post in posts:
-                    post.save()
-                    if post.status != Post.STATUS_ACCEPTED or blank:
-                        continue
-                    published = publish_post(post, channel, sleep_time=0.5)
-                    mark = '✅' if published else '❌'
-                    logger.debug(f"{mark}  > {post}")
+    publishing_job = group(
+        [
+            publish_subreddit_task.si(subreddit.id, blank)
+            for subreddit in Subreddit.objects.filter(enabled=True)
+        ]
+    )
+    publishing_job.apply_async()
     return True
+
+
+@celery_app.task
+def publish_subreddit_task(subreddit_id, blank):
+    subreddit = Subreddit.objects.get(id=subreddit_id)
+    posts = fetch(subreddit.name, limit=settings.REDDIT_FETCH_SIZE)
+    posts = pack_posts(posts, subreddit)
+    # todo: filter in context of concrete channel
+    posts = apply_filters(posts, subreddit)
+    load_videos(posts)
+
+    processed_channels = set()
+    for subscription in subreddit.subscriptions.all():
+        for channel in subscription.tg_channels.all():
+            if channel in processed_channels:
+                continue
+            for post in posts:
+                post.save()
+                if post.status != Post.STATUS_ACCEPTED or blank:
+                    continue
+                published = publish_post(post, channel, sleep_time=0.5)
+                mark = '✅' if published else '❌'
+                logger.debug(f"{mark}  > {post}")
 
 
 def skip_publishing(force=False):
