@@ -21,7 +21,10 @@ python-dotenv = "*"
 easy-env = "*"
 feedparser = "*"
 youtube-dl = "*"
-graphene-django = ">=2.0"
+graphene-django = "*"
+django-graphql-jwt = "*"
+graphql-core = "*"
+django-filter = ">=2.0.0"
 
 [dev-packages]
 

@@ -22,15 +22,15 @@ logger = logging.getLogger(__name__)
 
 
 @celery_app.task
-def publish_posts_task(force=False, blank=False):
-    if skip_publishing(force):
+def publish_posts_task(idle=False):
+    if not idle and skip_publishing():
         logger.info('Skip publishing.')
         return False
 
-    logger.info(f'Publishing reddit posts (force={force}, blank={blank})...')
+    logger.info(f'Publishing reddit posts (idle={idle})...')
     publishing_job = group(
         [
-            publish_subreddit_task.si(subreddit.id, blank)
+            publish_subreddit_task.si(subreddit.id, idle)
             for subreddit in Subreddit.objects.filter(enabled=True)
         ]
     )
@@ -39,13 +39,14 @@ def publish_posts_task(force=False, blank=False):
 
 
 @celery_app.task
-def publish_subreddit_task(subreddit_id, blank):
+def publish_subreddit_task(subreddit_id, idle):
     subreddit = Subreddit.objects.get(id=subreddit_id)
     posts = fetch(subreddit.name, limit=settings.REDDIT_FETCH_SIZE)
     posts = pack_posts(posts, subreddit)
     # todo: filter in context of concrete channel
     posts = apply_filters(posts, subreddit)
-    load_videos(posts)
+    if not idle:
+        load_videos(posts)
 
     processed_channels = set()
     for subscription in subreddit.subscriptions.all():
@@ -54,17 +55,15 @@ def publish_subreddit_task(subreddit_id, blank):
                 continue
             for post in posts:
                 post.save()
-                if post.status != Post.STATUS_ACCEPTED or blank:
+                if post.status != Post.STATUS_ACCEPTED or idle:
                     continue
                 published = publish_post(post, channel, sleep_time=0.5)
                 mark = '✅' if published else '❌'
                 logger.debug(f"{mark}  > {post}")
 
 
-def skip_publishing(force=False):
-    return not force and (
-        not SiteConfig.get_solo().enabled or not RedditConfig.get_solo().enabled
-    )
+def skip_publishing():
+    return not SiteConfig.get_solo().enabled or not RedditConfig.get_solo().enabled
 
 
 def pack_posts(raw_posts, subreddit: Subreddit):

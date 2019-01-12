@@ -22,7 +22,7 @@ def publish_view(request):
 @permission_classes([IsAdminUser])
 def blank_publish_view(request):
     """Save posts into db w/o publishing."""
-    tasks.publish_posts_task.delay(force=True, blank=True)
+    tasks.publish_posts_task.delay(idle=True)
     return Response()
 
 
