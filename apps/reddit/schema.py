@@ -5,7 +5,7 @@ from graphene_django.filter import DjangoFilterConnectionField
 from graphql import ResolveInfo
 
 from . import tasks
-from .models import Post
+from .models import Post, RedditConfig
 
 
 class PostObject(DjangoObjectType):
@@ -20,8 +20,12 @@ class PostObject(DjangoObjectType):
 
 
 class RedditQuery(graphene.ObjectType):
+    reddit_enabled = graphene.Boolean()
     reddit_post = relay.Node.Field(PostObject)
     all_reddit_posts = DjangoFilterConnectionField(PostObject)
+
+    def resolve(self):
+        return RedditConfig.get_solo().enabled
 
 
 class PublishPosts(graphene.Mutation):
@@ -86,7 +90,21 @@ class RejectPosts(graphene.Mutation):
         return RejectPosts(count=rows)
 
 
+class ToggleRedditState(graphene.Mutation):
+    enabled = graphene.Boolean()
+
+    class Arguments:
+        pass
+
+    def mutate(self, info: ResolveInfo, **input):
+        config = RedditConfig.get_solo()
+        config.enabled = not config.enabled
+        config.save()
+        return ToggleRedditState(enabled=config.enabled)
+
+
 class RedditMutation(graphene.ObjectType):
     publish_posts = PublishPosts.Field()
     publish_post = PublishPost.Field()
     reject_posts = RejectPosts.Field()
+    toggle_reddit_state = ToggleRedditState.Field()

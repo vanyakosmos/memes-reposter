@@ -7,6 +7,8 @@ from graphene_django import DjangoObjectType
 from graphql import ResolveInfo
 from graphql_jwt.exceptions import PermissionDenied
 
+from apps.core.models import SiteConfig
+
 
 User = get_user_model()
 
@@ -50,8 +52,22 @@ class UserType(DjangoObjectType):
 
 
 class CoreQuery(graphene.ObjectType):
+    status = graphene.String()
+    site_enabled = graphene.Boolean()
     me = graphene.Field(UserType)
     users = graphene.List(UserType)
+
+    def resolve_status(self, info):
+        """
+        todo: system status report
+        - objects number
+        - redis open connections
+        - last error messages
+        """
+        return ""
+
+    def resolve_site_enabled(self, info):
+        return SiteConfig.get_solo().enabled
 
     @permissions(is_staff)
     def resolve_me(self, info):
@@ -62,7 +78,21 @@ class CoreQuery(graphene.ObjectType):
         return User.objects.all()
 
 
+class ToggleSiteState(graphene.Mutation):
+    enabled = graphene.Boolean()
+
+    class Arguments:
+        pass
+
+    def mutate(self, info: ResolveInfo, **input):
+        config = SiteConfig.get_solo()
+        config.enabled = not config.enabled
+        config.save()
+        return ToggleSiteState(enabled=config.enabled)
+
+
 class CoreMutations(graphene.ObjectType):
     token_auth = graphql_jwt.ObtainJSONWebToken.Field()
     verify_token = graphql_jwt.Verify.Field()
     refresh_token = graphql_jwt.Refresh.Field()
+    toggle_site_state = ToggleSiteState.Field()
