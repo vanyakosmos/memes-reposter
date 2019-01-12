@@ -5,7 +5,6 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from apps.core.views import poster
 from . import tasks
 from .models import Post
 from .serializers import PostSerializer, PostUpdateSerializer, RejectSerializer
@@ -14,14 +13,17 @@ from .serializers import PostSerializer, PostUpdateSerializer, RejectSerializer
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def publish_view(request):
-    return poster(tasks.fetch_and_publish)
+    initialed = not tasks.skip_publishing()
+    tasks.publish_posts_task.delay()
+    return Response({'initialed': initialed})
 
 
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def blank_publish_view(request):
     """Save posts into db w/o publishing."""
-    return poster(lambda: tasks.fetch_and_publish(force=True, blank=True))
+    tasks.publish_posts_task.delay(force=True, blank=True)
+    return Response()
 
 
 @api_view()

@@ -1,4 +1,3 @@
-import re
 from html import unescape
 
 from django.core import validators
@@ -51,12 +50,15 @@ class Subreddit(models.Model):
     )
     enabled = models.BooleanField(default=True)
     on_moderation = models.BooleanField(default=True)
-    forbidden_keywords = models.TextField(blank=True, null=True)
+    forbidden_keywords = models.TextField(
+        blank=True, null=True, help_text="Comma-separated list of words/phrases."
+    )
 
     def __str__(self):
         return self.name
 
 
+# todo: add subscription field to post model and track where it was posted
 class Post(models.Model):
     STATUS_ACCEPTED = 'accepted'
     STATUS_PENDING = 'pending'
@@ -94,6 +96,11 @@ class Post(models.Model):
     nsfw = models.BooleanField(default=False)
     comments = URLField(blank=True, null=True)
     num_comments = models.IntegerField(null=True)
+    file_path = models.TextField(
+        null=True,
+        blank=True,
+        help_text="For posts that need to be temporary saved, such as merged reddit videos.",
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -106,12 +113,6 @@ class Post(models.Model):
             self,
             ('reddit_id', 'subreddit', 'title', 'media_link', 'media_type', 'score'),
         )
-
-    @property
-    def title_terms(self):
-        title = self.title.lower()
-        title = re.sub(r'[^\w\s]', '', title)
-        return title.split()
 
     @property
     def not_media(self):

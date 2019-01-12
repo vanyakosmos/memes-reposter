@@ -2,7 +2,7 @@ import html
 import logging
 import re
 from time import sleep
-from typing import List, Optional
+from typing import Optional
 
 from telegram import (
     InlineKeyboardButton,
@@ -12,42 +12,22 @@ from telegram import (
     TelegramError,
 )
 
-from memes_reposter import tg_bot
-from .models import Post
+from apps.reddit.models import Post
+from apps.tgapp.bot import bot
+from apps.tgapp.models import TelegramChannel
 
 
 logger = logging.getLogger(__name__)
-REPOST_REGEX = re.compile(r'\(\s*(x-?|re)post .+\)')
+REPOST_REGEX = re.compile(r'\(\s*(x-?|re|cross-?)\s*post .+\)')
 
 
-def publish_posts(posts: List[Post]):
-    size = len(posts)
-    for i, post in enumerate(posts):
-        post.save()
-        if post.status != Post.STATUS_ACCEPTED:
-            logger.info('Skipped %3d/%d: %s', i + 1, size, repr(post))
-            continue
-        published = publish_post(post)
-        sleep(0.5)
-        if published:
-            logger.info('Published %3d/%d: %s', i + 1, size, repr(post))
-        else:
-            logger.info('Error %3d/%d: %s', i + 1, size, repr(post))
-
-
-def publish_blank(posts: List[Post]):
-    for post in posts:
-        logger.info('Blank publishing: %s', repr(post))
-        post.save()
-
-
-def publish_post(post: Post, post_title=None):
-    chat_id = post.subreddit.channel.chat_id
+def publish_post(post: Post, channel: TelegramChannel, post_title=None, sleep_time=0.0):
+    sleep(sleep_time)
     try:
         if post.not_media:
-            publish_post_link(post, chat_id)
+            publish_post_link(post, channel.chat_id)
         else:
-            publish_media_post(post, chat_id, post_title)
+            publish_media_post(post, channel.chat_id, post_title)
         return True
     except TelegramError as e:
         logger.error('Error %s: %s for post %s', type(e), e, repr(post))
@@ -66,10 +46,10 @@ def format_title(post: Post, escape=False) -> Optional[str]:
 
 def publish_post_link(post: Post, channel_id: str):
     title = format_title(post)
-    text = title + f'\n{post.link}'
+    text = title + f'\n{post.url}'
 
     keyboard_markup = build_keyboard_markup(post, pass_original=False)
-    tg_bot.send_message(
+    bot.send_message(
         text=text,
         chat_id=channel_id,
         reply_markup=keyboard_markup,
@@ -87,7 +67,7 @@ def publish_media_post(post: Post, channel_id: str, post_title=None):
     if show_title and title and len(title) > MAX_CAPTION_LENGTH:
         publish_media(post, chat_id=channel_id)
         kwargs = dict(text=title, **common)
-        tg_bot.send_message(**kwargs)
+        bot.send_message(**kwargs)
     # need title, post pic with caption
     elif show_title:
         kwargs = dict(caption=title, **common)
@@ -99,19 +79,19 @@ def publish_media_post(post: Post, channel_id: str, post_title=None):
 
 
 def publish_media(post: Post, **kwargs):
-    if post.media_type == Post.MEDIA_PHOTO:
-        tg_bot.send_photo(photo=post.media_link, **kwargs)
-    elif post.media_type == Post.MEDIA_VIDEO:
+    if post.type == Post.MEDIA_PHOTO:
+        bot.send_photo(photo=post.source_url, **kwargs)
+    elif post.type == Post.MEDIA_VIDEO:
         if hasattr(post, 'file_path'):
-            tg_bot.send_video(video=open(post.file_path, 'rb'), **kwargs)
+            bot.send_video(video=open(post.file_path, 'rb'), **kwargs)
         else:
-            tg_bot.send_video(video=post.media_link, **kwargs)
+            bot.send_video(video=post.source_url, **kwargs)
 
 
 def build_keyboard_markup(post: Post, pass_original=True):
     keyboard = []
     if pass_original:
-        keyboard.append(InlineKeyboardButton('original', url=post.media_link))
+        keyboard.append(InlineKeyboardButton('original', url=post.source_url))
     keyboard.append(InlineKeyboardButton('comments', url=post.comments_full))
 
     return InlineKeyboardMarkup([keyboard])

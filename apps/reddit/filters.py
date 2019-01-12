@@ -1,4 +1,5 @@
 import logging
+import re
 from functools import reduce
 from typing import List
 
@@ -27,10 +28,7 @@ def score_filter(posts: List[Post], subreddit: Subreddit):
 @log_size
 def nsfw_filter(posts: List[Post], subreddit: Subreddit):
     """NSFW pass."""
-    return [
-        post for post in posts
-        if subreddit.pass_nsfw or not post.nsfw
-    ]
+    return [post for post in posts if subreddit.pass_nsfw or not post.nsfw]
 
 
 @log_size
@@ -39,9 +37,9 @@ def inner_unique_filter(posts: List[Post], _: Subreddit):
     res = []
     urls = set()
     for post in posts:
-        if post.link not in urls:
+        if post.url not in urls:
             res.append(post)
-            urls.add(post.link)
+            urls.add(post.url)
     return res
 
 
@@ -61,15 +59,15 @@ def unique_filter(posts: List[Post], _: Subreddit):
     new_posts = []
     for post in posts:
         try:
-            old_post = Post.objects.get(
-                Q(reddit_id=post.reddit_id) |
-                Q(link=post.link)
-            )
+            old_post = Post.objects.get(Q(reddit_id=post.reddit_id) | Q(url=post.url))
         except Post.DoesNotExist:
             old_post = None
 
         if old_post:
-            if old_post.status == Post.STATUS_PENDING and post.status == Post.STATUS_ACCEPTED:
+            if (
+                old_post.status == Post.STATUS_PENDING
+                and post.status == Post.STATUS_ACCEPTED
+            ):
                 old_post.status = Post.STATUS_ACCEPTED
                 old_post.score = post.score
                 new_posts.append(old_post)
@@ -81,19 +79,20 @@ def unique_filter(posts: List[Post], _: Subreddit):
 @log_size
 def keywords_filter(posts: List[Post], subreddit: Subreddit):
     """Filter out posts with forbidden words in title."""
-    keywords = subreddit.forbidden_keywords_set
-    return [
-        post for post in posts
-        if not any(map(lambda k: k in keywords, post.title_terms))
-    ]
+    keywords = set(subreddit.forbidden_keywords.lower().split(','))
+    res = []
+    for post in posts:
+        title = post.title.lower()
+        title = re.sub(r'[^\w\s]', '', title)
+        terms = title.split()
+        if not any(map(lambda k: k in keywords, terms)):
+            res.append(post)
+    return res
 
 
 @log_size
 def links_filter(posts: List[Post], _: Subreddit):
-    return [
-        post for post in posts
-        if not post.not_media
-    ]
+    return list(filter(lambda p: not p.not_media, posts))
 
 
 def apply_filters(posts: List[Post], subreddit: Subreddit) -> iter:
