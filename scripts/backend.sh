@@ -14,5 +14,5 @@ else
     echo "🎬"
 	echo "🎬  running PROD server"
 	echo "🎬"
-	exec gunicorn memes_reposter.wsgi -c server.py
+	exec gunicorn reposter.wsgi -c server.py
 fi
