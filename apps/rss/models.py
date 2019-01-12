@@ -4,7 +4,7 @@ from django.db import models
 from telegram import TelegramError
 
 from apps.core.fields import URLField
-from memes_reposter import tg_bot
+from reposter import tg_bot
 
 
 class Channel(models.Model):

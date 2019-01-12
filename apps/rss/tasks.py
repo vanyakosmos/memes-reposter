@@ -6,7 +6,7 @@ from celery import group
 from django.conf import settings
 
 from apps.core.models import SiteConfig
-from memes_reposter import celery_app, tg_bot
+from reposter import celery_app, tg_bot
 from .fetcher import fetch_posts
 from .models import Channel, Post, RssFeed
 from .publisher import publish_post

@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from apps.core.models import SiteConfig
 from apps.tgapp.publishers.reddit import publish_post
-from memes_reposter import celery_app
+from reposter import celery_app
 from .fetcher import fetch
 from .filters import apply_filters
 from .models import Post, RedditConfig, Subreddit

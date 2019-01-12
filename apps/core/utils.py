@@ -5,7 +5,7 @@ from typing import Dict, List, Iterable
 from django.conf import settings
 from telegram import Message, TelegramError
 
-from memes_reposter import tg_bot
+from reposter import tg_bot
 
 
 logger = logging.getLogger(__name__)

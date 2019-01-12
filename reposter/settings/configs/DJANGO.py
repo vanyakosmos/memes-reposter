@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'solo.apps.SoloAppConfig',
     'rest_framework',
     'django_celery_beat',
+    'graphene_django',
     # local apps
     'apps.core.apps.CoreConfig',
     'apps.reddit.apps.RedditConfig',
@@ -45,7 +46,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'memes_reposter.urls'
+ROOT_URLCONF = 'reposter.urls'
 
 TEMPLATES = [
     {
@@ -58,33 +59,27 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-            ],
+            ]
         },
-    },
+    }
 ]
 
-WSGI_APPLICATION = 'memes_reposter.wsgi.application'
+WSGI_APPLICATION = 'reposter.wsgi.application'
 
 # Database
-DATABASE_URL = easy_env.get('DATABASE_URL', None)
-DATABASES = {
-    'default': dj_database_url.parse(DATABASE_URL)
-}
+DATABASE_URL = easy_env.get(
+    'DATABASE_URL', 'postgres://postgres:postgres@localhost:5432/postgres'
+)
+DATABASES = {'default': dj_database_url.parse(DATABASE_URL)}
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'
     },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
 # Internationalization

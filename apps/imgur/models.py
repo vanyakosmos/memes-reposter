@@ -7,7 +7,7 @@ from django.db import models
 from solo.models import SingletonModel
 from telegram import TelegramError
 
-from memes_reposter import tg_bot
+from reposter import tg_bot
 
 
 class ImgurConfig(SingletonModel):

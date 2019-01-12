@@ -11,7 +11,7 @@ from telegram import (
     TelegramError,
 )
 
-from memes_reposter import tg_bot
+from reposter import tg_bot
 from .models import ImgurConfig, Media, Post
 
 

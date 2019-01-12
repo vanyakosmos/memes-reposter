@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.urls import include, path, re_path
+from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import RedirectView
+from graphene_django.views import GraphQLView
 
 from . import views
 
@@ -16,5 +18,6 @@ urlpatterns = [
     path('', RedirectView.as_view(url='admin/')),
     path('admin/', admin.site.urls),
     path('api/', include(api_patterns)),
+    path('graphql/', csrf_exempt(GraphQLView.as_view(graphiql=True))),
     re_path(r'^videos/(?P<path>.*)$', views.stream_video, name='video'),
 ]

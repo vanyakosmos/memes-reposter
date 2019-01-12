@@ -21,6 +21,7 @@ python-dotenv = "*"
 easy-env = "*"
 feedparser = "*"
 youtube-dl = "*"
+graphene-django = ">=2.0"
 
 [dev-packages]
 
