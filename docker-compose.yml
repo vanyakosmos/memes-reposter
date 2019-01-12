@@ -18,7 +18,7 @@ services:
     - redisdata:/data
 
   backend:
-    image: memes_reposter_backend
+    image: reposter_backend
     build:
       context: .
       args:
@@ -33,7 +33,7 @@ services:
     restart: on-failure:2
 
   worker:
-    image: memes_reposter_backend
+    image: reposter_backend
     build:
       context: .
       args:

@@ -44,7 +44,7 @@ def publish_blank(posts: List[Post]):
 def publish_post(post: Post, post_title=None):
     chat_id = post.subreddit.channel.chat_id
     try:
-        if post.is_not_media():
+        if post.not_media:
             publish_post_link(post, chat_id)
         else:
             publish_media_post(post, chat_id, post_title)

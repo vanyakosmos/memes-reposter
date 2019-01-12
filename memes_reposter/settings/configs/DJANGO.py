@@ -4,10 +4,7 @@ from pathlib import Path
 
 import dj_database_url
 import easy_env
-# from dotenv import find_dotenv, load_dotenv
 
-
-# load_dotenv(find_dotenv())
 
 BASE_DIR = str(Path(__file__).parents[3])
 SECRET_KEY = easy_env.get('SECRET_KEY')
@@ -29,11 +26,12 @@ INSTALLED_APPS = [
     'solo.apps.SoloAppConfig',
     'rest_framework',
     'django_celery_beat',
-    # own apps
+    # local apps
     'apps.core.apps.CoreConfig',
     'apps.reddit.apps.RedditConfig',
-    'apps.imgur.apps.ImgurConfig',
-    'apps.rss.apps.RssConfig',
+    'apps.tgapp.apps.TGAppConfig',
+    # 'apps.imgur.apps.ImgurConfig',
+    # 'apps.rss.apps.RssConfig',
 ]
 
 MIDDLEWARE = [
@@ -68,7 +66,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'memes_reposter.wsgi.application'
 
 # Database
-DATABASE_URL = easy_env.get('DATABASE_URL', 'sqlite:///db.sqlite3')
+DATABASE_URL = easy_env.get('DATABASE_URL', None)
 DATABASES = {
     'default': dj_database_url.parse(DATABASE_URL)
 }

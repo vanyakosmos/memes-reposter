@@ -1,11 +1,11 @@
 from django.db import models
 from solo.models import SingletonModel
 
-from .errors import ConfigError
+from apps.core.utils import format_object_repr
 
 
 class SiteConfig(SingletonModel):
-    maintenance = models.BooleanField(default=False)
+    enabled = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Site Configuration"
@@ -14,6 +14,15 @@ class SiteConfig(SingletonModel):
     def __str__(self):
         return "Site Configuration"
 
-    def check_maintenance(self, force=False):
-        if self.maintenance and not force:
-            raise ConfigError('Site in maintenance mode, skipping publishing.')
+    def __repr__(self):
+        return format_object_repr(self, ['enabled'])
+
+
+class Subscription(models.Model):
+    name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return format_object_repr(self, ['name'])

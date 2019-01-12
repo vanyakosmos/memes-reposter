@@ -1,87 +1,60 @@
 import re
 from html import unescape
-from typing import List
 
 from django.core import validators
-from django.core.exceptions import ValidationError
 from django.db import models
-from telegram import TelegramError
+from solo.models import SingletonModel
 
 from apps.core.fields import URLField
+from apps.core.models import Subscription
+from apps.core.utils import format_object_repr
 from apps.reddit.utils import get_media
-from memes_reposter import tg_bot
 
 
-TRASH_REGEX = re.compile(r'[^\w\s]')
-
-
-class Channel(models.Model):
-    forbidden_keywords = models.TextField(blank=True)
-    username = models.CharField(max_length=200, null=True, blank=True)
-    chat_id = models.BigIntegerField(null=True, blank=True)
+class RedditConfig(SingletonModel):
+    enabled = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.username
+        return "Reddit Configuration"
 
-    @property
-    def forbidden_keywords_set(self):
-        return set(self.forbidden_keywords.split())
+    def __repr__(self):
+        return format_object_repr(self, ['enabled'])
 
-    def _bot_has_access(self):
-        try:
-            tg_bot.get_chat(chat_id=self.username)
-        except TelegramError:
-            raise ValidationError("Bot doesn't have access to this channel.")
-
-    def _bot_id_admin(self):
-        admins = tg_bot.get_chat_administrators(chat_id=self.username)
-        for admin in admins:
-            if admin.user.username == tg_bot.username:
-                if not admin.can_post_messages:
-                    raise ValidationError("Bot can't post messages.")
-                break
-        else:
-            raise ValidationError("Bot is not admin.")
-
-    def clean(self):
-        name = getattr(self, '_username', None)
-        if name != self.username:
-            self._bot_has_access()
-            self._bot_id_admin()
-            setattr(self, '_username', self.username)
-
-    def save(self, *args, **kwargs):
-        chat = tg_bot.get_chat(chat_id=self.username)
-        self.chat_id = chat.id
-        return super().save(*args, **kwargs)
+    class Meta:
+        verbose_name = "Reddit Configuration"
+        verbose_name_plural = "Reddit Configuration"
 
 
 class Subreddit(models.Model):
-    name = models.CharField(max_length=200)
-    channel = models.ForeignKey(Channel, on_delete=models.CASCADE)
+    subscriptions = models.ManyToManyField(
+        Subscription,
+        related_name='subreddits',
+        blank=True,
+        help_text="List of subscriptions that will be notified about subreddit updates.",
+    )
+    name = models.CharField(max_length=255, help_text="Name of subreddit. W/o /r/.")
     low_score_limit = models.IntegerField(
-        validators=[validators.MinValueValidator(0)], default=1000
+        validators=[validators.MinValueValidator(0)],
+        default=1000,
+        help_text="After exceeding this limit posts will be send to moderation.",
     )
     score_limit = models.IntegerField(
-        validators=[validators.MinValueValidator(0)], default=1000
+        validators=[validators.MinValueValidator(0)],
+        default=1000,
+        help_text="After exceeding this limit posts will be published.",
     )
-    pass_nsfw = models.BooleanField(default=False)
-    show_title = models.BooleanField(default=True)
-    active = models.BooleanField(default=True)
-    on_moderation = models.BooleanField(default=False)
-    forbidden_keywords = models.TextField(blank=True)
+    pass_nsfw = models.BooleanField(
+        default=False, help_text="Allow to post NSFW content."
+    )
+    show_title = models.BooleanField(
+        default=True, help_text="Drop title if it is useless."
+    )
+    enabled = models.BooleanField(default=True)
+    on_moderation = models.BooleanField(default=True)
+    forbidden_keywords = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.name
-
-    @property
-    def forbidden_keywords_set(self):
-        keywords = set(self.forbidden_keywords.split())
-        return keywords | self.channel.forbidden_keywords_set
-
-
-def format_field_pairs(obj, fields: List[str]):
-    return ', '.join([f'{field}="{getattr(obj, field, None)}"' for field in fields])
 
 
 class Post(models.Model):
@@ -108,48 +81,41 @@ class Post(models.Model):
     )
 
     subreddit = models.ForeignKey(Subreddit, on_delete=models.CASCADE)
-    title = models.TextField()
-    link = URLField(unique=True)
+    subreddit_name = models.CharField(max_length=255)
     reddit_id = models.CharField(max_length=200, unique=True)
+    title = models.TextField()
+    url = URLField()
     created = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=200, choices=STATUSES, default=STATUS_ACCEPTED)
-
     score = models.IntegerField(null=True)
-    media_link = URLField(blank=True, null=True)
-    media_type = models.CharField(
-        max_length=200, choices=MEDIA_TYPES, default=MEDIA_LINK
-    )
+    source_url = URLField(blank=True, null=True)
+    type = models.CharField(max_length=200, choices=MEDIA_TYPES, default=MEDIA_LINK)
     text = models.TextField(null=True, blank=True)
     nsfw = models.BooleanField(default=False)
     comments = URLField(blank=True, null=True)
+    num_comments = models.IntegerField(null=True)
 
     def __init__(self, *args, **kwargs):
-        # self._post_meta = PostMeta()
         super().__init__(*args, **kwargs)
 
     def __str__(self):
-        return f'{self.reddit_id} : {self.title}'
+        return f'{self.reddit_id}: {self.title}'
 
     def __repr__(self):
-        fields = [
-            'reddit_id',
-            'subreddit',
-            'title',
-            'media_link',
-            'media_type',
-            'score',
-        ]
-        pairs = format_field_pairs(self, fields)
-        return f'Post({pairs})'
+        return format_object_repr(
+            self,
+            ('reddit_id', 'subreddit', 'title', 'media_link', 'media_type', 'score'),
+        )
 
     @property
     def title_terms(self):
         title = self.title.lower()
-        title = TRASH_REGEX.sub('', title)
+        title = re.sub(r'[^\w\s]', '', title)
         return title.split()
 
-    def is_not_media(self):
-        return self.media_type in (self.MEDIA_LINK, self.MEDIA_TEXT)
+    @property
+    def not_media(self):
+        return self.type in (self.MEDIA_LINK, self.MEDIA_TEXT)
 
     @property
     def comments_short(self):
@@ -157,23 +123,21 @@ class Post(models.Model):
 
     @property
     def comments_full(self):
-        auto_link = (
-            f'https://reddit.com/r/{self.subreddit.name}/comments/{self.reddit_id}'
-        )
-        return self.comments or auto_link
+        return f'https://reddit.com/r/{self.subreddit_name}/comments/{self.reddit_id}'
 
     def populate_media(self, item: dict):
+        self.subreddit_name = item['subreddit']
         self.title = unescape(item['title'])
-        self.link = item['url']
+        self.url = item['url']
         self.reddit_id = item['id']
         self.comments = 'https://reddit.com' + item['permalink']
+        self.nsfw = item['over_18']
+        self.score = int(item['score'])
 
         media = get_media(item)
-        self.score = int(item['score'])
-        self.media_link = media['media']
-        self.media_type = media['type']
+        self.source_url = media['media']
+        self.type = media['type']
         self.text = media['text']
-        self.nsfw = item['over_18']
 
     @classmethod
     def from_dict(cls, item: dict, subreddit: Subreddit):

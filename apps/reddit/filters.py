@@ -92,7 +92,7 @@ def keywords_filter(posts: List[Post], subreddit: Subreddit):
 def links_filter(posts: List[Post], _: Subreddit):
     return [
         post for post in posts
-        if not post.is_not_media()
+        if not post.not_media
     ]
 
 

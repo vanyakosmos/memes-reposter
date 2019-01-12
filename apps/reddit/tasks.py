@@ -17,7 +17,7 @@ from apps.core.utils import notify_admins
 from memes_reposter import celery_app
 from .fetcher import fetch
 from .filters import apply_filters
-from .models import Channel, Post, Subreddit
+from .models import Post, Subreddit
 from .publisher import publish_blank, publish_post, publish_posts
 
 
@@ -75,19 +75,19 @@ def publish_sub(subreddit_id: int, blank: bool):
         publish_posts(posts)
 
 
-@celery_app.task
-def fetch_and_publish(force=False, blank=False):
-    logger.info('Publishing reddit posts...')
-    SiteConfig.get_solo().check_maintenance(force)
-
-    jobs = []
-    for channel in Channel.objects.all():
-        subs = channel.subreddit_set.filter(active=True)
-        for subreddit in subs:
-            job_sig = publish_sub.s(subreddit.id, blank)
-            jobs.append(job_sig)
-    publishing_job = chord(jobs, notify_admins_task.si())
-    publishing_job.apply_async()
+# @celery_app.task
+# def fetch_and_publish(force=False, blank=False):
+#     logger.info('Publishing reddit posts...')
+#     SiteConfig.get_solo().check_maintenance(force)
+#
+#     jobs = []
+#     for channel in Channel.objects.all():
+#         subs = channel.subreddit_set.filter(active=True)
+#         for subreddit in subs:
+#             job_sig = publish_sub.s(subreddit.id, blank)
+#             jobs.append(job_sig)
+#     publishing_job = chord(jobs, notify_admins_task.si())
+#     publishing_job.apply_async()
 
 
 @celery_app.task
