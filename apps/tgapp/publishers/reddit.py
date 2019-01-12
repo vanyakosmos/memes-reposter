@@ -82,7 +82,7 @@ def publish_media(post: Post, **kwargs):
     if post.type == Post.MEDIA_PHOTO:
         bot.send_photo(photo=post.source_url, **kwargs)
     elif post.type == Post.MEDIA_VIDEO:
-        if hasattr(post, 'file_path'):
+        if post.file_path:
             bot.send_video(video=open(post.file_path, 'rb'), **kwargs)
         else:
             bot.send_video(video=post.source_url, **kwargs)
