@@ -19,10 +19,16 @@ class SiteConfig(SingletonModel):
 
 
 class Subscription(models.Model):
+    REDDIT = 'REDDIT'
+    IMGUR = 'IMGUR'
+    RSS = 'RSS'
+    TYPES = ((REDDIT, 'Reddit'), (IMGUR, 'Imgur'), (RSS, 'RSS'))
+
+    type = models.CharField(max_length=255, choices=TYPES)
     name = models.CharField(max_length=255)
 
     def __str__(self):
-        return self.name
+        return f"{self.type}.{self.name}"
 
     def __repr__(self):
-        return format_object_repr(self, ['name'])
+        return format_object_repr(self, ['type', 'name'])

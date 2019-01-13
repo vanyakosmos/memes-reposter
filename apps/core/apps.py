@@ -7,6 +7,6 @@ class CoreConfig(AppConfig):
     def ready(self):
         from .models import Subscription
 
-        Subscription.objects.get_or_create(name='reddit main')
-        Subscription.objects.get_or_create(name='imgur main')
-        Subscription.objects.get_or_create(name='rss main')
+        Subscription.objects.get_or_create(type=Subscription.REDDIT, name='main')
+        Subscription.objects.get_or_create(type=Subscription.IMGUR, name='main')
+        Subscription.objects.get_or_create(type=Subscription.RSS, name='main')

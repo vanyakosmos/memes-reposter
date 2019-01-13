@@ -11,4 +11,4 @@ class SiteConfigAdmin(SingletonModelAdmin):
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
-    list_display = ('name',)
+    list_display = ('__str__', 'type', 'name')
