@@ -5,6 +5,7 @@ from time import sleep
 from typing import Optional
 from urllib.parse import quote_plus
 
+from django.db.models import Q
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -22,7 +23,16 @@ logger = logging.getLogger(__name__)
 REPOST_REGEX = re.compile(r'\(\s*(x-?|re|cross-?)\s*post .+\)')
 
 
-def publish_post(post: Post, channel: TelegramChannel, post_title=None, sleep_time=0.0):
+def publish_post(
+    post: Post, channel: TelegramChannel, post_title=None, sleep_time=0.0, idle=False
+):
+    """
+    :returns `True` if post was successfully published.
+    """
+    ok = check_post(post, channel, idle)
+    if not ok:
+        return False
+    # try not ot break tg limitations
     sleep(sleep_time)
     try:
         if post.not_media:
@@ -105,3 +115,48 @@ def build_keyboard_markup(post: Post, pass_original=True):
     keyboard.append(InlineKeyboardButton('comments', url=post.comments_full))
 
     return InlineKeyboardMarkup([keyboard])
+
+
+def unique_in_channel(post, channel: TelegramChannel) -> Post:
+    """
+    find similar post in the same channel
+    if exist:
+        check if pending -> accepted
+            use old posts with refreshed data
+        otherwise
+            don't use any posts assuming old post is rejected or already posted
+    else:
+        user new post
+    """
+    try:
+        # similar post with same reddit id or same url and in the same channel
+        old_post = Post.objects.get(
+            Q(reddit_id=post.reddit_id)
+            | Q(source_url=post.source_url)
+            | Q(url=post.url),
+            subreddit__subscriptions__tg_channels=channel,
+        )
+    except Post.DoesNotExist:
+        return post
+
+    if old_post.status == Post.STATUS_PENDING and post.status == Post.STATUS_ACCEPTED:
+        old_post.status = Post.STATUS_ACCEPTED
+        if old_post.reddit_id == post.reddit_id:
+            old_post.score = post.score
+            old_post.num_comments = post.num_comments
+        return old_post
+
+
+def check_post(post: Post, channel: TelegramChannel, idle: bool):
+    # check similar post in the channel
+    post = unique_in_channel(post, channel)
+    # already posted/rejected, don't save redundant post
+    if not post:
+        return False
+    # post not accepted or forced skip, save refreshed post
+    if post.status != Post.STATUS_ACCEPTED or idle:
+        post.save()
+        return False
+    # ready to publish
+    post.save()
+    return True

@@ -11,7 +11,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from apps.core.models import SiteConfig
-from apps.tgapp.publishers.reddit import publish_post
+from apps.tgapp.publishers import reddit as tg_reddit
 from reposter import celery_app
 from .fetcher import fetch
 from .filters import apply_filters
@@ -43,21 +43,22 @@ def publish_subreddit_task(subreddit_id, idle):
     subreddit = Subreddit.objects.get(id=subreddit_id)
     posts = fetch(subreddit.name, limit=settings.REDDIT_FETCH_SIZE)
     posts = pack_posts(posts, subreddit)
-    # todo: filter in context of concrete channel
     posts = apply_filters(posts, subreddit)
     if not idle:
         load_videos(posts)
 
+    # if different subreddit subscriptions has same channel
+    # then don't process same channel twice
     processed_channels = set()
     for subscription in subreddit.subscriptions.all():
         for channel in subscription.tg_channels.all():
             if channel in processed_channels:
                 continue
+            processed_channels.add(channel)
             for post in posts:
-                post.save()
-                if post.status != Post.STATUS_ACCEPTED or idle:
-                    continue
-                published = publish_post(post, channel, sleep_time=0.5)
+                published = tg_reddit.publish_post(
+                    post, channel, sleep_time=0.5, idle=idle
+                )
                 mark = '✅' if published else '❌'
                 logger.debug(f"{mark}  > {post}")
 
@@ -125,7 +126,7 @@ def publish_post_task(post_id, post_title: bool):
     subreddit = post.subreddit
     for subscription in subreddit.subscriptions.all():
         for channel in subscription.tg_channels.all():
-            publish_post(post, channel, post_title)
+            tg_reddit.publish_post(post, channel, post_title)
 
 
 @celery_app.task
