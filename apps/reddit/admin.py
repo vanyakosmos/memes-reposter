@@ -1,6 +1,7 @@
 from django.contrib import admin
 from solo.admin import SingletonModelAdmin
 
+from apps.tgapp.models import TelegramChannel
 from .models import Post, RedditConfig, Subreddit
 
 
@@ -30,18 +31,20 @@ class SubredditAdmin(admin.ModelAdmin):
 class PostAdmin(admin.ModelAdmin):
     list_display = (
         '__str__',
-        'file_path',
         'status',
-        'comments',
         'subreddit_name',
-        'title',
-        'source_url',
         'type',
-        'score',
-        'nsfw',
+        'channel',
     )
     actions = ('make_pending',)
-    list_filter = ('status', 'subreddit_name')
+    list_filter = ('status', 'subreddit_name', 'channel_uuid')
+
+    def channel(self, post: Post):
+        try:
+            channel = TelegramChannel.objects.get(uuid=post.channel_uuid)
+            return channel
+        except TelegramChannel.DoesNotExist:
+            pass
 
     def make_pending(self, _, qs):
         return qs.update(status=Post.STATUS_PENDING)

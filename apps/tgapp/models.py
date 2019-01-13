@@ -9,13 +9,17 @@ from .bot import bot
 
 
 class TelegramChannel(models.Model):
+    name = models.TextField(
+        null=True, blank=True, help_text="Human friendly name of channel."
+    )
     username = models.CharField(
         max_length=200,
         null=True,
         blank=True,
         help_text="Channel username, should start with @.",
     )
-    chat_id = models.BigIntegerField(
+    chat_id = models.CharField(
+        max_length=255,
         null=True,
         blank=True,
         help_text="Telegram chat id of channel, can be omitted if username is specified.",
@@ -29,16 +33,20 @@ class TelegramChannel(models.Model):
     uuid = models.UUIDField()
 
     def __str__(self):
-        return self.username
+        return f"TG~{self.name or self.username or self.chat_id!r}"
+
+    @property
+    def channel_id(self):
+        return self.chat_id or self.username
 
     def _bot_has_access(self):
         try:
-            bot.get_chat(chat_id=self.username)
+            bot.get_chat(chat_id=self.channel_id)
         except TelegramError:
             raise ValidationError("Bot doesn't have access to this channel.")
 
     def _bot_id_admin(self):
-        admins = bot.get_chat_administrators(chat_id=self.username)
+        admins = bot.get_chat_administrators(chat_id=self.channel_id)
         for admin in admins:
             if admin.user.username == bot.username:
                 if not admin.can_post_messages:
@@ -54,9 +62,14 @@ class TelegramChannel(models.Model):
             self._bot_id_admin()
             setattr(self, '_username', self.username)
 
-    def save(self, force=False, *args, **kwargs):
-        if not force:
-            chat = bot.get_chat(chat_id=self.username)
+    def save(self, update_meta=True, *args, **kwargs):
+        if update_meta:
+            chat = bot.get_chat(chat_id=self.channel_id)
+            self.name = chat.title
+            un = chat.username
+            if un and not un.startswith('@'):
+                un = '@' + un
+            self.username = un
             self.chat_id = chat.id
         if not self.uuid:
             self.uuid = uuid.uuid4()

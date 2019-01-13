@@ -24,6 +24,7 @@ class PostFilter(FilterSet):
         fields = (
             'status',
             'type',
+            'channel_uuid',
             'subreddit__on_moderation',
             'subreddit__subscriptions__name',
             'subreddit__subscriptions__type',

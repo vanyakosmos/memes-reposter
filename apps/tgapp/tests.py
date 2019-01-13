@@ -19,11 +19,11 @@ class RedditPublisherTests(TestCase):
         self.sr2.subscriptions.add(sub1)
 
         self.tg1 = TelegramChannel(username='tg1')
-        self.tg1.save(force=True)
+        self.tg1.save(update_meta=False)
         self.tg1.subscriptions.add(sub1)
 
         self.tg2 = TelegramChannel(username='tg2')
-        self.tg2.save(force=True)
+        self.tg2.save(update_meta=False)
         self.tg2.subscriptions.add(sub1)
 
         Post.objects.create(
