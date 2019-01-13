@@ -1,49 +1,14 @@
-from functools import wraps
-
 import graphene
 import graphql_jwt
 from django.contrib.auth import get_user_model
 from graphene_django import DjangoObjectType
 from graphql import ResolveInfo
-from graphql_jwt.exceptions import PermissionDenied
 
-from apps.core.models import SiteConfig
+from .models import SiteConfig
+from .permissions import is_staff, permissions
 
 
 User = get_user_model()
-
-
-def is_authenticated(info: ResolveInfo):
-    user = info.context.user
-    return user.is_authenticated
-
-
-def is_staff(info: ResolveInfo):
-    user = info.context.user
-    return user.is_staff
-
-
-def is_admin(info: ResolveInfo):
-    user = info.context.user
-    return user.is_superuser
-
-
-def permissions(*ps):
-    def wrapper(resolver):
-        @wraps(resolver)
-        def decorator(obj, info, *args, **kwargs):
-            for permission in ps:
-                if len(permission.__code__.co_varnames) > 1:
-                    passed = permission(info, *args, **kwargs)
-                else:
-                    passed = permission(info)
-                if not passed:
-                    raise PermissionDenied()
-                return resolver(obj, info, *args, **kwargs)
-
-        return decorator
-
-    return wrapper
 
 
 class UserType(DjangoObjectType):
@@ -57,6 +22,7 @@ class CoreQuery(graphene.ObjectType):
     me = graphene.Field(UserType)
     users = graphene.List(UserType)
 
+    @permissions(is_staff)
     def resolve_status(self, info):
         """
         todo: system status report
@@ -66,6 +32,7 @@ class CoreQuery(graphene.ObjectType):
         """
         return ""
 
+    @permissions(is_staff)
     def resolve_site_enabled(self, info):
         return SiteConfig.get_solo().enabled
 
@@ -84,6 +51,7 @@ class ToggleSiteState(graphene.Mutation):
     class Arguments:
         pass
 
+    @permissions(is_staff)
     def mutate(self, info: ResolveInfo, **input):
         config = SiteConfig.get_solo()
         config.enabled = not config.enabled
