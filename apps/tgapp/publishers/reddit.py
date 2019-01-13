@@ -3,6 +3,7 @@ import logging
 import re
 from time import sleep
 from typing import Optional
+from urllib.parse import quote_plus
 
 from telegram import (
     InlineKeyboardButton,
@@ -91,7 +92,16 @@ def publish_media(post: Post, **kwargs):
 def build_keyboard_markup(post: Post, pass_original=True):
     keyboard = []
     if pass_original:
-        keyboard.append(InlineKeyboardButton('original', url=post.source_url))
+        if post.file_path:
+            cmd = quote_plus(
+                f'youtube-dl '
+                f'--format="bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4" '
+                f'{post.comments}'
+            )
+            url = f'https://explainshell.com/explain?cmd={cmd}'
+        else:
+            url = post.source_url
+        keyboard.append(InlineKeyboardButton('original', url=url))
     keyboard.append(InlineKeyboardButton('comments', url=post.comments_full))
 
     return InlineKeyboardMarkup([keyboard])

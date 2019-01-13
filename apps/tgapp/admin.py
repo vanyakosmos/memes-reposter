@@ -8,4 +8,4 @@ class TelegramChannelAdmin(admin.ModelAdmin):
     list_display = ('__str__', 'subs')
 
     def subs(self, channel: TelegramChannel):
-        return ', '.join([s.name for s in channel.subscriptions.all()])
+        return ', '.join([str(s) for s in channel.subscriptions.all()])

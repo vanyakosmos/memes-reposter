@@ -80,27 +80,33 @@ def pack_posts(raw_posts, subreddit: Subreddit):
 def load_videos(posts: List[Post]):
     options = {
         'outtmpl': os.path.join(settings.VIDEOS_ROOT, '%(id)s.%(ext)s'),
-        'format': 'bestvideo[height<=480]+bestaudio/best[height<=480]',
+        'format': 'bestvideo[height<=480][ext=mp4]+bestaudio[height<=480][ext=m4a]/mp4',
+        'quiet': True,
     }
     with youtube_dl.YoutubeDL(options) as ydl:
         links = []
         for post in posts:
-            correct_link = ('v.redd.it' in post.source_url) or (
-                settings.THIS_HOST in post.source_url
-            )
-            if post.type == 'video' and correct_link:
+            if post.type == 'video' and (
+                'v.redd.it' in post.source_url or post.file_path
+            ):
                 link = post.comments_full
                 info = ydl.extract_info(link, download=False)
                 video_id = info['id']
                 ext = info['ext']
 
-                if info['acodec'] == 'none':
+                if info['acodec'] == 'none' and all(
+                    [f.get('acodec', 'none') == 'none' for f in info['formats']]
+                ):
                     continue
 
+                logger.debug('have audio')
                 file_path = os.path.join(settings.VIDEOS_ROOT, f'{video_id}.{ext}')
                 post.source_url = f'{settings.THIS_HOST}/videos/{video_id}.{ext}'
                 post.file_path = file_path
                 if not os.path.exists(file_path):
+                    logger.info(
+                        f"Will download post {post.comments_full} to {post.file_path}"
+                    )
                     links.append(post.comments_full)
         ydl.download(links)
 

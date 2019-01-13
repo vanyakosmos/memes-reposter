@@ -5,6 +5,7 @@ import requests
 
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 GIPHY_REGEX = re.compile(r'^https?://(?:media|i)\.giphy\.com/media/(\w+)/giphy\.(?:gif|mp4)$')
 GFYCAT_REGEX = re.compile(r'^https?://(?:\w+\.)?gfycat.com/(?:\w+/)*(\w+)(?:\.mp4)?$')

@@ -19,13 +19,18 @@ class SubredditAdmin(admin.ModelAdmin):
         'show_title',
         'enabled',
         'on_moderation',
+        'subs',
     )
+
+    def subs(self, subreddit: Subreddit):
+        return ', '.join([str(s) for s in subreddit.subscriptions.all()])
 
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
     list_display = (
         '__str__',
+        'file_path',
         'status',
         'comments',
         'subreddit_name',
