@@ -24,11 +24,25 @@ REPOST_REGEX = re.compile(r'\(\s*(x-?|re|cross-?)\s*post .+\)')
 
 
 def publish_post(
-    post: Post, channel: TelegramChannel, post_title=None, sleep_time=0.0, idle=False
+    post: Post,
+    channel: Optional[TelegramChannel] = None,
+    post_title=None,
+    sleep_time=0.0,
+    idle=False,
 ):
     """
+    :param post: never saved reddit post if channel is provide, otherwise
+    :param channel:
+    :param post_title: override title inclusion
+    :param sleep_time: sleep time before post
+    :param idle: save but not publish
     :returns `True` if post was successfully published.
     """
+    if channel is None:
+        channel = TelegramChannel.objects.get(uuid=post.channel_uuid)
+    else:
+        post = post.clone(exclude=['id'])
+        post.channel_uuid = channel.uuid
     ok = check_post(post, channel, idle)
     if not ok:
         return False
@@ -128,26 +142,42 @@ def unique_in_channel(post, channel: TelegramChannel) -> Post:
     else:
         user new post
     """
-    try:
-        # similar post with same reddit id or same url and in the same channel
-        old_post = Post.objects.get(
-            Q(reddit_id=post.reddit_id)
-            | Q(source_url=post.source_url)
-            | Q(url=post.url),
-            subreddit__subscriptions__tg_channels=channel,
-        )
-    except Post.DoesNotExist:
+    # similar post with same reddit id or same url and in the same channel
+    old_posts = Post.objects.filter(
+        Q(reddit_id=post.reddit_id)
+        | Q(url=post.url)
+        | Q(source_url=post.source_url, source_url__isnull=False),
+        channel_uuid=channel.uuid,
+    )
+    logger.debug(f">> {post!r}")
+    [logger.debug(f"> {p!r}") for p in old_posts]
+
+    old_posts = list(old_posts)
+    if len(old_posts) == 0:
+        logger.debug(f'using new post {post!r}')
         return post
+    # pick old post, prioritise accepted/rejected post so it can be filtered out later
+    old_post = old_posts[0]
+    for op in old_posts:
+        if op.status in (Post.STATUS_ACCEPTED, Post.STATUS_REJECTED):
+            old_post = op
+            break
+    logger.debug(f'got old post {old_post!r}')
 
     if old_post.status == Post.STATUS_PENDING and post.status == Post.STATUS_ACCEPTED:
         old_post.status = Post.STATUS_ACCEPTED
         if old_post.reddit_id == post.reddit_id:
             old_post.score = post.score
             old_post.num_comments = post.num_comments
+        logger.debug(f'using old post {old_post!r}')
         return old_post
+    logger.debug(f'dropping post {post!r}')
 
 
 def check_post(post: Post, channel: TelegramChannel, idle: bool):
+    # something is wrong
+    if post.channel_uuid != channel.uuid:
+        return False
     # check similar post in the channel
     post = unique_in_channel(post, channel)
     # already posted/rejected, don't save redundant post
@@ -155,8 +185,10 @@ def check_post(post: Post, channel: TelegramChannel, idle: bool):
         return False
     # post not accepted or forced skip, save refreshed post
     if post.status != Post.STATUS_ACCEPTED or idle:
+        logger.debug(f'skip not accepted {post!r}')
         post.save()
         return False
     # ready to publish
+    logger.debug(f'ok {post!r}')
     post.save()
     return True

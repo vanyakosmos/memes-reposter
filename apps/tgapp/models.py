@@ -1,3 +1,5 @@
+import uuid
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from telegram import TelegramError
@@ -24,6 +26,7 @@ class TelegramChannel(models.Model):
         blank=True,
         help_text="List of channel subscriptions.",
     )
+    uuid = models.UUIDField()
 
     def __str__(self):
         return self.username
@@ -51,7 +54,10 @@ class TelegramChannel(models.Model):
             self._bot_id_admin()
             setattr(self, '_username', self.username)
 
-    def save(self, *args, **kwargs):
-        chat = bot.get_chat(chat_id=self.username)
-        self.chat_id = chat.id
+    def save(self, force=False, *args, **kwargs):
+        if not force:
+            chat = bot.get_chat(chat_id=self.username)
+            self.chat_id = chat.id
+        if not self.uuid:
+            self.uuid = uuid.uuid4()
         return super().save(*args, **kwargs)

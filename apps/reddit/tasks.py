@@ -121,12 +121,8 @@ def publish_post_task(post_id, post_title: bool):
     if post.status != Post.STATUS_ALMOST:
         return
     post.status = Post.STATUS_ACCEPTED
-    post.save()
     load_videos([post])
-    subreddit = post.subreddit
-    for subscription in subreddit.subscriptions.all():
-        for channel in subscription.tg_channels.all():
-            tg_reddit.publish_post(post, channel, post_title)
+    tg_reddit.publish_post(post, post_title=post_title)
 
 
 @celery_app.task

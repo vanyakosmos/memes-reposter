@@ -27,5 +27,5 @@ def notify_admins(text: str, type='pending', clean=True):
 
 
 def format_object_repr(obj, fields: Iterable[str]):
-    fs = ', '.join([f'{field}="{getattr(obj, field, None)}"' for field in fields])
+    fs = ', '.join([f'{field}={getattr(obj, field, None)!r}' for field in fields])
     return f'<{obj.__class__.__name__}: {fs}>'

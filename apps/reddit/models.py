@@ -84,7 +84,7 @@ class Post(models.Model):
 
     subreddit = models.ForeignKey(Subreddit, on_delete=models.CASCADE)
     subreddit_name = models.CharField(max_length=255)
-    reddit_id = models.CharField(max_length=200, unique=True)
+    reddit_id = models.CharField(max_length=200)
     title = models.TextField()
     url = URLField()
     created = models.DateTimeField(auto_now_add=True)
@@ -101,6 +101,9 @@ class Post(models.Model):
         blank=True,
         help_text="For posts that need to be temporary saved, such as merged reddit videos.",
     )
+    channel_uuid = models.UUIDField(
+        help_text="Identifier of channel where this post was/will be published.",
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -110,8 +113,7 @@ class Post(models.Model):
 
     def __repr__(self):
         return format_object_repr(
-            self,
-            ('reddit_id', 'subreddit', 'title', 'media_link', 'media_type', 'score'),
+            self, ('reddit_id', 'subreddit', 'title', 'url', 'source_url', 'type')
         )
 
     @property
@@ -139,6 +141,16 @@ class Post(models.Model):
         self.source_url = media['media']
         self.type = media['type']
         self.text = media['text']
+
+    def clone(self, exclude=None):
+        new_kwargs = {
+            field.name: getattr(self, field.name)
+            for field in self._meta.fields
+        }
+        if exclude:
+            for field in exclude:
+                new_kwargs.pop(field)
+        return Post(**new_kwargs)
 
     @classmethod
     def from_dict(cls, item: dict, subreddit: Subreddit):
