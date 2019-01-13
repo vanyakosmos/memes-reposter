@@ -1,10 +1,12 @@
 import graphene
 import graphql_jwt
 from django.contrib.auth import get_user_model
+from graphene import relay
 from graphene_django import DjangoObjectType
+from graphene_django.filter import DjangoFilterConnectionField
 from graphql import ResolveInfo
 
-from .models import SiteConfig
+from .models import SiteConfig, Subscription
 from .permissions import is_staff, permissions
 
 
@@ -16,11 +18,19 @@ class UserType(DjangoObjectType):
         model = User
 
 
+class SubscriptionNode(DjangoObjectType):
+    class Meta:
+        model = Subscription
+        filter_fields = ('name', 'type')
+        interfaces = (relay.Node,)
+
+
 class CoreQuery(graphene.ObjectType):
     status = graphene.String()
     site_enabled = graphene.Boolean()
     me = graphene.Field(UserType)
     users = graphene.List(UserType)
+    all_subscriptions = DjangoFilterConnectionField(SubscriptionNode)
 
     @permissions(is_staff)
     def resolve_status(self, info):
@@ -43,6 +53,10 @@ class CoreQuery(graphene.ObjectType):
     @permissions(is_staff)
     def resolve_users(self, info):
         return User.objects.all()
+
+    @permissions(is_staff)
+    def resolve_all_subscriptions(self, info: ResolveInfo, **kwargs):
+        return Subscription.objects.all().order_by('type', 'name')
 
 
 class ToggleSiteState(graphene.Mutation):
