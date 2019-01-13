@@ -44,8 +44,18 @@ class PostNode(DjangoObjectType):
 
 class RedditQuery(graphene.ObjectType):
     reddit_enabled = graphene.Boolean()
+    reddit_posts_number = graphene.Int(status=graphene.String(), channel=graphene.String())
     reddit_post = relay.Node.Field(PostNode)
     all_reddit_posts = DjangoFilterConnectionField(PostNode, filterset_class=PostFilter)
+
+    @permissions(is_staff)
+    def resolve_reddit_posts_number(self, info: ResolveInfo, status=None, channel=None):
+        qs = Post.objects.all()
+        if channel:
+            qs = qs.filter(channel_uuid=channel)
+        if status:
+            qs = qs.filter(status=status)
+        return qs.count()
 
     @permissions(is_staff)
     def resolve_reddit_enabled(self, info: ResolveInfo):

@@ -27,6 +27,21 @@ class SubredditAdmin(admin.ModelAdmin):
         return ', '.join([str(s) for s in subreddit.subscriptions.all()])
 
 
+class ChannelsFilter(admin.SimpleListFilter):
+    title = 'Channels'
+    parameter_name = 'channel'
+
+    def lookups(self, request, model_admin):
+        return [
+            (channel.uuid, str(channel))
+            for channel in TelegramChannel.objects.all()
+        ]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(channel_uuid=self.value())
+
+
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
     list_display = (
@@ -37,7 +52,7 @@ class PostAdmin(admin.ModelAdmin):
         'channel',
     )
     actions = ('make_pending',)
-    list_filter = ('status', 'subreddit_name', 'channel_uuid')
+    list_filter = ('status', 'subreddit_name', ChannelsFilter)
 
     def channel(self, post: Post):
         try:
