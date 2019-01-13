@@ -1,4 +1,5 @@
 import graphene
+from django_filters import FilterSet, OrderingFilter
 from graphene import relay
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
@@ -9,15 +10,29 @@ from . import tasks
 from .models import Post, RedditConfig
 
 
-class PostObject(DjangoObjectType):
+class PostFilter(FilterSet):
+    order_by = OrderingFilter(
+        fields=(
+            ('created', 'created'),
+            ('status', 'status'),
+            ('score', 'score'),
+        ),
+    )
+
     class Meta:
         model = Post
-        filter_fields = (
+        fields = (
             'status',
+            'type',
             'subreddit__on_moderation',
             'subreddit__subscriptions__name',
             'subreddit__subscriptions__type',
         )
+
+
+class PostNode(DjangoObjectType):
+    class Meta:
+        model = Post
         interfaces = (relay.Node,)
 
     @classmethod
@@ -28,8 +43,8 @@ class PostObject(DjangoObjectType):
 
 class RedditQuery(graphene.ObjectType):
     reddit_enabled = graphene.Boolean()
-    reddit_post = relay.Node.Field(PostObject)
-    all_reddit_posts = DjangoFilterConnectionField(PostObject)
+    reddit_post = relay.Node.Field(PostNode)
+    all_reddit_posts = DjangoFilterConnectionField(PostNode, filterset_class=PostFilter)
 
     @permissions(is_staff)
     def resolve_reddit_enabled(self, info: ResolveInfo):
