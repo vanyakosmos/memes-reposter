@@ -1,4 +1,5 @@
 from .CELERY import *
+from .CORS import *
 from .DJANGO import *
 from .DRF import *
 from .GRAPHENE import *

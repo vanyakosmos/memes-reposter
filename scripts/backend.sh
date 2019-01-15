@@ -3,6 +3,7 @@
 set -e
 
 python manage.py migrate
+python manage.py collectstatic --noinput -v 0
 
 if [[ ${1:-dev} == 'dev' ]]
 then

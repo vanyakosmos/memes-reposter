@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'whitenoise.runserver_nostatic',  # whitenoise support in dev
     'django.contrib.staticfiles',
     # 3rd parties
+    'corsheaders',
     'solo.apps.SoloAppConfig',
     'django_filters',
     'rest_framework',
@@ -37,6 +38,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -70,7 +72,7 @@ WSGI_APPLICATION = 'reposter.wsgi.application'
 
 # Database
 DATABASE_URL = easy_env.get(
-    'DATABASE_URL', 'postgres://postgres:postgres@localhost:5432/postgres'
+    'DATABASE_URL', 'postgres://postgres:postgres@db:5432/postgres'
 )
 DATABASES = {'default': dj_database_url.parse(DATABASE_URL)}
 

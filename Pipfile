@@ -25,6 +25,7 @@ graphene-django = "*"
 django-graphql-jwt = "*"
 graphql-core = "*"
 django-filter = ">=2.0.0"
+django-cors-headers = "*"
 
 [dev-packages]
 
