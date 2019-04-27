@@ -4,7 +4,7 @@ Service that steal memes from different sources and repost its to telegram.
 
 ### List of some channels
 
-- [reddit ~ rad](https://t.me/pop_reddit)
+- [reddit ~ rad](https://t.me/radchan)
 - [imgur ~ telemgur](https://t.me/telemgur)
 - rss feeds:
 	- [The Verge](https://t.me/verge_media)
