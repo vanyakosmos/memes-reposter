@@ -15,7 +15,7 @@ loggers = {
         'level': LOGGING_LEVEL,
         'propagate': False,
     }
-    for module in ['core', 'imgur', 'reddit', 'rss']
+    for module in ['core', 'imgur', 'reddit', 'rss', 'telegram_app']
 }
 
 LOGGING = {

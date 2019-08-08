@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     # own apps
     'core.apps.CoreConfig',
     'reddit.apps.RedditConfig',
+    'telegram_app.apps.TelegramAppConfig',
     # 'imgur.apps.ImgurConfig',
     # 'rss.apps.RssConfig',
 ]
