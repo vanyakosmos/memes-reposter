@@ -1,0 +1,27 @@
+sudo: required
+language: python
+
+python: 3.6
+
+services:
+  - postgresql
+
+install:
+  - pip install codecov
+
+before_script:
+  - cd reposter
+script:
+  - pytest --cov . --cov-report xml
+
+
+after_success:
+  - codecov
+
+before_deploy:
+  - cd reposter
+
+
+notifications:
+  webhooks:
+    - https://travis-tg.herokuapp.com/u/89599420

@@ -106,8 +106,11 @@ venv.bak/
 
 *.sqlite3
 playground.py
-/static
 *.db
 nohup.out
 celerybeat.pid
+staticfiles
 videos
+docker-compose.override.yml
+.envs
+!.gitkeep
