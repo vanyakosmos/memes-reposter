@@ -13,7 +13,7 @@ from .utils import get_photo_url, get_video_url
 from core.fields import URLField
 from core.post import Post as NormalPost
 
-TRASH_REGEX = re.compile(r'[^\w\s]')
+NOT_ALPHANUMERIC = re.compile(r'[^\w\s]')
 logger = logging.getLogger(__name__)
 
 
@@ -61,18 +61,18 @@ class Subreddit(models.Model):
 
 
 class Post(models.Model):
-    STATUS_ACCEPTED = 'accepted'
-    STATUS_PENDING = 'pending'
-    STATUS_ALMOST = 'almost'
-    STATUS_REJECTED = 'rejected'
+    ACCEPTED = 'accepted'
+    PENDING = 'pending'
+    ALMOST = 'almost'
+    REJECTED = 'rejected'
     STATUSES = (
-        (STATUS_ACCEPTED, STATUS_ACCEPTED),
-        (STATUS_PENDING, STATUS_PENDING),
-        (STATUS_ALMOST, STATUS_ALMOST),
-        (STATUS_REJECTED, STATUS_REJECTED),
+        (ACCEPTED, ACCEPTED),
+        (PENDING, PENDING),
+        (ALMOST, ALMOST),
+        (REJECTED, REJECTED),
     )
 
-    status = models.CharField(max_length=200, choices=STATUSES, default=STATUS_ACCEPTED)
+    status = models.CharField(max_length=200, choices=STATUSES, default=ACCEPTED)
     created = models.DateTimeField(auto_now_add=True)
 
     reddit_id = models.CharField(max_length=200, unique=True)
@@ -84,20 +84,25 @@ class Post(models.Model):
     nsfw = models.BooleanField(default=False)
     comments = URLField(blank=True, null=True)
 
-    url = URLField(null=True, blank=True)
+    url = URLField()
     photo_url = URLField(null=True, blank=True)
     video_url = URLField(null=True, blank=True)
     text = models.TextField(null=True, blank=True)
     file_path = models.TextField(null=True, blank=True)
+    transcript = models.TextField(null=True, blank=True)
 
     def __str__(self):
-        return f'Post({self.reddit_id}, {self.title!r})'
+        return f'Post({self.status}, {self.reddit_id}, {self.title!r})'
 
     @property
-    def title_terms(self):
+    def tokens(self):
         title = self.title.lower()
-        title = TRASH_REGEX.sub('', title)
-        return title.split()
+        title = NOT_ALPHANUMERIC.sub('', title)
+        tokens = title.split()
+        if self.transcript:
+            transcript = NOT_ALPHANUMERIC.sub('', self.transcript)
+            tokens.extend(transcript.split())
+        return tokens
 
     @property
     def comments_short(self):

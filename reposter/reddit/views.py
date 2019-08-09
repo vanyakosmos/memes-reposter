@@ -35,7 +35,7 @@ class PostViewMixin(generics.GenericAPIView):
     permission_classes = (IsAdminUser,)
 
     def get_queryset(self):
-        qs = Post.objects.filter(status=Post.STATUS_PENDING)
+        qs = Post.objects.filter(status=Post.PENDING)
         qs = qs.order_by('-created')
         return qs
 
@@ -53,11 +53,11 @@ class PostView(PostViewMixin, generics.UpdateAPIView):
         title = s.validated_data.get('title')
 
         post = self.get_object()
-        if post.status == Post.STATUS_ACCEPTED:
+        if post.status == Post.ACCEPTED:
             return Response({
                 'accepted': True,
             })
-        post.status = Post.STATUS_ALMOST
+        post.status = Post.ALMOST
         post.title = title or post.title
         post.save()
         tasks.publish_post_task.delay(post.id, bool(title))
@@ -73,7 +73,7 @@ def reject_view(request: Request):
     s.is_valid(raise_exception=True)
     posts_ids = s.validated_data['posts']
     posts = Post.objects.filter(pk__in=s.validated_data['posts'])
-    posts.update(status=Post.STATUS_REJECTED)
+    posts.update(status=Post.REJECTED)
     return Response({
         'rejected': posts_ids,
     })

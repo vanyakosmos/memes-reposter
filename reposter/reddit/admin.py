@@ -29,4 +29,4 @@ class PostAdmin(admin.ModelAdmin):
     list_filter = ('status', 'subreddit')
 
     def make_pending(self, request, qs):
-        return qs.update(status=Post.STATUS_PENDING)
+        return qs.update(status=Post.PENDING)

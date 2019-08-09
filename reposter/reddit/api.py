@@ -7,7 +7,7 @@ HEADERS = {"User-Agent": f"Mozilla/2000"}
 
 
 def get_reddit_url(*args, api=True):
-    base = 'https://reddit.com'
+    base = 'https://reddit.com/r'
     url = '/'.join([base, *args])
     if api:
         url += '/.json'
@@ -24,10 +24,10 @@ def get_about(subreddit):
 def get_posts(subreddit, limit: int):
     logger.debug(f'Subreddit: "{subreddit}". Fetching...')
     url = get_reddit_url(subreddit, 'top')
-    response = requests.get(url, params={'limit': limit}, headers=HEADERS)
-    logger.info(f'Fetched data from "{subreddit}". Code: {response.status_code}')
-    data = response.json()
+    res = requests.get(url, params={'limit': limit}, headers=HEADERS)
+    logger.info(f'Fetched data from "{subreddit}". Code: {res.status_code}')
+    data = res.json()
     posts = []
-    if response.status_code == 200:
+    if res.status_code == 200:
         posts = [p['data'] for p in data['data']['children']]
     return posts

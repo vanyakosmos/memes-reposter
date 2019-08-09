@@ -59,21 +59,23 @@ def load_videos(posts: List[Post]):
 
 @celery_app.task
 def publish_sub(subreddit_id: int, blank: bool):
+    logger.debug(f"publish_sub: id={subreddit_id}, blank={blank}")
     subreddit = Subreddit.objects.get(pk=subreddit_id)
     raw_posts = subreddit.get_posts()
     posts = pack_posts(raw_posts, subreddit)
     posts = apply_filters(posts, subreddit)
 
-    # load_videos(posts)
     if blank:
         for post in posts:
             logger.info(f"Blank publishing: {post!r}")
+            post.status = Post.REJECTED
             post.save()
         return
 
+    load_videos(posts)
     for post in posts:
         post.save()
-    posts = list(filter(lambda p: p.status != Post.STATUS_ACCEPTED, posts))
+    posts = list(filter(lambda p: p.status != Post.ACCEPTED, posts))
     posts = [p.normalize() for p in posts]
 
     for chat in Chat.objects.filter(subs__subreddits=subreddit).distinct():
@@ -84,7 +86,7 @@ def publish_sub(subreddit_id: int, blank: bool):
 def fetch_and_publish(blank=False):
     logger.info('Publishing reddit posts...')
     for subreddit in Subreddit.objects.filter(active=True):
-        publish_sub.deplay(subreddit.id, blank)
+        publish_sub.delay(subreddit.id, blank)
 
 
 @celery_app.task
@@ -93,9 +95,9 @@ def publish_post_task(post_id, post_title: bool):
         post = Post.objects.get(id=post_id)
     except Post.DoesNotExist:
         return
-    if post.status != Post.STATUS_ALMOST:
+    if post.status != Post.ALMOST:
         return
-    post.status = Post.STATUS_ACCEPTED
+    post.status = Post.ACCEPTED
     post.save()
     load_videos([post])
     # todo

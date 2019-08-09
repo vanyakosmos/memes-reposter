@@ -1,24 +1,68 @@
 import pytest
+from django.test import override_settings
 
-from reddit.filters import inner_unique_filter
+from reddit.tasks import fetch_and_publish, publish_sub
 
+from . import filters
 from .models import Subreddit, Post
+from core.models import Subscription
+from telegram_app.models import Chat
 
 
-class TestSubredditModel:
-    pass
+class TestModels:
+    def test_get_posts(self):
+        sub = Subreddit(name='pics')
+        raw_posts = sub.get_posts(limit=2)
+        posts = [Post.from_dict(p, sub) for p in raw_posts]
+        assert len(raw_posts) == 2
+        assert posts[0].subreddit_name == 'pics'
 
 
+@pytest.mark.usefixtures('create_post')
 @pytest.mark.django_db
 class TestFilters:
+    def test_score_filter(self):
+        sub = Subreddit.objects.create(name='sub', score_limit=100, score_limit_repost=200)
+        posts = [
+            Post(subreddit=sub, url='a', score=50),
+            Post(subreddit=sub, url='b', score=150),
+            Post(subreddit=sub, url='c', score=250),
+        ]
+        ps = filters.score_filter(posts)
+        assert len(ps) == 2
+        assert ps[0].status == Post.PENDING
+        assert ps[1].status == Post.ACCEPTED
+
+        sub = Subreddit.objects.create(name='sub', score_limit=100, score_limit_repost=100)
+        posts = [
+            Post(subreddit=sub, url='a', score=50),
+            Post(subreddit=sub, url='b', score=150),
+            Post(subreddit=sub, url='c', score=250),
+        ]
+        ps = filters.score_filter(posts)
+        assert len(ps) == 2
+        assert ps[0].status == Post.ACCEPTED
+        assert ps[1].status == Post.ACCEPTED
+
+    def test_nsfw_filter(self):
+        sub = Subreddit.objects.create(name='sub')
+        posts = [
+            Post(subreddit=sub, url='a'),
+            Post(subreddit=sub, url='b', nsfw=True),
+            Post(subreddit=sub, url='c'),
+        ]
+        ps = filters.nsfw_filter(posts)
+        assert len(ps) == 2
+        assert ps[0].url == 'a' and ps[1].url == 'c'
+
     def test_inner_unique_filter(self):
-        sub = Subreddit(name='sub')
+        sub = Subreddit.objects.create(name='sub')
         posts = [
             Post(subreddit=sub, url='a'),
             Post(subreddit=sub, url='a'),
             Post(subreddit=sub, url='a'),
         ]
-        new_posts = inner_unique_filter(posts, sub)
+        new_posts = filters.inner_unique_filter(posts)
         assert len(new_posts) == 1
         assert new_posts[0] == posts[0]
 
@@ -27,7 +71,7 @@ class TestFilters:
             Post(subreddit=sub, url='b'),
             Post(subreddit=sub, url='c'),
         ]
-        new_posts = inner_unique_filter(posts, sub)
+        new_posts = filters.inner_unique_filter(posts)
         assert len(new_posts) == 3
 
         posts = [
@@ -35,6 +79,63 @@ class TestFilters:
             Post(subreddit=sub, url='b', photo_url='a'),
             Post(subreddit=sub, url='c', video_url='b'),
         ]
-        new_posts = inner_unique_filter(posts, sub)
+        new_posts = filters.inner_unique_filter(posts)
         assert len(new_posts) == 1
         assert new_posts[0] == posts[0]
+
+    def test_unique_filter(self):
+        sub = Subreddit.objects.create(name='sub')
+        self.create_post(subreddit=sub, id='a', status=Post.ACCEPTED)
+        p2 = self.create_post(subreddit=sub, id='b', status=Post.PENDING)
+        self.create_post(subreddit=sub, id='c', status=Post.REJECTED)
+        posts = [
+            Post(subreddit=sub, reddit_id='a'),
+            Post(subreddit=sub, reddit_id='b', status=Post.ACCEPTED),
+            Post(subreddit=sub, reddit_id='c'),
+            Post(subreddit=sub, reddit_id='d'),
+        ]
+        ps = filters.unique_filter(posts)
+        assert len(ps) == 2
+        assert ps[0] == p2
+        assert ps[1] == posts[3]
+
+    def test_keywords_filter(self):
+        sub = Subreddit.objects.create(name='sub', forbidden_keywords=['a', 'b', 'c'])
+        posts = [
+            Post(subreddit=sub, title='foo bar'),
+            Post(subreddit=sub, title='foo a'),
+            Post(subreddit=sub, title='foo b c'),
+        ]
+        ps = filters.keywords_filter(posts)
+        assert len(ps) == 1
+        assert ps[0] == posts[0]
+
+    def test_apply_filters(self):
+        pass
+
+
+@pytest.mark.django_db
+class TestTasks:
+    def test_fetch_and_publish_blank(self, mocker):
+        mocker.patch.object(publish_sub, 'delay', publish_sub)
+        Subreddit.objects.create(name='pics')
+        with override_settings(REDDIT_POSTS_LIMIT=2):
+            fetch_and_publish(blank=True)
+        assert Post.objects.count() == 2
+        assert Post.objects.filter(status=Post.REJECTED).count() == 2
+
+    def test_fetch_and_publish(self, mocker):
+        mocker.patch.object(publish_sub, 'delay', publish_sub)
+        mocker.patch.object(Chat, 'update_from_telegram')
+        mocker.patch.object(Chat, 'publish')
+
+        subr = Subreddit.objects.create(name='pics', score_limit=0, score_limit_repost=0)
+        chat = Chat.objects.create(telegram_id='1111', username='username', type='private')
+        sub = Subscription.objects.create(name='pics')
+        sub.telegram_chats.add(chat)
+        sub.subreddits.add(subr)
+
+        with override_settings(REDDIT_POSTS_LIMIT=2):
+            fetch_and_publish(blank=False)
+        assert Post.objects.count() == 2
+        assert Post.objects.filter(status=Post.ACCEPTED).count() == 2
