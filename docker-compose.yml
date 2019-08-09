@@ -3,6 +3,7 @@ version: "3.7"
 
 x-app: &app
   build: reposter
+  image: reposter
   env_file:
     - .envs/prod/app.env
     - .envs/prod/db.env
@@ -38,6 +39,10 @@ services:
   worker:
     <<: *app
     command: ["./scripts/celery.sh"]
+
+  beat:
+    <<: *app
+    command: ["./scripts/beat.sh"]
 
 volumes:
   dbdata:

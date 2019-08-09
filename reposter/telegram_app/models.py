@@ -5,14 +5,16 @@ from typing import List
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from telegram import TelegramError, Chat as TGChat
+from telegram import Chat as TGChat, TelegramError
 from telegram.error import BadRequest
 
 from core.post import Post
-from telegram_app.publisher import publish_post
 from .bot import bot
+from .filters import filters_posts
+from .publisher import publish_post
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +51,12 @@ class Chat(models.Model):
     forbidden_keywords = ArrayField(
         models.CharField(max_length=255),
         default=list,
+        blank=True,
         help_text="List of keywords that are forbidden in current chat.",
     )
+
+    def __str__(self):
+        return f"Chat({self.telegram_id}, {self.type}, {self.username}, {self.title!r})"
 
     @property
     def chat_id(self):
@@ -117,11 +123,53 @@ class Chat(models.Model):
         return super().save(*args, **kwargs)
 
     def publish(self, posts: List[Post]):
+        logger.debug(f"if chat: {self}")
+        logger.debug(f"got {len(posts)} posts")
+        posts = filters_posts(self, posts)
+        logger.debug(f"{len(posts)} posts after filter")
         size = len(posts)
         for i, post in enumerate(posts):
-            published = publish_post(self, post)
-            sleep(0.5)
-            if published:
-                logger.info('Published %3d/%d: %s', i + 1, size, repr(post))
+            qs = Q(identifier=post.id)
+            if post.url:
+                qs |= Q(url=post.url)
+            if post.photo_url:
+                qs |= Q(url=post.photo_url)
+            if post.video_url:
+                qs |= Q(url=post.video_url)
+            if Message.objects.filter(chat=self).filter(qs).exists():
+                logger.debug(f"Already in the chat: {post}")
+                continue
+            msg = publish_post(self, post)
+            if msg:
+                Message.objects.create(
+                    chat=self,
+                    message_id=msg.message_id,
+                    identifier=post.id,
+                    url=post.url,
+                    photo_url=post.photo_url,
+                    video_url=post.video_url,
+                    text=post.text,
+                )
+                logger.debug('Published %3d/%d: %s', i + 1, size, repr(post))
             else:
-                logger.info('Error %3d/%d: %s', i + 1, size, repr(post))
+                logger.debug('Error %3d/%d: %s', i + 1, size, repr(post))
+            sleep(0.5)  # prevent burst throttling
+
+
+class Message(models.Model):
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
+    message_id = models.CharField(max_length=255)
+    identifier = models.CharField(
+        max_length=255,
+        help_text=(
+            "Message ID in specific chat. Similar to message_id "
+            "but determined before posting and required for filtration."
+        )
+    )
+    url = models.CharField(max_length=255, null=True, blank=True)
+    photo_url = models.CharField(max_length=255, null=True, blank=True)
+    video_url = models.CharField(max_length=255, null=True, blank=True)
+    text = models.TextField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('identifier', 'chat')

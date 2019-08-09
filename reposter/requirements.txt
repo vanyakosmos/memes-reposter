@@ -34,6 +34,7 @@ python-crontab==2.3.8
 python-dateutil==2.8.0
 python-telegram-bot==11.1.0
 pytz==2019.2
+redis==3.3.6
 requests==2.22.0
 six==1.12.0
 sqlparse==0.3.0

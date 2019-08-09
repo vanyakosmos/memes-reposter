@@ -6,7 +6,7 @@ from .models import Post, Subreddit
 @admin.register(Subreddit)
 class SubredditAdmin(admin.ModelAdmin):
     list_display = (
-        '__str__',
+        'name',
         'score_limit',
         'pass_nsfw',
         'show_title',
@@ -19,8 +19,7 @@ class PostAdmin(admin.ModelAdmin):
     list_display = (
         '__str__',
         'status',
-        'comments',
-        'subreddit',
+        'subreddit_name',
         'title',
         'score',
         'nsfw',

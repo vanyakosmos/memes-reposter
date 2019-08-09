@@ -11,7 +11,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from application.celery import app as celery_app
-from telegram_app.models import Chat
+from core.publisher import publish_posts, publish_post
 from .filters import apply_filters
 from .models import Post, Subreddit
 
@@ -75,11 +75,11 @@ def publish_sub(subreddit_id: int, blank: bool):
     load_videos(posts)
     for post in posts:
         post.save()
-    posts = list(filter(lambda p: p.status != Post.ACCEPTED, posts))
+    posts = filter(lambda p: p.status == Post.ACCEPTED, posts)
     posts = [p.normalize() for p in posts]
 
-    for chat in Chat.objects.filter(subs__subreddits=subreddit).distinct():
-        chat.publish(posts)
+    subs = subreddit.subs.all()
+    publish_posts(subs, posts)
 
 
 @celery_app.task
@@ -92,7 +92,7 @@ def fetch_and_publish(blank=False):
 @celery_app.task
 def publish_post_task(post_id, post_title: bool):
     try:
-        post = Post.objects.get(id=post_id)
+        post = Post.objects.select_related().get(id=post_id)
     except Post.DoesNotExist:
         return
     if post.status != Post.ALMOST:
@@ -100,8 +100,9 @@ def publish_post_task(post_id, post_title: bool):
     post.status = Post.ACCEPTED
     post.save()
     load_videos([post])
-    # todo
-    # publish_post(post, post_title)
+    p = post.normalize(with_title=post_title)
+    subs = post.subreddit.subs.all()
+    publish_post(subs, p)
 
 
 @celery_app.task

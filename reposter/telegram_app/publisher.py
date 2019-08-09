@@ -23,18 +23,13 @@ Chat = 'telegram_app.models.Chat'
 def publish_post(chat: Chat, post: Post):
     try:
         if post.text:
-            publish_text(chat, post)
-            return True
+            return publish_text(chat, post)
         if post.photo_url or post.video_url:
-            publish_media_post(chat, post)
-            return True
+            return publish_media_post(chat, post)
         if post.url:
-            publish_post_link(chat, post)
-            return True
-        return False
+            return publish_post_link(chat, post)
     except TelegramError as e:
         logger.error('Error %s: %s for post %s', type(e), e, repr(post))
-        return False
 
 
 def format_title(post: Post, escape=False) -> Optional[str]:
@@ -52,7 +47,7 @@ def publish_text(chat: Chat, post: Post):
         text = f'*{title}*\n\n{text}'
 
     keyboard_markup = build_keyboard_markup(post, pass_original=False)
-    bot.send_message(
+    return bot.send_message(
         text=text,
         chat_id=chat.telegram_id,
         reply_markup=keyboard_markup,
@@ -67,7 +62,7 @@ def publish_post_link(chat: Chat, post: Post):
         text = title + f'\n{text}'
 
     keyboard_markup = build_keyboard_markup(post, pass_original=False)
-    bot.send_message(
+    return bot.send_message(
         text=text,
         chat_id=chat.telegram_id,
         reply_markup=keyboard_markup,
@@ -84,28 +79,26 @@ def publish_media_post(chat: Chat, post: Post):
     }
     # need title, post pic and text separately
     if title and len(title) > MAX_CAPTION_LENGTH:
-        publish_media(post, chat_id=chat.telegram_id)
-        kwargs = dict(text=title, **common)
-        bot.send_message(**kwargs)
+        msg = publish_media(post, chat_id=chat.telegram_id)
+        if msg:
+            return bot.send_message(text=title, reply_to_message_id=msg.message_id, **common)
+        return
     # need title, post pic with caption
-    elif title:
-        kwargs = dict(caption=title, **common)
-        publish_media(post, **kwargs)
+    if title:
+        return publish_media(post, caption=title, **common)
     # post just pic
-    else:
-        kwargs = dict(**common)
-        publish_media(post, **kwargs)
+    return publish_media(post, **common)
 
 
 def publish_media(post: Post, **kwargs):
     if post.photo_url:
-        bot.send_photo(photo=post.photo_url, **kwargs)
-    elif post.video_url:
+        return bot.send_photo(photo=post.photo_url, **kwargs)
+    if post.video_url:
         if post.file_path:
             with open(post.file_path, 'rb') as f:
-                bot.send_video(video=f, **kwargs)
+                return bot.send_video(video=f, **kwargs)
         else:
-            bot.send_video(video=post.video_url, **kwargs)
+            return bot.send_video(video=post.video_url, **kwargs)
 
 
 def build_keyboard_markup(post: Post, pass_original=True):

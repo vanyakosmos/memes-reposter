@@ -35,7 +35,7 @@ class Subreddit(models.Model):
     )
     pass_nsfw = models.BooleanField(default=False)
     show_title = models.BooleanField(default=True)
-    forbidden_keywords = ArrayField(models.CharField(max_length=255), default=list)
+    forbidden_keywords = ArrayField(models.CharField(max_length=255), default=list, blank=True)
 
     def __str__(self):
         return f'Subreddit({self.name})'
@@ -126,13 +126,15 @@ class Post(models.Model):
             text=data['selftext']
         )
 
-    def normalize(self):
+    def normalize(self, with_title=True):
         return NormalPost(
-            title=self.title,
+            id=f"reddit:{self.reddit_id}",
+            title=self.title if with_title else None,
             url=self.url,
             photo_url=self.photo_url,
             video_url=self.video_url,
             text=self.text,
             comments=self.comments,
             file_path=self.file_path,
+            tokens=self.tokens,
         )
