@@ -114,3 +114,4 @@ videos
 docker-compose.override.yml
 .envs
 !.gitkeep
+data

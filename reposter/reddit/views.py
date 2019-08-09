@@ -21,7 +21,7 @@ def publish_view(request):
 @permission_classes([IsAdminUser])
 def blank_publish_view(request):
     """Save posts into db w/o publishing."""
-    tasks.fetch_and_publish(force=True, blank=True)
+    tasks.fetch_and_publish(blank=True)
     return Response({'status': 'ok'})
 
 
@@ -35,7 +35,7 @@ class PostViewMixin(generics.GenericAPIView):
     permission_classes = (IsAdminUser,)
 
     def get_queryset(self):
-        qs = Post.objects.filter(status=Post.STATUS_PENDING, subreddit__on_moderation=True)
+        qs = Post.objects.filter(status=Post.STATUS_PENDING)
         qs = qs.order_by('-created')
         return qs
 

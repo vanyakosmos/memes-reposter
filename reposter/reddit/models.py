@@ -1,84 +1,63 @@
+import logging
 import re
 from html import unescape
-from typing import List
 
+from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from django.core import validators
 from django.core.exceptions import ValidationError
 from django.db import models
-from telegram import TelegramError
 
+from .api import get_about, get_posts, get_reddit_url
+from .utils import get_photo_url, get_video_url
 from core.fields import URLField
-from reddit.utils import get_media
-from application.telegram_bot import bot
+from core.post import Post as NormalPost
 
 TRASH_REGEX = re.compile(r'[^\w\s]')
-
-
-class Channel(models.Model):
-    forbidden_keywords = models.TextField(blank=True)
-    username = models.CharField(max_length=200, null=True, blank=True)
-    chat_id = models.BigIntegerField(null=True, blank=True)
-
-    def __str__(self):
-        return self.username
-
-    @property
-    def forbidden_keywords_set(self):
-        return set(self.forbidden_keywords.split())
-
-    def _bot_has_access(self):
-        try:
-            bot.get_chat(chat_id=self.username)
-        except TelegramError:
-            raise ValidationError("Bot doesn't have access to this channel.")
-
-    def _bot_id_admin(self):
-        admins = bot.get_chat_administrators(chat_id=self.username)
-        for admin in admins:
-            if admin.user.username == bot.username:
-                if not admin.can_post_messages:
-                    raise ValidationError("Bot can't post messages.")
-                break
-        else:
-            raise ValidationError("Bot is not admin.")
-
-    def clean(self):
-        name = getattr(self, '_username', None)
-        if name != self.username:
-            self._bot_has_access()
-            self._bot_id_admin()
-            setattr(self, '_username', self.username)
-
-    def save(self, *args, **kwargs):
-        chat = bot.get_chat(chat_id=self.username)
-        self.chat_id = chat.id
-        return super().save(*args, **kwargs)
+logger = logging.getLogger(__name__)
 
 
 class Subreddit(models.Model):
-    name = models.CharField(max_length=200)
-    channel = models.ForeignKey(Channel, on_delete=models.CASCADE)
-    low_score_limit = models.IntegerField(
-        validators=[validators.MinValueValidator(0)], default=1000
+    name = models.CharField(
+        max_length=255,
+        help_text="Subreddit name or search criterion (eg 'popular' or 'all')",
     )
-    score_limit = models.IntegerField(validators=[validators.MinValueValidator(0)], default=1000)
+    active = models.BooleanField(default=True)
+    score_limit = models.IntegerField(
+        validators=[validators.MinValueValidator(0)],
+        default=1000,
+        help_text="Required score to be send to moderation.",
+    )
+    score_limit_repost = models.IntegerField(
+        validators=[validators.MinValueValidator(0)],
+        default=100000,
+        help_text="Required score for automatic repost by bot.",
+    )
     pass_nsfw = models.BooleanField(default=False)
     show_title = models.BooleanField(default=True)
-    active = models.BooleanField(default=True)
-    on_moderation = models.BooleanField(default=False)
-    forbidden_keywords = models.TextField(blank=True)
+    forbidden_keywords = ArrayField(models.CharField(max_length=255), default=list)
 
     def __str__(self):
-        return self.name
+        return f'Subreddit({self.name})'
+
+    @property
+    def url(self):
+        return get_reddit_url(self.name, api=False)
 
     @property
     def forbidden_keywords_set(self):
-        keywords = set(self.forbidden_keywords.split())
-        return keywords | self.channel.forbidden_keywords_set
+        return set(self.forbidden_keywords)
 
+    def clean(self):
+        if self.score_limit > self.score_limit_repost:
+            raise ValidationError("Invalid score limits. Score limit for repost should be higher.")
 
-def format_field_pairs(obj, fields: List[str]):
-    return ', '.join([f'{field}="{getattr(obj, field, None)}"' for field in fields])
+    def get_about(self):
+        return get_about(self.name)
+
+    def get_posts(self, limit: int = None):
+        limit = limit or settings.REDDIT_POSTS_LIMIT
+        return get_posts(self.name, limit)
 
 
 class Post(models.Model):
@@ -93,42 +72,26 @@ class Post(models.Model):
         (STATUS_REJECTED, STATUS_REJECTED),
     )
 
-    MEDIA_LINK = 'link'
-    MEDIA_TEXT = 'text'
-    MEDIA_PHOTO = 'photo'
-    MEDIA_VIDEO = 'video'
-    MEDIA_TYPES = (
-        (MEDIA_LINK, MEDIA_LINK),
-        (MEDIA_TEXT, MEDIA_TEXT),
-        (MEDIA_PHOTO, MEDIA_PHOTO),
-        (MEDIA_VIDEO, MEDIA_VIDEO),
-    )
-
-    subreddit = models.ForeignKey(Subreddit, on_delete=models.CASCADE)
-    title = models.TextField()
-    link = URLField(unique=True)
-    reddit_id = models.CharField(max_length=200, unique=True)
-    created = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=200, choices=STATUSES, default=STATUS_ACCEPTED)
+    created = models.DateTimeField(auto_now_add=True)
 
-    score = models.IntegerField(null=True)
-    media_link = URLField(blank=True, null=True)
-    media_type = models.CharField(max_length=200, choices=MEDIA_TYPES, default=MEDIA_LINK)
-    text = models.TextField(null=True, blank=True)
+    reddit_id = models.CharField(max_length=200, unique=True)
+    subreddit = models.ForeignKey(Subreddit, on_delete=models.CASCADE)
+    subreddit_name = models.CharField(max_length=255)
+
+    title = models.TextField()
+    score = models.IntegerField()
     nsfw = models.BooleanField(default=False)
     comments = URLField(blank=True, null=True)
 
-    def __init__(self, *args, **kwargs):
-        # self._post_meta = PostMeta()
-        super().__init__(*args, **kwargs)
+    url = URLField(null=True, blank=True)
+    photo_url = URLField(null=True, blank=True)
+    video_url = URLField(null=True, blank=True)
+    text = models.TextField(null=True, blank=True)
+    file_path = models.TextField(null=True, blank=True)
 
     def __str__(self):
-        return f'{self.reddit_id} : {self.title}'
-
-    def __repr__(self):
-        fields = ['reddit_id', 'subreddit', 'title', 'media_link', 'media_type', 'score']
-        pairs = format_field_pairs(self, fields)
-        return f'Post({pairs})'
+        return f'Post({self.reddit_id}, {self.title!r})'
 
     @property
     def title_terms(self):
@@ -136,33 +99,35 @@ class Post(models.Model):
         title = TRASH_REGEX.sub('', title)
         return title.split()
 
-    def is_not_media(self):
-        return self.media_type in (self.MEDIA_LINK, self.MEDIA_TEXT)
-
     @property
     def comments_short(self):
         return f'https://redd.it/{self.reddit_id}'
 
-    @property
-    def comments_full(self):
-        auto_link = f'https://reddit.com/r/{self.subreddit.name}/comments/{self.reddit_id}'
-        return self.comments or auto_link
-
-    def populate_media(self, item: dict):
-        self.title = unescape(item['title'])
-        self.link = item['url']
-        self.reddit_id = item['id']
-        self.comments = 'https://reddit.com' + item['permalink']
-
-        media = get_media(item)
-        self.score = int(item['score'])
-        self.media_link = media['media']
-        self.media_type = media['type']
-        self.text = media['text']
-        self.nsfw = item['over_18']
-
     @classmethod
-    def from_dict(cls, item: dict, subreddit: Subreddit):
-        post = Post(subreddit=subreddit)
-        post.populate_media(item)
-        return post
+    def from_dict(cls, data: dict, subreddit: Subreddit):
+        return Post(
+            reddit_id=data['id'],
+            subreddit=subreddit,
+            subreddit_name=data['subreddit'],
+            # meta
+            title=unescape(data['title']),
+            score=int(data['score']),
+            nsfw=data['over_18'],
+            comments='https://reddit.com' + data['permalink'],
+            # content
+            url=data['url'],
+            photo_url=get_photo_url(data),
+            video_url=get_video_url(data),
+            text=data['selftext']
+        )
+
+    def normalize(self):
+        return NormalPost(
+            title=self.title,
+            url=self.url,
+            photo_url=self.photo_url,
+            video_url=self.video_url,
+            text=self.text,
+            comments=self.comments,
+            file_path=self.file_path,
+        )

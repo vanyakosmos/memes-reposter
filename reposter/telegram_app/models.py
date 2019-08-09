@@ -1,4 +1,6 @@
 import logging
+from time import sleep
+from typing import List
 
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
@@ -8,6 +10,8 @@ from django.utils.safestring import mark_safe
 from telegram import TelegramError, Chat as TGChat
 from telegram.error import BadRequest
 
+from core.post import Post
+from telegram_app.publisher import publish_post
 from .bot import bot
 
 logger = logging.getLogger(__name__)
@@ -44,8 +48,7 @@ class Chat(models.Model):
     )
     forbidden_keywords = ArrayField(
         models.CharField(max_length=255),
-        null=True,
-        blank=True,
+        default=list,
         help_text="List of keywords that are forbidden in current chat.",
     )
 
@@ -112,3 +115,13 @@ class Chat(models.Model):
             logger.debug("update in save()")
             self.update_from_telegram()
         return super().save(*args, **kwargs)
+
+    def publish(self, posts: List[Post]):
+        size = len(posts)
+        for i, post in enumerate(posts):
+            published = publish_post(self, post)
+            sleep(0.5)
+            if published:
+                logger.info('Published %3d/%d: %s', i + 1, size, repr(post))
+            else:
+                logger.info('Error %3d/%d: %s', i + 1, size, repr(post))

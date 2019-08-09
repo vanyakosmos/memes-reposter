@@ -1,5 +1,7 @@
 amqp==2.5.0
 asn1crypto==0.24.0
+atomicwrites==1.3.0
+attrs==19.1.0
 billiard==3.6.0.0
 celery==4.3.0
 certifi==2019.6.16
@@ -16,9 +18,18 @@ easy-env==0.1.3
 future==0.17.1
 gunicorn==19.9.0
 idna==2.8
+importlib-metadata==0.19
 kombu==4.6.3
+more-itertools==7.2.0
+packaging==19.1
+pluggy==0.12.0
 psycopg2-binary==2.8.3
+py==1.8.0
 pycparser==2.19
+pyparsing==2.4.2
+pytest==5.0.1
+pytest-django==3.5.1
+pytest-mock==1.10.4
 python-crontab==2.3.8
 python-dateutil==2.8.0
 python-telegram-bot==11.1.0
@@ -28,5 +39,7 @@ six==1.12.0
 sqlparse==0.3.0
 urllib3==1.25.3
 vine==1.3.0
+wcwidth==0.1.7
 whitenoise==4.1.3
 youtube-dl==2019.8.2
+zipp==0.5.2

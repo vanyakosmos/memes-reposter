@@ -6,16 +6,14 @@ from typing import List
 
 import pytz
 import youtube_dl
-from celery import chord
 from celery.schedules import crontab
 from django.conf import settings
 from django.utils import timezone
 
 from application.celery import app as celery_app
-from .fetcher import fetch
+from telegram_app.models import Chat
 from .filters import apply_filters
-from .models import Channel, Post, Subreddit
-from .publisher import publish_blank, publish_post, publish_posts
+from .models import Post, Subreddit
 
 logger = logging.getLogger(__name__)
 
@@ -39,50 +37,54 @@ def load_videos(posts: List[Post]):
     with youtube_dl.YoutubeDL(options) as ydl:
         links = []
         for post in posts:
-            correct_link = ('v.redd.it' in post.media_link
-                           ) or (settings.THIS_HOST in post.media_link)
-            if post.media_type == 'video' and correct_link:
-                link = post.comments_full
-                info = ydl.extract_info(link, download=False)
-                video_id = info['id']
-                ext = info['ext']
+            correct_link = 'v.redd.it' in post.url or settings.APP_URL in post.url
+            if not (post.video_url and correct_link):
+                continue
+            link = post.comments
+            info = ydl.extract_info(link, download=False)
+            video_id = info['id']
+            ext = info['ext']
 
-                if info['acodec'] == 'none':
-                    continue
+            if info['acodec'] == 'none':
+                continue
 
-                file_path = os.path.join(settings.VIDEOS_ROOT, f'{video_id}.{ext}')
-                post.media_link = f'{settings.THIS_HOST}/videos/{video_id}.{ext}'
-                post.file_path = file_path
-                if not os.path.exists(file_path):
-                    links.append(post.comments_full)
+            file_path = os.path.join(settings.VIDEOS_ROOT, f'{video_id}.{ext}')
+            post.video_url = f'{settings.APP_URL}/videos/{video_id}.{ext}'
+            post.file_path = file_path
+            post.save()
+            if not os.path.exists(file_path):
+                links.append(post.comments)
         ydl.download(links)
 
 
 @celery_app.task
 def publish_sub(subreddit_id: int, blank: bool):
     subreddit = Subreddit.objects.get(pk=subreddit_id)
-    raw_posts = fetch(subreddit.name, limit=settings.REDDIT_FETCH_SIZE)
+    raw_posts = subreddit.get_posts()
     posts = pack_posts(raw_posts, subreddit)
     posts = apply_filters(posts, subreddit)
-    load_videos(posts)
+
+    # load_videos(posts)
     if blank:
-        publish_blank(posts)
-    else:
-        publish_posts(posts)
+        for post in posts:
+            logger.info(f"Blank publishing: {post!r}")
+            post.save()
+        return
+
+    for post in posts:
+        post.save()
+    posts = list(filter(lambda p: p.status != Post.STATUS_ACCEPTED, posts))
+    posts = [p.normalize() for p in posts]
+
+    for chat in Chat.objects.filter(subs__subreddits=subreddit).distinct():
+        chat.publish(posts)
 
 
 @celery_app.task
-def fetch_and_publish(force=False, blank=False):
+def fetch_and_publish(blank=False):
     logger.info('Publishing reddit posts...')
-
-    jobs = []
-    for channel in Channel.objects.all():
-        subs = channel.subreddit_set.filter(active=True)
-        for subreddit in subs:
-            job_sig = publish_sub.s(subreddit.id, blank)
-            jobs.append(job_sig)
-    publishing_job = chord(jobs)
-    publishing_job.apply_async()
+    for subreddit in Subreddit.objects.filter(active=True):
+        publish_sub.deplay(subreddit.id, blank)
 
 
 @celery_app.task
@@ -96,7 +98,8 @@ def publish_post_task(post_id, post_title: bool):
     post.status = Post.STATUS_ACCEPTED
     post.save()
     load_videos([post])
-    publish_post(post, post_title)
+    # todo
+    # publish_post(post, post_title)
 
 
 @celery_app.task

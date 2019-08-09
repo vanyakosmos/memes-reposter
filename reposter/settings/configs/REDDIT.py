@@ -1,3 +1,3 @@
 import easy_env
 
-REDDIT_FETCH_SIZE = easy_env.get_int('REDDIT_FETCH_SIZE', default=100)
+REDDIT_POSTS_LIMIT = easy_env.get_int('REDDIT_POSTS_LIMIT', default=20)

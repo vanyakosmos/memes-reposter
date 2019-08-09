@@ -15,9 +15,9 @@ def score_filter(posts: List[Post], subreddit: Subreddit):
     """Score pass."""
     new_posts = []
     for post in posts:
-        if post.score > subreddit.score_limit:
+        if post.score > subreddit.score_limit_repost:
             new_posts.append(post)
-        elif post.score > subreddit.low_score_limit and subreddit.on_moderation:
+        elif post.score > subreddit.score_limit:
             post.status = Post.STATUS_PENDING
             new_posts.append(post)
     return new_posts
@@ -35,9 +35,10 @@ def inner_unique_filter(posts: List[Post], _: Subreddit):
     res = []
     urls = set()
     for post in posts:
-        if post.link not in urls:
+        post_urls = {post.url, post.photo_url, post.video_url} - {None}
+        if all(url not in urls for url in post_urls):
             res.append(post)
-            urls.add(post.link)
+        urls |= post_urls
     return res
 
 
@@ -57,7 +58,7 @@ def unique_filter(posts: List[Post], _: Subreddit):
     new_posts = []
     for post in posts:
         try:
-            old_post = Post.objects.get(Q(reddit_id=post.reddit_id) | Q(link=post.link))
+            old_post = Post.objects.get(Q(reddit_id=post.reddit_id) | Q(link=post.url))
         except Post.DoesNotExist:
             old_post = None
 
@@ -78,11 +79,6 @@ def keywords_filter(posts: List[Post], subreddit: Subreddit):
     return [post for post in posts if not any(map(lambda k: k in keywords, post.title_terms))]
 
 
-@log_size
-def links_filter(posts: List[Post], _: Subreddit):
-    return [post for post in posts if not post.is_not_media()]
-
-
 def apply_filters(posts: List[Post], subreddit: Subreddit) -> iter:
     filters = [
         score_filter,
@@ -90,7 +86,6 @@ def apply_filters(posts: List[Post], subreddit: Subreddit) -> iter:
         inner_unique_filter,
         unique_filter,
         keywords_filter,
-        links_filter,
     ]
     posts = reduce(lambda ps, f: f(ps, subreddit), filters, posts)
     return posts
