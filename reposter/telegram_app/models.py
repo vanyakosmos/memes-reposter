@@ -136,7 +136,7 @@ class Chat(models.Model):
             for m in post.medias:
                 qs |= Q(url=m.url)
             if Message.objects.filter(chat=self).filter(qs).exists():
-                logger.debug(f"Already in the chat: {post}")
+                logger.debug(f"Already in the chat")
                 continue
             msg = publish_post(self, post)
             if msg:
@@ -147,13 +147,13 @@ class Chat(models.Model):
                     url=post.url,
                     text=post.text,
                 )
-                logger.debug('Published %3d/%d: %s', i + 1, size)
+                logger.debug('Published %3d/%d', i + 1, size)
             else:
-                logger.debug('Error %3d/%d: %s', i + 1, size)
+                logger.debug('Error %3d/%d', i + 1, size)
             sleep(0.5)  # prevent burst throttling
 
 
-# todo: allow to admin through admin
+# todo: allow to edit message through admin
 class Message(models.Model):
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
     message_id = models.CharField(max_length=255)

@@ -23,6 +23,7 @@ def publish_feed(feed_id: int, blank: bool):
         logger.exception(str(e))
         return
     posts = filter_posts(posts)
+    logger.debug(f"posts: {posts}")
     for p in posts:
         p.save()
     if blank:

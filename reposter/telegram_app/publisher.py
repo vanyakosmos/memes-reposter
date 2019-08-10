@@ -48,7 +48,7 @@ def publish_text(chat: Chat, post: Post):
     if title:
         text = f'*{title}*\n\n{text}'
 
-    keyboard_markup = build_keyboard_markup(post, pass_original=False)
+    keyboard_markup = build_keyboard_markup(post)
     return bot.send_message(
         text=text,
         chat_id=chat.telegram_id,
@@ -63,7 +63,7 @@ def publish_post_link(chat: Chat, post: Post):
     if title:
         text = title + f'\n{text}'
 
-    keyboard_markup = build_keyboard_markup(post, pass_original=False)
+    keyboard_markup = build_keyboard_markup(post)
     return bot.send_message(
         text=text,
         chat_id=chat.telegram_id,
@@ -80,10 +80,14 @@ def publish_media_post(chat: Chat, post: Post):
         'reply_markup': keyboard_markup,
     }
     # need title, post pic and text separately
-    if title and len(title) > MAX_CAPTION_LENGTH:
-        msg = publish_media(post, chat_id=chat.telegram_id)
-        if msg:
-            return bot.send_message(text=title, reply_to_message_id=msg.message_id, **common)
+    if title and len(title) > MAX_CAPTION_LENGTH or len(post.medias) > 1:
+        messages = publish_media(post, chat_id=chat.telegram_id)
+        if messages:
+            return bot.send_message(
+                text=title,
+                reply_to_message_id=messages[0].message_id,
+                **common,
+            )
         return
     # need title, post pic with caption
     if title:
@@ -118,10 +122,10 @@ def publish_media(post: Post, **kwargs):
         return bot.send_photo(photo=media.url, **kwargs)
 
 
-def build_keyboard_markup(post: Post, pass_original=True):
+def build_keyboard_markup(post: Post):
     keyboard = []
-    if pass_original and isinstance(post.medias, Media):
-        keyboard.append(InlineKeyboardButton('original', url=post.url))
+    if post.url and post.url != post.comments:
+        keyboard.append(InlineKeyboardButton('link', url=post.url))
     if post.comments:
         keyboard.append(InlineKeyboardButton('comments', url=post.comments))
 

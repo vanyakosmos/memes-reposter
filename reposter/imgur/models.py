@@ -30,6 +30,9 @@ class ImgurConfig(models.Model):
     )
     active = models.BooleanField(default=True)
 
+    def __str__(self):
+        return f"Imgur({self.score_limit}, {self.allow_albums})"
+
     @staticmethod
     def _tags_to_set(tags_string: str):
         if tags_string:
@@ -62,7 +65,7 @@ class Post(models.Model):
         super().__init__(*args, **kwargs)
 
     def __str__(self):
-        return f'{self.imgur_id} : {self.title}'
+        return f'{self.imgur_id}: {self.title}'
 
     def __repr__(self):
         return f'Post(title={repr(self.title)}, link={repr(self.link)}, is_single={self.is_album})'

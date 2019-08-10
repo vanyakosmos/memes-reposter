@@ -17,4 +17,4 @@ class ImgurConfigAdmin(admin.ModelAdmin):
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    list_display = ('imgur_id', 'config', 'title')
+    list_display = ('imgur_id', 'config', 'title', 'is_album', 'score')
