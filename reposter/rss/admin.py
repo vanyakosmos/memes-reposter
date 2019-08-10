@@ -4,18 +4,12 @@ from django.contrib import admin
 from django.db.models import Case, Value, When
 from django.utils import timezone
 
-from .models import Channel, Post, RssFeed
-
-
-@admin.register(Channel)
-class ChannelAdmin(admin.ModelAdmin):
-    list_display = ('__str__', 'title', 'username', 'publish_picture', 'linked_title', 'short_link')
-    change_list_template = "rss/actions.html"
+from .models import Post, RssFeed
 
 
 @admin.register(RssFeed)
 class RssFeedAdmin(admin.ModelAdmin):
-    list_display = ('__str__', 'channel', 'link', 'active')
+    list_display = ('link', 'title', 'active')
     actions = ('activate', 'deactivate', 'toggle_active')
 
     def activate(self, request, queryset):
@@ -30,7 +24,7 @@ class RssFeedAdmin(admin.ModelAdmin):
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    list_display = ('title', 'feed', 'link', 'created', 'older_then_five_days')
+    list_display = ('title', 'feed', 'url', 'created', 'older_then_five_days')
     ordering = ('-created',)
 
     def older_then_five_days(self, post: Post):

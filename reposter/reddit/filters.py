@@ -65,8 +65,8 @@ def unique_filter(posts: List[Post]):
             do nothing
     if not found old post:
         add new post to list
-
     """
+    # todo: filter for specific subreddit
     new_posts = []
     for post in posts:
         try:

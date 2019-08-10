@@ -6,12 +6,11 @@ from typing import List
 
 import pytz
 import youtube_dl
-from celery.schedules import crontab
 from django.conf import settings
 from django.utils import timezone
 
 from application.celery import app as celery_app
-from core.publisher import publish_posts, publish_post
+from core.publisher import publish_post, publish_posts
 from .filters import apply_filters
 from .models import Post, Subreddit
 
@@ -119,14 +118,3 @@ def delete_old_posts():
             os.remove(file_path)
             logger.info(f'Deleted {file_path}.')
     return deleted
-
-
-@celery_app.on_after_finalize.connect
-def setup_periodic_tasks(sender, **_):
-    logger.info('SCHEDULING REDDIT')
-    # publish
-    fetch_crontab = crontab(hour='*', minute='0,30')
-    sender.add_periodic_task(fetch_crontab, fetch_and_publish.s(), name='reddit.publishing')
-    # clean up
-    clean_crontab = crontab(hour='*/12', minute='55')
-    sender.add_periodic_task(clean_crontab, delete_old_posts.s(), name='reddit.clean_up')

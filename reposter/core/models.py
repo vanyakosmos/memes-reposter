@@ -2,14 +2,23 @@ from django.db import models
 
 from reddit.models import Subreddit
 from telegram_app.models import Chat
+from rss.models import RssFeed
+
+
+class Related(models.ManyToManyField):
+    def __init__(self, to, *args, **kwargs):
+        kwargs.setdefault('related_name', 'subs')
+        kwargs.setdefault('blank', True)
+        super().__init__(to, *args, **kwargs)
 
 
 class Subscription(models.Model):
     name = models.CharField(max_length=255)
     # sources
-    subreddits = models.ManyToManyField(Subreddit, related_name='subs', blank=True)
+    subreddits = Related(Subreddit)
+    rss_feeds = Related(RssFeed)
     # targets
-    telegram_chats = models.ManyToManyField(Chat, related_name='subs', blank=True)
+    telegram_chats = Related(Chat)
 
     def __str__(self):
         return self.name

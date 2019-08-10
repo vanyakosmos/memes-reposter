@@ -129,6 +129,7 @@ class Chat(models.Model):
         logger.debug(f"{len(posts)} posts after filter")
         size = len(posts)
         for i, post in enumerate(posts):
+            logger.debug(repr(post))
             qs = Q(identifier=post.id)
             if post.url:
                 qs |= Q(url=post.url)
@@ -150,12 +151,13 @@ class Chat(models.Model):
                     video_url=post.video_url,
                     text=post.text,
                 )
-                logger.debug('Published %3d/%d: %s', i + 1, size, repr(post))
+                logger.debug('Published %3d/%d: %s', i + 1, size)
             else:
-                logger.debug('Error %3d/%d: %s', i + 1, size, repr(post))
+                logger.debug('Error %3d/%d: %s', i + 1, size)
             sleep(0.5)  # prevent burst throttling
 
 
+# todo: allow to admin through admin
 class Message(models.Model):
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
     message_id = models.CharField(max_length=255)

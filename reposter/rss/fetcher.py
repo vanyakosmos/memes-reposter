@@ -3,11 +3,13 @@ from typing import Optional
 
 import feedparser
 
-from apps.core.errors import ServiceUnavailableException
-from .models import Post
-
+from .models import Post, RssFeed
 
 IMAGE_TAG = re.compile(r'<img.*src="(.+)".*/>')
+
+
+class FeedException(Exception):
+    pass
 
 
 def get_picture(post: dict) -> Optional[str]:
@@ -25,27 +27,22 @@ def get_picture(post: dict) -> Optional[str]:
 def posts_iter(feed_link: str):
     feed = feedparser.parse(feed_link)
     if feed.get('status', 500) != 200:
-        raise ServiceUnavailableException(f"Failed to fetch feed {feed_link}.")
+        raise FeedException(f"Failed to fetch feed {feed_link}.")
     if feed['bozo'] != 0:
         exc = str(feed.get('bozo_exception', 'none'))
         msg = f"Feed {feed_link} is malformed: {exc}"
-        raise ServiceUnavailableException(msg)
+        raise FeedException(msg)
     entities = feed.get('entries', [])
     return entities[::-1]
 
 
-def fetch_posts(feed_link: str, link_field: Optional[str] = None):
-    posts = []
-    for post in posts_iter(feed_link):
-        title = post['title']
-        link = post[link_field or 'link']
-        pic_link = get_picture(post)
-        comments_link = post.get('comments', None)
-        p = Post(
-            title=title,
-            link=link,
-            pic_link=pic_link,
-            comments_link=comments_link,
-        )
-        posts.append(p)
-    return posts
+def fetch_posts(feed: RssFeed):
+    return [
+        Post(
+            feed=feed,
+            title=post['title'],
+            url=post[feed.link_field or 'link'],
+            photo_url=get_picture(post),
+            comments=post.get('comments', None),
+        ) for post in posts_iter(feed.link)
+    ]

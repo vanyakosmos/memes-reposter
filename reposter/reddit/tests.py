@@ -6,7 +6,7 @@ from reddit.tasks import fetch_and_publish, publish_sub
 from . import filters
 from .models import Subreddit, Post
 from core.models import Subscription
-from telegram_app.models import Chat
+from telegram_app.models import Chat, Message
 
 
 class TestModels:
@@ -18,7 +18,7 @@ class TestModels:
         assert posts[0].subreddit_name == 'pics'
 
 
-@pytest.mark.usefixtures('create_post')
+@pytest.mark.usefixtures('create_reddit_post')
 @pytest.mark.django_db
 class TestFilters:
     def test_score_filter(self):
@@ -85,9 +85,9 @@ class TestFilters:
 
     def test_unique_filter(self):
         sub = Subreddit.objects.create(name='sub')
-        self.create_post(subreddit=sub, id='a', status=Post.ACCEPTED)
-        p2 = self.create_post(subreddit=sub, id='b', status=Post.PENDING)
-        self.create_post(subreddit=sub, id='c', status=Post.REJECTED)
+        self.create_reddit_post(subreddit=sub, id='a', status=Post.ACCEPTED)
+        p2 = self.create_reddit_post(subreddit=sub, id='b', status=Post.PENDING)
+        self.create_reddit_post(subreddit=sub, id='c', status=Post.REJECTED)
         posts = [
             Post(subreddit=sub, reddit_id='a'),
             Post(subreddit=sub, reddit_id='b', status=Post.ACCEPTED),
@@ -114,6 +114,7 @@ class TestFilters:
         pass
 
 
+@pytest.mark.usefixtures('mock_bot')
 @pytest.mark.django_db
 class TestTasks:
     def test_fetch_and_publish_blank(self, mocker):
@@ -127,15 +128,18 @@ class TestTasks:
     def test_fetch_and_publish(self, mocker):
         mocker.patch.object(publish_sub, 'delay', publish_sub)
         mocker.patch.object(Chat, 'update_from_telegram')
-        mocker.patch.object(Chat, 'publish')
 
         subr = Subreddit.objects.create(name='pics', score_limit=0, score_limit_repost=0)
-        chat = Chat.objects.create(telegram_id='1111', username='username', type='private')
+        chat1 = Chat.objects.create(telegram_id='1111', username='username1', type='private')
+        chat2 = Chat.objects.create(telegram_id='2222', username='username2', type='private')
         sub = Subscription.objects.create(name='pics')
-        sub.telegram_chats.add(chat)
+        sub.telegram_chats.add(chat1, chat2)
         sub.subreddits.add(subr)
 
         with override_settings(REDDIT_POSTS_LIMIT=2):
             fetch_and_publish(blank=False)
         assert Post.objects.count() == 2
         assert Post.objects.filter(status=Post.ACCEPTED).count() == 2
+        assert Message.objects.count() == 4
+        assert Message.objects.filter(chat=chat1).count() == 2
+        assert Message.objects.filter(chat=chat2).count() == 2

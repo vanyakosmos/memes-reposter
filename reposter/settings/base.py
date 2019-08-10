@@ -30,8 +30,8 @@ INSTALLED_APPS = [
     'core.apps.CoreConfig',
     'reddit.apps.RedditConfig',
     'telegram_app.apps.TelegramAppConfig',
+    'rss.apps.RssConfig',
     # 'imgur.apps.ImgurConfig',
-    # 'rss.apps.RssConfig',
 ]
 
 MIDDLEWARE = [

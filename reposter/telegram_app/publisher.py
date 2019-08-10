@@ -29,7 +29,7 @@ def publish_post(chat: Chat, post: Post):
         if post.url:
             return publish_post_link(chat, post)
     except TelegramError as e:
-        logger.error('Error %s: %s for post %s', type(e), e, repr(post))
+        logger.error('Error %s: %s', type(e), e)
 
 
 def format_title(post: Post, escape=False) -> Optional[str]:
@@ -104,8 +104,8 @@ def publish_media(post: Post, **kwargs):
 def build_keyboard_markup(post: Post, pass_original=True):
     keyboard = []
     url = post.photo_url or post.url
-    if pass_original and url:
-        keyboard.append(InlineKeyboardButton('original', url=url))
+    if pass_original and url and not post.video_url:
+        keyboard.append(InlineKeyboardButton('open', url=url))
     if post.comments:
         keyboard.append(InlineKeyboardButton('comments', url=post.comments))
 
