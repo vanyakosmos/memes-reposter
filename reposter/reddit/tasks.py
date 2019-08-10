@@ -62,7 +62,7 @@ def publish_sub(subreddit_id: int, blank: bool):
     subreddit = Subreddit.objects.get(pk=subreddit_id)
     raw_posts = subreddit.get_posts()
     posts = pack_posts(raw_posts, subreddit)
-    posts = apply_filters(posts, subreddit)
+    posts = apply_filters(posts)
 
     if blank:
         for post in posts:

@@ -5,7 +5,7 @@ from typing import List
 from django.db.models import Q
 
 from core.filters import log_size
-from .models import Post, Subreddit
+from .models import Post
 
 logger = logging.getLogger(__name__)
 
@@ -66,11 +66,12 @@ def unique_filter(posts: List[Post]):
     if not found old post:
         add new post to list
     """
-    # todo: filter for specific subreddit
+    subreddit = get_subreddit(posts)
     new_posts = []
     for post in posts:
         try:
-            old_post = Post.objects.get(Q(reddit_id=post.reddit_id) | Q(url=post.url))
+            qs = Post.objects.filter(subreddit=subreddit)
+            old_post = qs.get(Q(reddit_id=post.reddit_id) | Q(url=post.url))
         except Post.DoesNotExist:
             old_post = None
 
@@ -92,7 +93,7 @@ def keywords_filter(posts: List[Post]):
     return [post for post in posts if not any(map(lambda k: k in keywords, post.tokens))]
 
 
-def apply_filters(posts: List[Post], subreddit: Subreddit) -> iter:
+def apply_filters(posts: List[Post]) -> iter:
     filters = [
         score_filter,
         nsfw_filter,
