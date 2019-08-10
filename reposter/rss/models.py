@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from core.fields import URLField
-from core.post import Post as NormalPost
+from core.post import Post as NormalPost, Media
 
 
 class RssFeed(models.Model):
@@ -45,12 +45,9 @@ class Post(models.Model):
     def normalize(self):
         return NormalPost(
             id=f"rss:{self.url}",
-            title=self.title,
             url=self.url,
-            photo_url=self.photo_url,
-            video_url=None,
-            text=None,
             comments=self.comments,
-            file_path=None,
-            tokens=self.title.split(),
+            title=self.title,
+            keywords=self.title.split(),
+            medias=[Media(url=self.photo_url)] if self.photo_url else []
         )

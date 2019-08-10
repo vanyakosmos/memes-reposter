@@ -34,7 +34,7 @@ def mock_bot(mocker):
             None,
         )
 
-    methods = ['send_message', 'send_video', 'send_photo']
+    methods = ['send_message', 'send_video', 'send_photo', 'send_media_group']
     for method in methods:
         mocker.patch.object(Bot, method, send)
 

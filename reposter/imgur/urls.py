@@ -1,7 +1,6 @@
 from django.urls import path
 
-from apps.imgur import views
-
+from . import views
 
 urlpatterns = [
     path('publish/', views.publish_view),

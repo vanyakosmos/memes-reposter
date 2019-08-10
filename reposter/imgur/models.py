@@ -1,57 +1,39 @@
-from collections import namedtuple
 from typing import List
 
+from django.contrib.postgres.fields import ArrayField, JSONField
 from django.core import validators
-from django.core.exceptions import ValidationError
 from django.db import models
-from solo.models import SingletonModel
-from telegram import TelegramError
 
-from memes_reposter.telegram_bot import bot
+from core.post import Post as NormalPost, Media
 
 
-class ImgurConfig(SingletonModel):
-    score_limit = models.IntegerField(default=1000,
-                                      validators=[validators.MinValueValidator(0)])
+class ImgurConfig(models.Model):
+    score_limit = models.IntegerField(
+        default=1000,
+        validators=[validators.MinValueValidator(0)],
+    )
+    allow_albums = models.BooleanField(default=True)
     good_tags = models.TextField(
         blank=True,
-        help_text="List of good tags. Should be separated with comma."
+        help_text="List of good tags. Should be separated with comma.",
     )
     bad_tags = models.TextField(
         blank=True,
-        help_text="List of bad tags. Should be separated with comma."
+        help_text="List of bad tags. Should be separated with comma.",
     )
     exclude_mode = models.BooleanField(
         default=True,
-        help_text="If true then posts with bad tags will be filtered out. "
-                  "Otherwise only posts from with good tags will pass the filter."
+        help_text=(
+            "If true then posts with bad tags will be filtered out. "
+            "Otherwise only posts from with good tags will pass the filter."
+        ),
     )
-    channel_username = models.CharField(max_length=200, null=True)
-    chat_id = models.BigIntegerField(null=True, blank=True)
-
-    def _bot_has_access(self):
-        try:
-            bot.get_chat(chat_id=self.channel_username)
-        except TelegramError:
-            raise ValidationError("Bot doesn't have access to this channel.")
-
-    def _bot_id_admin(self):
-        admins = bot.get_chat_administrators(chat_id=self.channel_username)
-        for admin in admins:
-            if admin.user.username == bot.username:
-                if not admin.can_post_messages:
-                    raise ValidationError("Bot can't post messages.")
-                break
-        else:
-            raise ValidationError("Bot is not admin.")
+    active = models.BooleanField(default=True)
 
     @staticmethod
     def _tags_to_set(tags_string: str):
         if tags_string:
-            return {
-                '_'.join(tag.strip().split())
-                for tag in tags_string.split(',')
-            }
+            return {'_'.join(tag.strip().split()) for tag in tags_string.split(',')}
         return set()
 
     @property
@@ -62,32 +44,20 @@ class ImgurConfig(SingletonModel):
     def good_tags_set(self):
         return self._tags_to_set(self.good_tags)
 
-    def clean(self):
-        self._bot_has_access()
-        self._bot_id_admin()
-
-    def save(self, *args, **kwargs):
-        if self.channel_username:
-            chat = bot.get_chat(chat_id=self.channel_username)
-            self.chat_id = chat.id
-        return super().save(*args, **kwargs)
-
-
-Media = namedtuple('Media', 'link desc animated')
-PostMeta = namedtuple('PostMeta', 'desc score')
-
 
 class Post(models.Model):
+    config = models.ForeignKey(ImgurConfig, on_delete=models.CASCADE)
     imgur_id = models.CharField(max_length=200)
     title = models.TextField()
+    description = models.TextField(null=True, blank=True)
+    score = models.IntegerField()
     is_album = models.BooleanField()
-    tags = models.TextField()
-    images_links = models.TextField()
+    tags = ArrayField(models.CharField(max_length=255), default=list, blank=True)
+    media_data = JSONField(default=list, blank=True)
     images_count = models.IntegerField(default=1)
     created = models.DateTimeField(auto_now_add=True)
 
     def __init__(self, *args, **kwargs):
-        self._post_meta = None  # type: PostMeta
         self._medias = []  # type: List[Media]
         super().__init__(*args, **kwargs)
 
@@ -105,10 +75,6 @@ class Post(models.Model):
         return base + self.imgur_id
 
     @property
-    def meta(self):
-        return self._post_meta
-
-    @property
     def medias(self):
         return self._medias
 
@@ -116,13 +82,12 @@ class Post(models.Model):
     def medias(self, images: list):
         self._medias = [
             Media(
-                link=item['mp4'] if item['animated'] else item['link'],
-                animated=item['animated'],
-                desc=item['description'],
-            )
-            for item in images
+                url=data['mp4'] if data['animated'] else data['link'],
+                video=data['animated'],
+                caption=data['description'],
+            ) for data in images
         ]
-        self.images_links = ', '.join([i.link for i in self._medias])
+        self.media_data = self._medias
 
     @property
     def is_single(self):
@@ -130,25 +95,33 @@ class Post(models.Model):
 
     @property
     def tags_set(self):
-        if self.tags:
-            return set(self.tags.split(', '))
-        return set()
+        return set(self.tags)
 
     @classmethod
-    def from_dict(cls, item: dict):
+    def from_dict(cls, data: dict, imgur: ImgurConfig):
         post = Post(
-            imgur_id=item['id'],
-            title=item['title'],
-            is_album=item['is_album'],
-            tags=', '.join([t['name'] for t in item['tags']]),
-            images_count=item.get('images_count', 1),
+            config=imgur,
+            imgur_id=data['id'],
+            title=data['title'],
+            description=data['description'],
+            score=data['score'],
+            is_album=data['is_album'],
+            tags=[t['name'] for t in data['tags']],
+            images_count=data.get('images_count', 1),
         )
-        if item['is_album']:
-            post.medias = item['images']
+        if data['is_album']:
+            post.medias = data['images']
         else:
-            post.medias = [item]
-        post._post_meta = PostMeta(
-            desc=item['description'],
-            score=item['score'],
-        )
+            post.medias = [data]
         return post
+
+    def normalize(self):
+        return NormalPost(
+            id=f"imgur:{self.id}",
+            title=self.title,
+            description=self.description,
+            url=self.link,
+            text=None,
+            comments=self.link,
+            medias=self.medias,
+        )

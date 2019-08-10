@@ -8,10 +8,10 @@ from django.core import validators
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from .api import get_about, get_posts, get_reddit_url
+from .fetcher import get_about, get_posts, get_reddit_url
 from .utils import get_photo_url, get_video_url
 from core.fields import URLField
-from core.post import Post as NormalPost
+from core.post import Post as NormalPost, Media
 
 NOT_ALPHANUMERIC = re.compile(r'[^\w\s]')
 logger = logging.getLogger(__name__)
@@ -129,12 +129,16 @@ class Post(models.Model):
     def normalize(self, with_title=True):
         return NormalPost(
             id=f"reddit:{self.reddit_id}",
-            title=self.title if with_title else None,
             url=self.url,
-            photo_url=self.photo_url,
-            video_url=self.video_url,
-            text=self.text,
             comments=self.comments,
-            file_path=self.file_path,
-            tokens=self.tokens,
+            title=self.title if with_title else None,
+            text=self.text,
+            keywords=self.tokens,
+            medias=[
+                Media(
+                    url=self.photo_url or self.video_url,
+                    video=bool(self.video_url),
+                    file_path=self.file_path,
+                )
+            ] if self.photo_url or self.video_url else [],
         )

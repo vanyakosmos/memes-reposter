@@ -9,10 +9,12 @@ from telegram import (
     InlineKeyboardButton,
     MAX_CAPTION_LENGTH,
     ParseMode,
+    InputMediaVideo,
+    InputMediaPhoto,
 )
 
 from .bot import bot
-from core.post import Post
+from core.post import Post, Media
 
 logger = logging.getLogger(__name__)
 REPOST_REGEX = re.compile(r'\(\s*(x-?|re)post .+\)')
@@ -24,7 +26,7 @@ def publish_post(chat: Chat, post: Post):
     try:
         if post.text:
             return publish_text(chat, post)
-        if post.photo_url or post.video_url:
+        if post.medias:
             return publish_media_post(chat, post)
         if post.url:
             return publish_post_link(chat, post)
@@ -90,22 +92,36 @@ def publish_media_post(chat: Chat, post: Post):
     return publish_media(post, **common)
 
 
+def get_media_input(media: Media):
+    Input = InputMediaPhoto
+    if media.video:
+        Input = InputMediaVideo
+    return Input(media.url, caption=media.caption)
+
+
 def publish_media(post: Post, **kwargs):
-    if post.photo_url:
-        return bot.send_photo(photo=post.photo_url, **kwargs)
-    if post.video_url:
-        if post.file_path:
-            with open(post.file_path, 'rb') as f:
-                return bot.send_video(video=f, **kwargs)
-        else:
-            return bot.send_video(video=post.video_url, **kwargs)
+    # post album
+    if len(post.medias) > 1:
+        medias = [get_media_input(m) for m in post.medias[:10]]
+        return bot.send_media_group(media=medias, **kwargs)
+
+    if len(post.medias) == 1:
+        media = post.medias[0]
+        # post video using url or local file
+        if media.video:
+            if media.file_path:
+                with open(media.file_path, 'rb') as f:
+                    return bot.send_video(video=f, **kwargs)
+            else:
+                return bot.send_video(video=media.url, **kwargs)
+        # post photo
+        return bot.send_photo(photo=media.url, **kwargs)
 
 
 def build_keyboard_markup(post: Post, pass_original=True):
     keyboard = []
-    url = post.photo_url or post.url
-    if pass_original and url and not post.video_url:
-        keyboard.append(InlineKeyboardButton('open', url=url))
+    if pass_original and isinstance(post.medias, Media):
+        keyboard.append(InlineKeyboardButton('original', url=post.url))
     if post.comments:
         keyboard.append(InlineKeyboardButton('comments', url=post.comments))
 

@@ -3,8 +3,7 @@ from typing import List
 
 import requests
 
-from apps.imgur.models import Post
-
+from .models import Post
 
 logger = logging.getLogger(__name__)
 
@@ -18,9 +17,9 @@ def fetch(client_id: str, limit=100):
 
     url = f'https://api.imgur.com/3/gallery/{section}/{sort}'
     querystring = {
-        "showViral": f"{show_viral}",
-        "mature": f"{show_mature}",
-        "album_previews": f"{album_previews}"
+        "showViral": show_viral,
+        "mature": show_mature,
+        "album_previews": album_previews,
     }
     headers = {'authorization': f'Client-ID {client_id}'}
     response = requests.get(url, headers=headers, params=querystring)

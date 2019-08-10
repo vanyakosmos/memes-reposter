@@ -1,32 +1,46 @@
 from functools import reduce
 from typing import List
 
-from apps.core.filters import log_size
-from .models import Post, ImgurConfig
+from core.filters import log_size
+from .models import Post
+
+
+class FilterException(Exception):
+    pass
+
+
+def get_imgur_config(posts: List[Post]):
+    if not posts:
+        raise FilterException()
+    return posts[0].config
 
 
 @log_size
-def score_filter(posts: List[Post], config: ImgurConfig):
+def albums_filter(posts: List[Post]):
+    config = get_imgur_config(posts)
+    if config.allow_albums:
+        return posts
+    return [post for post in posts if not post.is_album]
+
+
+@log_size
+def score_filter(posts: List[Post]):
     """Score pass."""
-    return [
-        post for post in posts
-        if post.meta.score > config.score_limit
-    ]
+    config = get_imgur_config(posts)
+    return [post for post in posts if post.score > config.score_limit]
 
 
 @log_size
-def unique_filter(posts: List[Post], _: ImgurConfig):
+def unique_filter(posts: List[Post]):
     """Filter out published posts."""
     ids_list = [p.imgur_id for p in posts]
     ids_in_db = set(Post.objects.filter(imgur_id__in=ids_list).values_list('imgur_id', flat=True))
-    return [
-        post for post in posts
-        if post.imgur_id not in ids_in_db
-    ]
+    return [post for post in posts if post.imgur_id not in ids_in_db]
 
 
 @log_size
-def exclude_by_tags_filter(posts: List[Post], config: ImgurConfig):
+def exclude_by_tags_filter(posts: List[Post]):
+    config = get_imgur_config(posts)
     if not config.exclude_mode:
         return posts
     result = []
@@ -37,7 +51,8 @@ def exclude_by_tags_filter(posts: List[Post], config: ImgurConfig):
 
 
 @log_size
-def include_by_tags_filter(posts: List[Post], config: ImgurConfig):
+def include_by_tags_filter(posts: List[Post]):
+    config = get_imgur_config(posts)
     if config.exclude_mode:
         return posts
     result = []
@@ -47,12 +62,16 @@ def include_by_tags_filter(posts: List[Post], config: ImgurConfig):
     return result
 
 
-def apply_filters(posts: List[Post], config: ImgurConfig) -> iter:
+def apply_filters(posts: List[Post]) -> iter:
     filters = [
+        albums_filter,
         score_filter,
         unique_filter,
         exclude_by_tags_filter,
         include_by_tags_filter,
     ]
-    posts = reduce(lambda ps, f: f(ps, config), filters, posts)
+    try:
+        posts = reduce(lambda ps, f: f(ps), filters, posts)
+    except FilterException:
+        return []
     return posts

@@ -1,14 +1,20 @@
 from django.contrib import admin
 
 from .models import Post, ImgurConfig
-from solo.admin import SingletonModelAdmin
 
 
 @admin.register(ImgurConfig)
-class ImgurConfigAdmin(SingletonModelAdmin):
-    readonly_fields = ('chat_id',)
+class ImgurConfigAdmin(admin.ModelAdmin):
+    list_display = (
+        'score_limit',
+        'allow_albums',
+        'exclude_mode',
+        'good_tags',
+        'bad_tags',
+        'active',
+    )
 
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('imgur_id', 'config', 'title')

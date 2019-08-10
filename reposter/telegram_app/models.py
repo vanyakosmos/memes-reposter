@@ -133,10 +133,8 @@ class Chat(models.Model):
             qs = Q(identifier=post.id)
             if post.url:
                 qs |= Q(url=post.url)
-            if post.photo_url:
-                qs |= Q(url=post.photo_url)
-            if post.video_url:
-                qs |= Q(url=post.video_url)
+            for m in post.medias:
+                qs |= Q(url=m.url)
             if Message.objects.filter(chat=self).filter(qs).exists():
                 logger.debug(f"Already in the chat: {post}")
                 continue
@@ -147,8 +145,6 @@ class Chat(models.Model):
                     message_id=msg.message_id,
                     identifier=post.id,
                     url=post.url,
-                    photo_url=post.photo_url,
-                    video_url=post.video_url,
                     text=post.text,
                 )
                 logger.debug('Published %3d/%d: %s', i + 1, size)

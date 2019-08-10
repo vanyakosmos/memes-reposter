@@ -1,7 +1,4 @@
-reset:
-	rm db.sqlite3
-	./manage.py makemigrations
-	./manage.py migrate
+createsuper:
 	./manage.py createsuperuser --username admin --email admin@admin.org
 
 mig:
@@ -9,7 +6,7 @@ mig:
 	./manage.py migrate
 
 celery:
-	./run/celery.sh
+	./scripts/celery.sh
 
 web:
-	./run/web.sh prod
+	./scripts/web.sh prod

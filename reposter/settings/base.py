@@ -23,7 +23,6 @@ INSTALLED_APPS = [
     'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
     # 3rd parties
-    'solo.apps.SoloAppConfig',
     'rest_framework',
     'django_celery_beat',
     # own apps
@@ -31,7 +30,7 @@ INSTALLED_APPS = [
     'reddit.apps.RedditConfig',
     'telegram_app.apps.TelegramAppConfig',
     'rss.apps.RssConfig',
-    # 'imgur.apps.ImgurConfig',
+    'imgur.apps.ImgurConfig',
 ]
 
 MIDDLEWARE = [
