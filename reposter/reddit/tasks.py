@@ -105,8 +105,9 @@ def publish_post_task(post_id, post_title: bool):
 
 
 @celery_app.task
-def delete_old_posts():
-    time = timezone.now() - timedelta(days=3)
+def delete_old_posts(days=None):
+    days = days or settings.REDDIT_DELETE_OLD_DAYS
+    time = timezone.now() - timedelta(days=days)
     posts = Post.objects.filter(created__lte=time)
     deleted, _ = posts.delete()
     logger.info(f'Deleted {deleted} post(s).')

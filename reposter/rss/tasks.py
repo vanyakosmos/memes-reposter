@@ -41,9 +41,9 @@ def fetch_and_publish(blank=False):
 
 
 @celery_app.task
-def delete_old_posts_db():
+def delete_old_posts_db(keep=None):
     stats = {}
-    keep = settings.RSS_CLEAN_KEEP
+    keep = keep or settings.RSS_CLEAN_KEEP
     for feed in RssFeed.objects.all():
         posts = feed.posts
         posts = posts.order_by('-created')[keep:]  # keep latest
