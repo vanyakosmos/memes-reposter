@@ -23,9 +23,12 @@ INSTALLED_APPS = [
     'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
     # 3rd parties
+    'django_filters',
     'rest_framework',
+    'drf_yasg',
     'django_celery_beat',
     # own apps
+    'api.apps.ApiConfig',
     'core.apps.CoreConfig',
     'reddit.apps.RedditConfig',
     'telegram_app.apps.TelegramAppConfig',

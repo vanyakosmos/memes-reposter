@@ -4,7 +4,6 @@ from datetime import timedelta
 
 import easy_env
 
-
 PORT = os.environ.get('PORT', '8000')
 WEB_WORKERS = easy_env.get_int('WEB_WORKERS', multiprocessing.cpu_count())
 
