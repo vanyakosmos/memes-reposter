@@ -3,6 +3,11 @@ from django.contrib import admin
 from .models import Post, ImgurConfig
 
 
+class SubscriptionInline(admin.TabularInline):
+    model = ImgurConfig.subs.through
+    extra = 0
+
+
 @admin.register(ImgurConfig)
 class ImgurConfigAdmin(admin.ModelAdmin):
     list_display = (
@@ -13,6 +18,7 @@ class ImgurConfigAdmin(admin.ModelAdmin):
         'bad_tags',
         'active',
     )
+    inlines = (SubscriptionInline,)
 
 
 @admin.register(Post)

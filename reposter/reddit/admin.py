@@ -3,6 +3,11 @@ from django.contrib import admin
 from .models import Post, Subreddit
 
 
+class SubscriptionInline(admin.TabularInline):
+    model = Subreddit.subs.through
+    extra = 0
+
+
 @admin.register(Subreddit)
 class SubredditAdmin(admin.ModelAdmin):
     list_display = (
@@ -12,6 +17,7 @@ class SubredditAdmin(admin.ModelAdmin):
         'show_title',
         'active',
     )
+    inlines = (SubscriptionInline,)
 
 
 @admin.register(Post)

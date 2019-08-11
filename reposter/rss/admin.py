@@ -7,10 +7,16 @@ from django.utils import timezone
 from .models import Post, RssFeed
 
 
+class SubscriptionInline(admin.TabularInline):
+    model = RssFeed.subs.through
+    extra = 0
+
+
 @admin.register(RssFeed)
 class RssFeedAdmin(admin.ModelAdmin):
     list_display = ('link', 'title', 'active')
     actions = ('activate', 'deactivate', 'toggle_active')
+    inlines = (SubscriptionInline,)
 
     def activate(self, request, queryset):
         queryset.update(active=True)
