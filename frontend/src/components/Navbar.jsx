@@ -22,7 +22,7 @@ const Navbar = () => {
   const classes = useStyles()
 
   return (
-    <AppBar position="static">
+    <AppBar position="fixed">
       <Toolbar>
         <Grid container spacing={1}>
           <Grid item>
