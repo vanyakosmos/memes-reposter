@@ -41,7 +41,7 @@ def fetch_and_publish(blank=False):
 
 
 @celery_app.task
-def delete_old_posts_db(keep=None):
+def delete_old_posts(keep=None):
     stats = {}
     keep = keep or settings.RSS_CLEAN_KEEP
     for feed in RssFeed.objects.all():
