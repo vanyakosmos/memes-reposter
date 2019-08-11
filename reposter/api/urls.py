@@ -5,6 +5,7 @@ from drf_yasg.generators import OpenAPISchemaGenerator
 from drf_yasg.views import get_schema_view
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAdminUser
+from rest_framework_jwt.views import obtain_jwt_token, refresh_jwt_token, verify_jwt_token
 
 
 class CustomOpenAPISchemaGenerator(OpenAPISchemaGenerator):
@@ -27,6 +28,12 @@ schema_view = get_schema_view(
     generator_class=CustomOpenAPISchemaGenerator,
 )
 
+auth_urls = [
+    path(r'obtain/', obtain_jwt_token),
+    path(r'refresh/', refresh_jwt_token),
+    path(r'verify/', verify_jwt_token),
+]
+
 urlpatterns = [
     # API Documentation
     re_path(
@@ -38,6 +45,8 @@ urlpatterns = [
     path('docs/', schema_view.with_ui('redoc', cache_timeout=None), name='api-docs'),
     path('client/', schema_view.with_ui('swagger', cache_timeout=None), name='api-client'),
 
+    # Auth
+    path('auth/', include(auth_urls)),
     # API endpoints
     path('reddit/', include('reddit.api.urls')),
     path('imgur/', include('imgur.api.urls')),
