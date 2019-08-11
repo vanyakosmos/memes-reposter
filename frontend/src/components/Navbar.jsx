@@ -1,21 +1,20 @@
-import React from "react"
-import { makeStyles } from "@material-ui/core/styles"
-import AppBar from "@material-ui/core/AppBar"
-import Toolbar from "@material-ui/core/Toolbar"
-import Typography from "@material-ui/core/Typography"
-import Button from "@material-ui/core/Button"
-import IconButton from "@material-ui/core/IconButton"
-import MenuIcon from "@material-ui/icons/Menu"
+import Grid from '@material-ui/core/Grid'
+import { Link } from 'gatsby'
+import React from 'react'
+import { makeStyles } from '@material-ui/core/styles'
+import AppBar from '@material-ui/core/AppBar'
+import Toolbar from '@material-ui/core/Toolbar'
+import Typography from '@material-ui/core/Typography'
+import Button from '@material-ui/core/Button'
 
-const useStyles = makeStyles(theme => ({
+const useStyles = makeStyles(({ palette }) => ({
   root: {
     flexGrow: 1,
   },
-  menuButton: {
-    marginRight: theme.spacing(2),
-  },
-  title: {
-    flexGrow: 1,
+  link: {
+    color: 'inherit',
+    textDecoration: 'none',
+    textTransform: 'none',
   },
 }))
 
@@ -25,12 +24,34 @@ const Navbar = () => {
   return (
     <AppBar position="static">
       <Toolbar>
-        <Typography variant="h6" className={classes.title}>
-          Reposter
-        </Typography>
-        <Button color="inherit" component="a" href="/admin">
-          admin
-        </Button>
+        <Grid container spacing={1}>
+          <Grid item>
+            <Typography
+              component={Link}
+              variant="h6"
+              to="/"
+              className={classes.link}
+            >
+              Reposter
+            </Typography>
+          </Grid>
+          <Grid item style={{ flexGrow: 1 }} />
+          <Grid item>
+            <Button component={Link} to="/reddit" className={classes.link}>
+              reddit
+            </Button>
+          </Grid>
+          <Grid item>
+            <Button
+              color="inherit"
+              component="a"
+              href="/admin"
+              className={classes.link}
+            >
+              admin
+            </Button>
+          </Grid>
+        </Grid>
       </Toolbar>
     </AppBar>
   )
