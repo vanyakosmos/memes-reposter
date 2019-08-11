@@ -15,6 +15,7 @@ ALLOWED_HOSTS = ['*']  # todo: extract host from APP_URL
 # Application definition
 
 INSTALLED_APPS = [
+    'jet',  # should be before django.contrib.admin
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

@@ -7,6 +7,7 @@ from . import views
 urlpatterns = [
     path('', RedirectView.as_view(url='admin/')),
     path('admin/', admin.site.urls),
+    path('admin/jet/', include('jet.urls', 'jet')),
     path('api-auth/', include('rest_framework.urls')),
     path('api/', include('api.urls')),
     path('reddit/', include('reddit.urls')),
