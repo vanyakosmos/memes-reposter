@@ -1,4 +1,5 @@
 from .CELERY import *
+from .CORS import *
 from .IMGUR import *
 from .JWT import *
 from .LOGGING import *
