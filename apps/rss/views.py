@@ -1,56 +1,15 @@
-import re
-
-from coreapi import Link
 from django.conf import settings
 from django.db.models import Q
 from django.shortcuts import redirect, render
-from rest_framework import schemas
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.schemas.generators import LinkNode, distribute_links
 
 from . import tasks
 from .fetcher import fetch_posts
 from .models import Channel, Post, RssFeed
 from .publisher import post_exists
-
-
-VERB_MAP = {
-    'read': 'GET',
-    'list': 'GET_LIST',
-    'create': 'POST',
-    'update': 'PUT',
-    'partial_update': 'PATCH',
-    'delete': 'DELETE',
-}
-API_TITLE = 'Sanegnize API'
-URL_REGEX = re.compile(r'{\w+?}')
-
-
-def traverse(request, node, root_key):
-    res = {}
-    if isinstance(node, Link):
-        root_key = VERB_MAP.get(root_key, root_key)
-        url = URL_REGEX.sub('1', node.url)
-        return root_key, request.build_absolute_uri(url)
-    elif isinstance(node, LinkNode):
-        for key, n in node.items():
-            key, r = traverse(request, n, key)
-            res[key] = r
-    return root_key, res
-
-
-@api_view()
-@permission_classes([IsAdminUser])
-def root_view(request: Request):
-    gen = schemas.SchemaGenerator()
-    gen.get_schema()
-    root = gen.get_links(request)
-    distribute_links(root)
-    key, res = traverse(request, root, root_key='api')
-    return Response(res)
 
 
 @api_view(['POST'])
