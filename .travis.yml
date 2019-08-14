@@ -6,22 +6,19 @@ python: 3.6
 services:
   - postgresql
 
-install:
-  - pip install codecov
-
-before_script:
+before_install:
   - cd reposter
+install:
+  - pip install -r requirements.txt
+  - pip install codecov pytest
+
 script:
   - pytest --cov . --cov-report xml
-
 
 after_success:
   - codecov
 
-before_deploy:
-  - cd reposter
-
-
 notifications:
+  email: false
   webhooks:
     - https://travis-tg.herokuapp.com/u/89599420
