@@ -60,6 +60,15 @@ class Subreddit(models.Model):
         return get_posts(self.name, limit)
 
 
+class PostManager(models.Manager):
+    def pending(self):
+        return self.filter(status=Post.PENDING)
+
+    def pending_subs(self):
+        posts = Post.objects.pending()
+        return posts.values_list('subreddit_name', flat=True).distinct()
+
+
 class Post(models.Model):
     ACCEPTED = 'accepted'
     PENDING = 'pending'
@@ -90,6 +99,8 @@ class Post(models.Model):
     text = models.TextField(null=True, blank=True)
     file_path = models.TextField(null=True, blank=True)
     transcript = models.TextField(null=True, blank=True)
+
+    objects = PostManager()
 
     def __str__(self):
         return f'Post({self.status}, {self.reddit_id}, {self.title!r})'

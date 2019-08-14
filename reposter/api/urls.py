@@ -7,6 +7,8 @@ from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAdminUser
 from rest_framework_jwt.views import obtain_jwt_token, refresh_jwt_token, verify_jwt_token
 
+app_name = 'api'
+
 
 class CustomOpenAPISchemaGenerator(OpenAPISchemaGenerator):
     def get_schema(self, *args, **kwargs):

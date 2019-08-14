@@ -9,6 +9,8 @@ from core.models import Subscription
 from telegram_app.models import Chat, Message
 
 
+@pytest.mark.usefixtures('create_reddit_post')
+@pytest.mark.django_db
 class TestModels:
     def test_get_posts(self):
         sub = Subreddit(name='pics')
@@ -16,6 +18,27 @@ class TestModels:
         posts = [Post.from_dict(p, sub) for p in raw_posts]
         assert len(raw_posts) == 2
         assert posts[0].subreddit_name == 'pics'
+
+    def test_pending_subs_no_posts(self):
+        subs = Post.objects.pending_subs()
+        assert list(subs) == []
+
+    def test_pending_subs_no_pending(self):
+        sub1 = Subreddit.objects.create(name='sub1')
+        self.create_reddit_post(subreddit=sub1)
+        self.create_reddit_post(subreddit=sub1)
+        subs = Post.objects.pending_subs()
+        assert list(subs) == []
+
+    def test_pending_subs(self):
+        sub2 = Subreddit.objects.create(name='sub2')
+        self.create_reddit_post(subreddit=sub2, status=Post.PENDING)
+        self.create_reddit_post(subreddit=sub2, status=Post.PENDING)
+        self.create_reddit_post(subreddit=sub2)
+        sub3 = Subreddit.objects.create(name='sub3')
+        self.create_reddit_post(subreddit=sub3, status=Post.PENDING)
+        subs = Post.objects.pending_subs()
+        assert list(subs) == ['sub2', 'sub3']
 
 
 @pytest.mark.usefixtures('create_reddit_post')

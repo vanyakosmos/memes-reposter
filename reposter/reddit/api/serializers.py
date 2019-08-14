@@ -10,7 +10,7 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 class PostUpdateRequest(serializers.Serializer):
-    title = serializers.CharField(allow_null=True)
+    title = serializers.CharField(required=False)
 
 
 class RejectRequest(serializers.Serializer):
@@ -22,3 +22,7 @@ class RejectRequest(serializers.Serializer):
 
 class RejectResponse(serializers.Serializer):
     rejected = serializers.IntegerField(help_text="Number of rejected posts.")
+
+
+class PendingSubredditsResponse(serializers.Serializer):
+    subreddits = serializers.ListField(child=serializers.CharField())

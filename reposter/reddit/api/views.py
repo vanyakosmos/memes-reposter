@@ -1,19 +1,23 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, filters, status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAdminUser
+from rest_framework.decorators import api_view
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from reddit import tasks
 from reddit.models import Post
-from .serializers import PostSerializer, PostUpdateRequest, RejectRequest, RejectResponse
+from .serializers import (
+    PostSerializer,
+    PostUpdateRequest,
+    RejectRequest,
+    RejectResponse,
+    PendingSubredditsResponse,
+)
 
 
 class PostViewMixin:
-    permission_classes = (IsAdminUser,)
-    queryset = Post.objects.filter(status=Post.PENDING)
+    queryset = Post.objects.pending()
 
 
 class PostsListView(PostViewMixin, generics.ListAPIView):
@@ -58,7 +62,6 @@ class PostView(PostViewMixin, generics.GenericAPIView):
     responses={status.HTTP_200_OK: RejectResponse},
 )
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
 def reject_view(request: Request):
     s = RejectRequest(data=request.data)
     s.is_valid(raise_exception=True)
@@ -67,3 +70,17 @@ def reject_view(request: Request):
     res = RejectResponse(data={'rejected': rows})
     res.is_valid(raise_exception=True)
     return Response(res.validated_data)
+
+
+@swagger_auto_schema(
+    operation_id="get list of subreddits for currently pending posts",
+    method='get',
+    responses={status.HTTP_200_OK: PendingSubredditsResponse},
+)
+@api_view(['GET'])
+def pending_subreddits_view(request: Request):
+    s = PendingSubredditsResponse(data={
+        'subreddits': list(Post.objects.pending_subs()),
+    })
+    s.is_valid(raise_exception=True)
+    return Response(s.validated_data)
