@@ -1,13 +1,14 @@
 import Grid from '@material-ui/core/Grid'
-import { Link } from 'gatsby'
+import { Link, navigate } from 'gatsby'
 import React from 'react'
 import { makeStyles } from '@material-ui/core/styles'
 import AppBar from '@material-ui/core/AppBar'
 import Toolbar from '@material-ui/core/Toolbar'
 import Typography from '@material-ui/core/Typography'
 import Button from '@material-ui/core/Button'
+import { getToken, removeToken } from 'src/jwt'
 
-const useStyles = makeStyles(({ palette }) => ({
+const useStyles = makeStyles(() => ({
   root: {
     flexGrow: 1,
   },
@@ -20,6 +21,12 @@ const useStyles = makeStyles(({ palette }) => ({
 
 const Navbar = () => {
   const classes = useStyles()
+  const token = getToken()
+
+  function handleLogout() {
+    removeToken()
+    navigate('/login')
+  }
 
   return (
     <AppBar position="fixed">
@@ -50,6 +57,17 @@ const Navbar = () => {
             >
               admin
             </Button>
+          </Grid>
+          <Grid item>
+            {token ? (
+              <Button onClick={handleLogout} className={classes.link}>
+                logout
+              </Button>
+            ) : (
+              <Button component={Link} to="/login" className={classes.link}>
+                login
+              </Button>
+            )}
           </Grid>
         </Grid>
       </Toolbar>

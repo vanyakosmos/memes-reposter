@@ -76,7 +76,7 @@ export default function Post({
       <CardContent>
         <Grid container justify="center" className={classes.block}>
           {photo_url && (
-            <a target="_blank" href={photo_url}>
+            <a target="_blank" rel="noopener noreferrer" href={photo_url}>
               <img src={photo_url} alt={title} className={classes.media} />
             </a>
           )}
@@ -93,6 +93,7 @@ export default function Post({
             <a
               href={comments}
               target="_blank"
+              rel="noopener noreferrer"
               color="secondary"
               className={classes.link}
             >

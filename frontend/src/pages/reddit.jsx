@@ -4,10 +4,10 @@ import InputLabel from '@material-ui/core/InputLabel'
 import MenuItem from '@material-ui/core/MenuItem'
 import Select from '@material-ui/core/Select'
 import { makeStyles } from '@material-ui/styles'
-import * as axios from 'axios'
 import React, { useEffect, useState } from 'react'
-import Layout from '../components/Layout'
-import Post from '../components/Post'
+import { getRedditPosts } from 'src/apiClient'
+import Layout from 'src/components/Layout'
+import Post from 'src/components/Post'
 
 const useStyles = makeStyles({
   filters: {
@@ -74,15 +74,10 @@ const IndexPage = () => {
   console.log(subreddit, ordering)
 
   useEffect(() => {
-    const subreddit_name = subreddit === '-' ? '' : subreddit
-    axios
-      .get(`http://localhost/api/reddit/posts/`, {
-        params: { ordering, subreddit_name },
-      })
-      .then(r => {
-        console.log(r.data)
-        setPosts(r.data.results.slice(0, 5))
-      })
+    const sub = subreddit === '-' ? '' : subreddit
+    getRedditPosts(sub, ordering).then(posts => {
+      setPosts(posts.slice(0, 5))
+    })
   }, [ordering, subreddit])
 
   return (
