@@ -20,7 +20,7 @@ def publish_view_factory(fetch_and_publish: Callable):
     @api_view(['POST'])
     @permission_classes([IsAdminUser])
     def view(request: Request):
-        blank = request.data.get() == '1'
+        blank = request.data.get('blank') == '1'
         fetch_and_publish(blank)
         return Response(status=status.HTTP_201_CREATED)
 

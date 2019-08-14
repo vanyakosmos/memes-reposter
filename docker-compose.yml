@@ -9,6 +9,12 @@ x-app: &app
     - .envs/prod/db.env
   depends_on:
     - db
+
+
+x-worker: &worker
+  <<: *app
+  depends_on:
+    - db
     - redis
 
 
@@ -37,12 +43,13 @@ services:
       - 8000:8000
 
   worker:
-    <<: *app
+    <<: *worker
     command: ["./scripts/celery.sh"]
 
   beat:
-    <<: *app
+    <<: *worker
     command: ["./scripts/beat.sh"]
+
 
 volumes:
   dbdata:
