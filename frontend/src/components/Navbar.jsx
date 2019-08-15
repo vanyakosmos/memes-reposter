@@ -7,6 +7,7 @@ import Toolbar from '@material-ui/core/Toolbar'
 import Typography from '@material-ui/core/Typography'
 import Button from '@material-ui/core/Button'
 import { getToken, removeToken } from 'src/jwt'
+import { globalHistory } from '@reach/router'
 
 const useStyles = makeStyles(() => ({
   root: {
@@ -19,9 +20,10 @@ const useStyles = makeStyles(() => ({
   },
 }))
 
-const Navbar = () => {
+export default function Navbar() {
   const classes = useStyles()
   const token = getToken()
+  const path = globalHistory.location.pathname
 
   function handleLogout() {
     removeToken()
@@ -31,7 +33,7 @@ const Navbar = () => {
   return (
     <AppBar position="fixed">
       <Toolbar>
-        <Grid container spacing={1}>
+        <Grid container spacing={1} alignItems="center">
           <Grid item>
             <Typography
               component={Link}
@@ -43,11 +45,13 @@ const Navbar = () => {
             </Typography>
           </Grid>
           <Grid item style={{ flexGrow: 1 }} />
-          <Grid item>
-            <Button component={Link} to="/reddit" className={classes.link}>
-              reddit
-            </Button>
-          </Grid>
+          {path !== '/reddit' && (
+            <Grid item>
+              <Button component={Link} to="/reddit" className={classes.link}>
+                reddit
+              </Button>
+            </Grid>
+          )}
           <Grid item>
             <Button
               color="inherit"
@@ -58,21 +62,15 @@ const Navbar = () => {
               admin
             </Button>
           </Grid>
-          <Grid item>
-            {token ? (
+          {token && (
+            <Grid item>
               <Button onClick={handleLogout} className={classes.link}>
                 logout
               </Button>
-            ) : (
-              <Button component={Link} to="/login" className={classes.link}>
-                login
-              </Button>
-            )}
-          </Grid>
+            </Grid>
+          )}
         </Grid>
       </Toolbar>
     </AppBar>
   )
 }
-
-export default Navbar

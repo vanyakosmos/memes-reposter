@@ -27,7 +27,7 @@ export async function authObtain(username, password) {
 export async function authRefresh(token) {
   if (!token) {
     removeToken()
-    throw "invalid token"
+    throw Error("invalid token")
   }
   const res = await client.post(`auth/refresh/`, { token })
   const newToken = res.data.token;
@@ -46,10 +46,22 @@ export async function authVerify(token) {
 }
 
 export async function getRedditPosts(subreddit, ordering) {
-  console.log('getRedditPosts')
   const res = await client.get(`reddit/posts/`, {
     params: { ordering, subreddit_name: subreddit },
   })
-  console.log('getRedditPosts', res.data)
-  return res.data.results;
+  return {
+    posts: res.data.results,
+    count: res.data.count,
+  };
+}
+
+
+export async function getPendingSubreddits() {
+  const res = await client.get(`reddit/posts/subreddits/`)
+  return res.data.subreddits
+}
+
+
+export async function publishPosts(service, blank=false) {
+  return  await client.post(`${service}/publish/`, {blank})
 }

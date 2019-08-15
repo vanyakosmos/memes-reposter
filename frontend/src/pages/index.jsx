@@ -10,7 +10,8 @@ import { makeStyles } from '@material-ui/core/styles'
 import TextField from '@material-ui/core/TextField'
 import Typography from '@material-ui/core/Typography'
 import React, { useState } from 'react'
-import Layout from '../components/Layout'
+import { publishPosts } from 'src/apiClient'
+import Layout from 'src/components/Layout'
 
 const useStyles = makeStyles({
   card: {
@@ -30,29 +31,36 @@ const useActionStyles = makeStyles({
   },
 })
 
-const Action = ({ label, actionLabel, Input }) => {
+function Action({ service, actionLabel, Input }) {
   const classes = useActionStyles()
+
+  function handlePublish() {
+    const blank = false // todo
+    publishPosts(service, blank)
+  }
 
   return (
     <Grid container alignItems="center" className={classes.root} spacing={1}>
       <Grid item className={classes.name}>
-        <Typography variant="body1">{label}</Typography>
+        <Typography variant="body1">{service}</Typography>
       </Grid>
       <Grid item className={classes.input}>
         <Input />
       </Grid>
       <Grid item>
-        <Button color="secondary">{actionLabel}</Button>
+        <Button color="secondary" onClick={handlePublish}>
+          {actionLabel}
+        </Button>
       </Grid>
     </Grid>
   )
 }
 
-const PublishAction = ({ label }) => {
+function PublishAction({ service }) {
   const [bool, setBool] = useState(false)
   return (
     <Action
-      label={label}
+      service={service}
       actionLabel="publish"
       Input={() => (
         <FormControlLabel
@@ -70,12 +78,12 @@ const PublishAction = ({ label }) => {
   )
 }
 
-const CleanUpAction = ({ label, switchLabel = 'days' }) => {
+const CleanUpAction = ({ service, switchLabel = 'days' }) => {
   const [val, setVal] = useState(7)
 
   return (
     <Action
-      label={label}
+      service={service}
       actionLabel="clean up"
       Input={() => (
         <TextField
@@ -91,28 +99,26 @@ const CleanUpAction = ({ label, switchLabel = 'days' }) => {
   )
 }
 
-const IndexPage = () => {
+export default function IndexPage() {
   const classes = useStyles()
   return (
     <Layout>
       <Card className={classes.card}>
         <CardHeader title="Publish" />
         <CardContent>
-          <PublishAction label="reddit" />
-          <PublishAction label="imgur" />
-          <PublishAction label="rss" />
+          <PublishAction service="reddit" />
+          <PublishAction service="imgur" />
+          <PublishAction service="rss" />
         </CardContent>
       </Card>
       <Card className={classes.card}>
         <CardHeader title="Clean Up" />
         <CardContent>
-          <CleanUpAction label="reddit" />
-          <CleanUpAction label="imgur" />
-          <CleanUpAction label="rss" switchLabel="keep" />
+          <CleanUpAction service="reddit" />
+          <CleanUpAction service="imgur" />
+          <CleanUpAction service="rss" switchLabel="keep" />
         </CardContent>
       </Card>
     </Layout>
   )
 }
-
-export default IndexPage
