@@ -9,7 +9,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from .fetcher import get_about, get_posts, get_reddit_url
-from .utils import get_photo_url, get_video_url
+from .utils import get_photo_url, get_video_url, get_gif_url
 from core.fields import URLField
 from core.post import Post as NormalPost, Media
 
@@ -81,21 +81,33 @@ class Post(models.Model):
         (REJECTED, REJECTED),
     )
 
+    TEXT = 'text'
+    LINK = 'link'
+    PHOTO = 'photo'
+    VIDEO = 'video'
+    ANIMATION = 'animation'
+    TYPES = (
+        (TEXT, TEXT),
+        (LINK, LINK),
+        (PHOTO, PHOTO),
+        (VIDEO, VIDEO),
+        (ANIMATION, ANIMATION),
+    )
+
     status = models.CharField(max_length=200, choices=STATUSES, default=ACCEPTED)
     created = models.DateTimeField(auto_now_add=True)
 
     reddit_id = models.CharField(max_length=200, unique=True)
     subreddit = models.ForeignKey(Subreddit, on_delete=models.CASCADE)
     subreddit_name = models.CharField(max_length=255)
-
+    # meta
     title = models.TextField()
     score = models.IntegerField()
     nsfw = models.BooleanField(default=False)
     comments = URLField(blank=True, null=True)
-
-    url = URLField()
-    photo_url = URLField(null=True, blank=True)
-    video_url = URLField(null=True, blank=True)
+    # content
+    url = URLField(null=True, blank=True)
+    type = models.CharField(max_length=50, choices=TYPES, default=TEXT)
     text = models.TextField(null=True, blank=True)
     file_path = models.TextField(null=True, blank=True)
     transcript = models.TextField(null=True, blank=True)
@@ -120,7 +132,30 @@ class Post(models.Model):
         return f'https://redd.it/{self.reddit_id}'
 
     @classmethod
+    def get_url(cls, data: dict):
+        photo_url = get_photo_url(data)
+        video_url = get_video_url(data)
+        animation_url = get_gif_url(data)
+        if data['selftext']:
+            url = None
+            type = Post.TEXT
+        elif photo_url:
+            url = photo_url
+            type = Post.PHOTO
+        elif video_url:
+            url = video_url
+            type = Post.VIDEO
+        elif animation_url:
+            url = animation_url
+            type = Post.ANIMATION
+        else:
+            url = data['url']
+            type = Post.LINK
+        return url, type
+
+    @classmethod
     def from_dict(cls, data: dict, subreddit: Subreddit):
+        url, type = cls.get_url(data)
         return Post(
             reddit_id=data['id'],
             subreddit=subreddit,
@@ -131,13 +166,21 @@ class Post(models.Model):
             nsfw=data['over_18'],
             comments='https://reddit.com' + data['permalink'],
             # content
-            url=data['url'],
-            photo_url=get_photo_url(data),
-            video_url=get_video_url(data),
+            url=url,
+            type=type,
             text=data['selftext']
         )
 
     def normalize(self, with_title=True):
+        if self.type in (Post.ANIMATION, Post.VIDEO, Post.PHOTO):
+            media = Media(
+                url=self.url,
+                video=self.type in (Post.ANIMATION, Post.VIDEO),
+                file_path=self.file_path,
+            )
+            medias = [media]
+        else:
+            medias = []
         return NormalPost(
             id=f"reddit:{self.reddit_id}",
             url=self.url,
@@ -145,11 +188,5 @@ class Post(models.Model):
             title=self.title if with_title else None,
             text=self.text,
             keywords=self.tokens,
-            medias=[
-                Media(
-                    url=self.photo_url or self.video_url,
-                    video=bool(self.video_url),
-                    file_path=self.file_path,
-                )
-            ] if self.photo_url or self.video_url else [],
+            medias=medias,
         )

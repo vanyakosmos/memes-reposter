@@ -18,6 +18,7 @@ def publish_into_telegram(chat_id, raw_posts: List[tuple]):
 
 def publish_posts(subs: List[Subscription], posts: List[Post]):
     if not posts:
+        logger.debug("no posts to publish")
         return
     for chat in Chat.objects.filter(subs__in=subs).distinct():
         publish_into_telegram.delay(chat.id, posts)

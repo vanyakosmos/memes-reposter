@@ -98,4 +98,5 @@ def create_user(request: FixtureRequest):
 
 @pytest.fixture(autouse=True)
 def attached_client(request: FixtureRequest, client):
-    setattr(request.cls, 'client', client)
+    if request.cls:
+        setattr(request.cls, 'client', client)

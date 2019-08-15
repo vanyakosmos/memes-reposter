@@ -37,7 +37,7 @@ def load_videos(posts: List[Post]):
         links = []
         for post in posts:
             correct_link = 'v.redd.it' in post.url or settings.APP_URL in post.url
-            if not (post.video_url and correct_link):
+            if not (post.url and correct_link):
                 continue
             link = post.comments
             info = ydl.extract_info(link, download=False)
@@ -48,7 +48,7 @@ def load_videos(posts: List[Post]):
                 continue
 
             file_path = os.path.join(settings.VIDEOS_ROOT, f'{video_id}.{ext}')
-            post.video_url = f'{settings.APP_URL}/videos/{video_id}.{ext}'
+            post.url = f'{settings.APP_URL}/videos/{video_id}.{ext}'
             post.file_path = file_path
             post.save()
             if not os.path.exists(file_path):

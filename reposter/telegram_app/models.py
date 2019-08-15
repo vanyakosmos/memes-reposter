@@ -123,7 +123,7 @@ class Chat(models.Model):
         return super().save(*args, **kwargs)
 
     def publish(self, posts: List[Post]):
-        logger.debug(f"if chat: {self}")
+        logger.debug(f"chat: {self}")
         logger.debug(f"got {len(posts)} posts")
         posts = filters_posts(self, posts)
         logger.debug(f"{len(posts)} posts after filter")

@@ -47,10 +47,10 @@ def inner_unique_filter(posts: List[Post]):
     res = []
     urls = set()
     for post in posts:
-        post_urls = {post.url, post.photo_url, post.video_url} - {None}
-        if all(url not in urls for url in post_urls):
+        if not post.url or post.url not in urls:
             res.append(post)
-        urls |= post_urls
+        if post.url:
+            urls.add(post.url)
     return res
 
 

@@ -7,7 +7,7 @@ logging.addLevelName(logging.WARNING, '⚠️ ')
 logging.addLevelName(logging.ERROR, '🚨 ')
 
 LOGGING_LEVEL = getenv('LOGGING_LEVEL', 'DEBUG')
-LOGGING_LEVEL_ROOT = getenv('LOGGING_LEVEL_ROOT', 'INFO')
+LOGGING_LEVEL_ROOT = getenv('LOGGING_LEVEL_ROOT', 'WARNING')
 
 loggers = {
     module: {
@@ -37,7 +37,12 @@ LOGGING = {
         },
     },
     'loggers': {
-        **loggers
+        **loggers,
+        'django': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
     },
     'root': {
         'handlers': ['console'],

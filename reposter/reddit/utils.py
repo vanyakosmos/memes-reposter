@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 GIPHY_REGEX = re.compile(r'^https?://(?:media|i)\.giphy\.com/media/(\w+)/giphy\.(?:gif|mp4)$')
 GFYCAT_REGEX = re.compile(r'^https?://(?:\w+\.)?gfycat.com/(?:\w+/)*(\w+)(?:\.mp4)?$')
 IMGUR_GIF_REGEX = re.compile(r'^(.+)\.(gifv?|mp4)$')
+GIF_REGEX = re.compile(r'^https?://.*\.gif$')
 
 
 def has_ext(file: str, *exts: str):
@@ -18,7 +19,11 @@ def has_ext(file: str, *exts: str):
 def get_gfycat_url(gif_url):
     api_url = GFYCAT_REGEX.sub(r'https://api.gfycat.com/v1/gfycats/\g<1>', gif_url)
     res = requests.get(api_url)
-    item = res.json()
+    try:
+        item = res.json()
+    except Exception as e:
+        logger.error(e)
+        return
     url = item['gfyItem']['mp4Url']
     return url
 
@@ -40,12 +45,17 @@ def get_video_url(data: dict):
         return f'https://i.giphy.com/media/{gif_id}/giphy.mp4'
 
     elif domain in ('imgur.com', 'm.imgur.com', 'i.imgur.com'):
-        return IMGUR_GIF_REGEX.sub('\g<1>.mp4', data['url'])
+        return IMGUR_GIF_REGEX.sub(r'\g<1>.mp4', data['url'])
 
     elif domain == 'v.redd.it':
         media = data['media']
         if media:
             return data['media']['reddit_video']['fallback_url']
+
+
+def get_gif_url(data: dict):
+    if GIF_REGEX.match(data['url']):
+        return data['url']
 
 
 def format_field_pairs(obj, fields: List[str]):
