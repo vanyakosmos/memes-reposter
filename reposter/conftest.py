@@ -18,7 +18,7 @@ def append_to_cls(request: FixtureRequest, func, name=None):
 def mock_bot(mocker):
     from telegram import Bot, Message as TGMessage
 
-    def send(*args, **kwargs):
+    def get_msg():
         return TGMessage.de_json(
             {
                 'message_id': '1111',
@@ -37,9 +37,17 @@ def mock_bot(mocker):
             None,
         )
 
-    methods = ['send_message', 'send_video', 'send_photo', 'send_media_group']
+    def send(*args, **kwargs):
+        return get_msg()
+
+    def send_album(*args, **kwargs):
+        return [get_msg()]
+
+    methods = ['send_message', 'send_video', 'send_photo']
     for method in methods:
         mocker.patch.object(Bot, method, send)
+
+    mocker.patch.object(Bot, 'send_media_group', send_album)
 
 
 @pytest.fixture(scope='class')
@@ -65,6 +73,7 @@ def create_reddit_post(request: FixtureRequest, create_subreddit):
         reddit_id=None,
         url=None,
         status=None,
+        type=None,
         **kwargs
     ):
         subreddit = subreddit or create_subreddit(name=subreddit_name)
@@ -76,6 +85,7 @@ def create_reddit_post(request: FixtureRequest, create_subreddit):
             reddit_id=reddit_id or id or str(uuid4()),
             url=url or id or 'https://example.com/foo.png',
             status=status or Post.ACCEPTED,
+            type=type or Post.PHOTO,
             **kwargs,
         )
 

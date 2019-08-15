@@ -1,6 +1,7 @@
 import pytest
 from django.test import override_settings
 
+from core.publisher import publish_into_telegram
 from reddit.tasks import fetch_and_publish, publish_sub
 
 from . import filters
@@ -99,8 +100,8 @@ class TestFilters:
 
         posts = [
             Post(subreddit=sub, url='a'),
-            Post(subreddit=sub, url='b', photo_url='a'),
-            Post(subreddit=sub, url='c', video_url='b'),
+            Post(subreddit=sub, url='a', type=Post.PHOTO),
+            Post(subreddit=sub, url='a', type=Post.VIDEO),
         ]
         new_posts = filters.inner_unique_filter(posts)
         assert len(new_posts) == 1
@@ -149,6 +150,7 @@ class TestTasks:
         assert Post.objects.filter(status=Post.REJECTED).count() == 2
 
     def test_fetch_and_publish(self, mocker):
+        mocker.patch.object(publish_into_telegram, 'delay', publish_into_telegram)
         mocker.patch.object(publish_sub, 'delay', publish_sub)
         mocker.patch.object(Chat, 'update_from_telegram')
 

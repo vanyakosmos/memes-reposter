@@ -1,0 +1,7 @@
+{% if post.type == post.PHOTO or post.type == post.ANIMATION %}
+  <a href="{{ post.url }}" target="_blank" rel="noopener noreferrer">
+    <img src="{{ post.url }}" alt="{{ post.title }}" style="max-height: 100px"/>
+  </a>
+{% elif post.type == post.VIDEO %}
+  <video src="{{ post.url }}" controls style="max-height: 100px"></video>
+{% endif %}

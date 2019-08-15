@@ -81,11 +81,11 @@ def publish_media_post(chat: Chat, post: Post):
     }
     # need title, post pic and text separately
     if title and len(title) > MAX_CAPTION_LENGTH or len(post.medias) > 1:
-        messages = publish_media(post, chat_id=chat.telegram_id)
-        if messages:
+        message = publish_media(post, chat_id=chat.telegram_id)
+        if message:
             return bot.send_message(
                 text=title,
-                reply_to_message_id=messages[0].message_id,
+                reply_to_message_id=message.message_id,
                 **common,
             )
         return
@@ -107,7 +107,8 @@ def publish_media(post: Post, **kwargs):
     # post album
     if len(post.medias) > 1:
         medias = [get_media_input(m) for m in post.medias[:10]]
-        return bot.send_media_group(media=medias, **kwargs)
+        msgs = bot.send_media_group(media=medias, **kwargs)
+        return msgs[0]
 
     if len(post.medias) == 1:
         media = post.medias[0]

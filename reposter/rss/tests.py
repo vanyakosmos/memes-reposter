@@ -1,6 +1,7 @@
 import pytest
 
 from core.models import Subscription
+from core.publisher import publish_into_telegram
 from rss.fetcher import fetch_posts
 from rss.models import Post, RssFeed
 from telegram_app.models import Chat, Message
@@ -43,6 +44,7 @@ class TestTasks:
         assert Message.objects.count() == 0
 
     def test_fetch_and_publish(self, mocker):
+        mocker.patch.object(publish_into_telegram, 'delay', publish_into_telegram)
         self.setup_feed(mocker)
         fetch_and_publish(blank=False)
         assert Post.objects.count() == 2

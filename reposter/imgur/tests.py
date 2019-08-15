@@ -2,6 +2,7 @@ import pytest
 from django.test import override_settings
 
 from core.models import Subscription
+from core.publisher import publish_into_telegram
 from telegram_app.models import Chat, Message
 from .models import ImgurConfig, Post
 from .tasks import fetch_and_publish, publish_imgur_posts
@@ -18,6 +19,7 @@ class TestTasks:
         assert Post.objects.count() == 2
 
     def test_fetch_and_publish(self, mocker):
+        mocker.patch.object(publish_into_telegram, 'delay', publish_into_telegram)
         mocker.patch.object(publish_imgur_posts, 'delay', publish_imgur_posts)
         mocker.patch.object(Chat, 'update_from_telegram')
 
