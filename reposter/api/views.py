@@ -10,10 +10,10 @@ from rest_framework.response import Response
 from .serializers import PublishRequest, CleanUpRequest
 
 
-def publish_view_factory(fetch_and_publish: Callable):
+def publish_view_factory(fetch_and_publish: Callable, name: str):
     @swagger_auto_schema(
         method='post',
-        operation_id=f'publish posts',
+        operation_id=f'publish {name} posts',
         request_body=PublishRequest,
         responses={status.HTTP_201_CREATED: 'empty'}
     )
@@ -27,10 +27,10 @@ def publish_view_factory(fetch_and_publish: Callable):
     return view
 
 
-def delete_old_posts_view_factory(delete_old_posts: Callable):
+def delete_old_posts_view_factory(delete_old_posts: Callable, name: str):
     @swagger_auto_schema(
         method='post',
-        operation_id=f'delete old posts',
+        operation_id=f'delete old {name} posts',
         request_body=CleanUpRequest,
         responses={status.HTTP_201_CREATED: 'empty'}
     )

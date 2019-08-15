@@ -1,5 +1,5 @@
-from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from rest_framework import generics, filters, status
 from rest_framework.decorators import api_view
 from rest_framework.request import Request
@@ -22,12 +22,29 @@ class PostViewMixin:
 
 class PostsListView(PostViewMixin, generics.ListAPIView):
     serializer_class = PostSerializer
-    filter_backends = (DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter)
-    filterset_fields = ('subreddit_name',)
+    filter_backends = (filters.OrderingFilter, filters.SearchFilter)
     ordering_fields = ('created', 'score')
     search_fields = ('title',)
 
-    @swagger_auto_schema(operation_id="get pending posts list")
+    def get_queryset(self):
+        qs = super().get_queryset()
+        subs = self.request.query_params.getlist('subs[]')
+        if subs:
+            qs = qs.filter(subreddit_name__in=subs)
+        return qs
+
+    @swagger_auto_schema(
+        operation_id="get pending reddit posts list",
+        manual_parameters=[
+            openapi.Parameter(
+                name='subs[]',
+                in_=openapi.IN_QUERY,
+                type=openapi.TYPE_ARRAY,
+                items=openapi.Items(openapi.TYPE_STRING),
+                description="example: `?subs[]=pics&subs[]=gifs`",
+            )
+        ]
+    )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
@@ -36,7 +53,7 @@ class PostView(PostViewMixin, generics.GenericAPIView):
     serializer_class = PostUpdateRequest
 
     @swagger_auto_schema(
-        operation_id="publish single post",
+        operation_id="publish single reddit post",
         responses={status.HTTP_201_CREATED: 'empty'},
     )
     def post(self, request: Request, *args, **kwargs):
@@ -56,7 +73,7 @@ class PostView(PostViewMixin, generics.GenericAPIView):
 
 
 @swagger_auto_schema(
-    operation_id="reject posts in bulk",
+    operation_id="reject reddit posts in bulk",
     method='post',
     request_body=RejectRequest,
     responses={status.HTTP_200_OK: RejectResponse},
